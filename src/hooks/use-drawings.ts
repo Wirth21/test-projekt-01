@@ -1,0 +1,177 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase";
+import type { Drawing } from "@/lib/types/drawing";
+
+export function useDrawings(projectId: string) {
+  const [drawings, setDrawings] = useState<Drawing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const supabase = createClient();
+
+  const fetchDrawings = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/projects/${projectId}/drawings`);
+      const json = await res.json();
+
+      if (!res.ok) {
+        setError(json.error ?? "Zeichnungen konnten nicht geladen werden");
+        return;
+      }
+
+      setDrawings(json.drawings ?? []);
+    } catch {
+      setError("Ein unerwarteter Fehler ist aufgetreten");
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    if (projectId) {
+      fetchDrawings();
+    }
+  }, [projectId, fetchDrawings]);
+
+  const uploadDrawing = async (
+    file: File,
+    onProgress: (pct: number) => void
+  ): Promise<Drawing> => {
+    // Generate a unique ID for the drawing
+    const drawingId = crypto.randomUUID();
+    // New storage path format: {project_id}/{drawing_id}/1.pdf (v1)
+    const storagePath = `${projectId}/${drawingId}/1.pdf`;
+
+    // Upload the file directly to Supabase Storage using XMLHttpRequest for progress
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      throw new Error("Nicht eingeloggt");
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const uploadUrl = `${supabaseUrl}/storage/v1/object/drawings/${storagePath}`;
+
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", uploadUrl, true);
+      xhr.setRequestHeader("Authorization", `Bearer ${session.access_token}`);
+      xhr.setRequestHeader("x-upsert", "true");
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const pct = Math.round((event.loaded / event.total) * 100);
+          onProgress(pct);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error("Upload fehlgeschlagen"));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Upload fehlgeschlagen"));
+      xhr.send(file);
+    });
+
+    // Record metadata via API (creates drawing + v1 version)
+    const res = await fetch(`/api/projects/${projectId}/drawings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        display_name: file.name.replace(/\.pdf$/i, ""),
+        storage_path: storagePath,
+        file_size: file.size,
+      }),
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.error ?? "Metadaten konnten nicht gespeichert werden");
+    }
+
+    await fetchDrawings();
+    return json.drawing;
+  };
+
+  const renameDrawing = async (drawingId: string, displayName: string) => {
+    const res = await fetch(
+      `/api/projects/${projectId}/drawings/${drawingId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ display_name: displayName }),
+      }
+    );
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.error ?? "Umbenennung fehlgeschlagen");
+    }
+
+    await fetchDrawings();
+  };
+
+  const archiveDrawing = async (drawingId: string) => {
+    const res = await fetch(
+      `/api/projects/${projectId}/drawings/${drawingId}/archive`,
+      { method: "POST" }
+    );
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.error ?? "Archivierung fehlgeschlagen");
+    }
+
+    await fetchDrawings();
+  };
+
+  const restoreDrawing = async (drawingId: string) => {
+    const res = await fetch(
+      `/api/projects/${projectId}/drawings/${drawingId}/restore`,
+      { method: "POST" }
+    );
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.error ?? "Wiederherstellung fehlgeschlagen");
+    }
+
+    await fetchDrawings();
+  };
+
+  const getSignedUrl = useCallback(async (drawingId: string): Promise<string> => {
+    const res = await fetch(
+      `/api/projects/${projectId}/drawings/${drawingId}/url`
+    );
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.error ?? "URL konnte nicht generiert werden");
+    }
+
+    return json.url;
+  }, [projectId]);
+
+  return {
+    drawings,
+    loading,
+    error,
+    uploadDrawing,
+    renameDrawing,
+    archiveDrawing,
+    restoreDrawing,
+    getSignedUrl,
+    refetch: fetchDrawings,
+  };
+}

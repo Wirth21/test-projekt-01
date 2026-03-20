@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Users, ShieldAlert } from "lucide-react";
+import { Search, Users, ShieldAlert, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,9 @@ import {
 } from "@/components/ui/table";
 import { useAdminUsers } from "@/hooks/use-admin";
 import { UserDetailSheet } from "@/components/admin/UserDetailSheet";
+import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 import { createClient } from "@/lib/supabase";
+import { toast } from "sonner";
 import type { AdminProfile } from "@/lib/types/admin";
 
 const statusLabels: Record<
@@ -54,8 +56,9 @@ export default function AdminUsersPage() {
   const [statusFilter, setStatusFilter] = useState(STATUS_ALL);
   const [selectedUser, setSelectedUser] = useState<AdminProfile | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [createUserOpen, setCreateUserOpen] = useState(false);
 
-  const { users, loading, error, updateUserStatus, refetch } = useAdminUsers(
+  const { users, loading, error, updateUserStatus, createUser, refetch } = useAdminUsers(
     debouncedSearch,
     statusFilter === STATUS_ALL ? "" : statusFilter
   );
@@ -93,11 +96,17 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold">Nutzerverwaltung</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Alle registrierten Nutzer verwalten
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold">Nutzerverwaltung</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Alle registrierten Nutzer verwalten
+          </p>
+        </div>
+        <Button onClick={() => setCreateUserOpen(true)}>
+          <UserPlus className="mr-1.5 h-4 w-4" />
+          Nutzer hinzufuegen
+        </Button>
       </div>
 
       {/* Filters */}
@@ -264,6 +273,16 @@ export default function AdminUsersPage() {
         }}
         onStatusChange={updateUserStatus}
         isSelf={selectedUser?.id === currentUserId}
+      />
+
+      {/* Create user dialog */}
+      <CreateUserDialog
+        open={createUserOpen}
+        onOpenChange={setCreateUserOpen}
+        onSubmit={async (email, password, displayName) => {
+          await createUser(email, password, displayName);
+          toast.success(`Nutzer ${email} wurde erstellt`);
+        }}
       />
     </div>
   );

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { getAuthenticatedAdmin } from "@/lib/admin";
+import { createUserSchema } from "@/lib/validations/admin";
 
 // GET /api/admin/users — list all users (admin only)
 // Query params: ?search=term&status=active
@@ -78,4 +80,88 @@ export async function GET(request: Request) {
   }));
 
   return NextResponse.json({ users });
+}
+
+// POST /api/admin/users — create a new user manually (admin only)
+export async function POST(request: Request) {
+  const supabase = await createServerSupabaseClient();
+
+  const { isAdmin, error } = await getAuthenticatedAdmin(supabase);
+  if (!isAdmin) {
+    return NextResponse.json(
+      { error: error ?? "Keine Admin-Berechtigung" },
+      { status: error === "Nicht authentifiziert" ? 401 : 403 }
+    );
+  }
+
+  // Parse and validate body
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Ungueltiger Request-Body" }, { status: 400 });
+  }
+
+  const result = createUserSchema.safeParse(body);
+  if (!result.success) {
+    return NextResponse.json(
+      { error: "Validierungsfehler", details: result.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const { email, password, display_name } = result.data;
+
+  // Use service_role key to create users via Auth Admin API
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    return NextResponse.json(
+      { error: "Server-Konfiguration unvollstaendig (Service Role Key fehlt)" },
+      { status: 500 }
+    );
+  }
+
+  const adminClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    serviceRoleKey
+  );
+
+  // Create user in Supabase Auth (auto-confirms email)
+  const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { display_name },
+  });
+
+  if (authError) {
+    if (authError.message?.includes("already been registered")) {
+      return NextResponse.json(
+        { error: "Diese E-Mail-Adresse ist bereits registriert" },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json(
+      { error: authError.message ?? "Nutzer konnte nicht erstellt werden" },
+      { status: 500 }
+    );
+  }
+
+  // Set profile to active status (bypass pending) and update display_name
+  const { error: profileError } = await adminClient
+    .from("profiles")
+    .update({ status: "active", display_name })
+    .eq("id", authData.user.id);
+
+  if (profileError) {
+    return NextResponse.json(
+      { error: "Nutzer erstellt, aber Profil konnte nicht aktualisiert werden" },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json(
+    { user: { id: authData.user.id, email, display_name } },
+    { status: 201 }
+  );
 }

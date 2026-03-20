@@ -32,3 +32,11 @@ export const removeUserFromProjectSchema = z.object({
   projectId: z.string().uuid("Ungueltige Projekt-ID"),
 });
 export type RemoveUserFromProjectInput = z.infer<typeof removeUserFromProjectSchema>;
+
+// Schema for creating a user manually (admin)
+export const createUserSchema = z.object({
+  email: z.string().email("Ungueltige E-Mail-Adresse"),
+  password: z.string().min(8, "Passwort muss mindestens 8 Zeichen lang sein"),
+  display_name: z.string().min(1, "Name ist erforderlich").max(100).trim(),
+});
+export type CreateUserInput = z.infer<typeof createUserSchema>;

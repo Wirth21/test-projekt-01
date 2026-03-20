@@ -101,7 +101,19 @@ export function useAdminUsers(search: string = "", statusFilter: string = "") {
     return json.user;
   };
 
-  return { users, loading, error, updateUserStatus, refetch: fetchUsers };
+  const createUser = async (email: string, password: string, displayName: string) => {
+    const res = await fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, display_name: displayName }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? "Nutzer konnte nicht erstellt werden");
+    await fetchUsers();
+    return json.user;
+  };
+
+  return { users, loading, error, updateUserStatus, createUser, refetch: fetchUsers };
 }
 
 // ---------- User Projects ----------

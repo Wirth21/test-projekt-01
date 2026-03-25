@@ -490,6 +490,20 @@
       "login": "Anmelden"
     }
   },
+  "billing": {
+    "managePlan": "Plan verwalten",
+    "currentPlan": "Aktueller Plan",
+    "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+    "manageSubscription": "Abo verwalten",
+    "trialEnds": "Testphase endet am {date}",
+    "checkoutSuccess": "Zahlung erfolgreich! Dein Plan wurde aktualisiert.",
+    "checkoutCanceled": "Checkout abgebrochen.",
+    "errors": {
+      "checkoutFailed": "Checkout konnte nicht gestartet werden.",
+      "portalFailed": "Abo-Verwaltung konnte nicht geöffnet werden."
+    }
+  },
   "superadmin": {
     "nav": {
       "title": "Platform Admin",

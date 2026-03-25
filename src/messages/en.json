@@ -412,6 +412,20 @@
       "login": "Log in"
     }
   },
+  "billing": {
+    "managePlan": "Manage plan",
+    "currentPlan": "Current plan",
+    "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+    "manageSubscription": "Manage subscription",
+    "trialEnds": "Trial ends on {date}",
+    "checkoutSuccess": "Payment successful! Your plan has been updated.",
+    "checkoutCanceled": "Checkout canceled.",
+    "errors": {
+      "checkoutFailed": "Could not start checkout.",
+      "portalFailed": "Could not open subscription management."
+    }
+  },
   "superadmin": {
     "nav": {
       "title": "Platform Admin",

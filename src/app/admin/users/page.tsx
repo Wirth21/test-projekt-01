@@ -275,6 +275,20 @@ export default function AdminUsersPage() {
           if (!open) setSelectedUser(null);
         }}
         onStatusChange={updateUserStatus}
+        onProfileUpdate={async (userId, data) => {
+          const res = await fetch(`/api/admin/users/${userId}/profile`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || "Fehler");
+          }
+          const { user: updated } = await res.json();
+          setSelectedUser((prev) => prev ? { ...prev, ...updated } : null);
+          refetch();
+        }}
         isSelf={selectedUser?.id === currentUserId}
       />
 

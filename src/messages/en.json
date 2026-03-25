@@ -346,6 +346,8 @@
       "disable": "Disable",
       "reactivate": "Reactivate",
       "deleteUser": "Delete",
+      "editProfile": "Edit profile",
+      "editProfileDescription": "Change the user's name and email address.",
       "selfProtection": "You cannot deactivate or delete your own account.",
       "projectAccess": "Project access",
       "loadingProjects": "Loading...",
@@ -380,7 +382,8 @@
       "addToProjectFailed": "Failed to add",
       "removedFromProject": "User removed from \"{project}\"",
       "removeFromProjectFailed": "Failed to remove",
-      "createFailed": "Error creating user"
+      "createFailed": "Error creating user",
+      "profileUpdated": "Profile updated"
     }
   },
   "limits": {

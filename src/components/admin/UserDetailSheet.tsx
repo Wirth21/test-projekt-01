@@ -29,6 +29,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Loader2,
   Trash2,
@@ -37,6 +39,9 @@ import {
   Plus,
   FolderOpen,
   ShieldAlert,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useUserProjects, useAdminProjects } from "@/hooks/use-admin";
@@ -48,6 +53,7 @@ interface UserDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onStatusChange: (userId: string, status: UserStatus) => Promise<unknown>;
+  onProfileUpdate?: (userId: string, data: { display_name?: string; email?: string }) => Promise<unknown>;
   isSelf: boolean;
 }
 
@@ -64,6 +70,7 @@ export function UserDetailSheet({
   open,
   onOpenChange,
   onStatusChange,
+  onProfileUpdate,
   isSelf,
 }: UserDetailSheetProps) {
   const t = useTranslations("admin");
@@ -80,6 +87,9 @@ export function UserDetailSheet({
   const [deleteStep2, setDeleteStep2] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [addProjectId, setAddProjectId] = useState<string>("");
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
 
   if (!user) return null;
 
@@ -153,22 +163,93 @@ export function UserDetailSheet({
     }
   }
 
+  function startEditing() {
+    if (!user) return;
+    setEditName(user.display_name || "");
+    setEditEmail(user.email);
+    setEditing(true);
+  }
+
+  async function handleSaveProfile() {
+    if (!onProfileUpdate || !user) return;
+    setSubmitting(true);
+    try {
+      const changes: { display_name?: string; email?: string } = {};
+      if (editName.trim() !== (user.display_name || "")) changes.display_name = editName.trim();
+      if (editEmail.trim().toLowerCase() !== user.email.toLowerCase()) changes.email = editEmail.trim().toLowerCase();
+      if (Object.keys(changes).length === 0) {
+        setEditing(false);
+        return;
+      }
+      await onProfileUpdate(user.id, changes);
+      toast.success(t("toasts.profileUpdated"));
+      setEditing(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("toasts.actionFailed"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
+      <Sheet open={open} onOpenChange={(o) => { if (!o) setEditing(false); onOpenChange(o); }}>
         <SheetContent className="overflow-y-auto sm:max-w-md">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              {user.display_name || t("users.noName")}
-              {user.is_admin && (
-                <Badge variant="outline" className="text-xs">
-                  <ShieldAlert className="mr-1 h-3 w-3" />
-                  {t("users.badge")}
-                </Badge>
+              {editing ? (
+                <span className="text-base">{t("detail.editProfile")}</span>
+              ) : (
+                <>
+                  {user.display_name || t("users.noName")}
+                  {user.is_admin && (
+                    <Badge variant="outline" className="text-xs">
+                      <ShieldAlert className="mr-1 h-3 w-3" />
+                      {t("users.badge")}
+                    </Badge>
+                  )}
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 ml-1" onClick={startEditing}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                </>
               )}
             </SheetTitle>
-            <SheetDescription>{user.email}</SheetDescription>
+            <SheetDescription>{editing ? t("detail.editProfileDescription") : user.email}</SheetDescription>
           </SheetHeader>
+
+          {editing ? (
+            <div className="mt-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">{t("users.name")}</Label>
+                <Input
+                  id="edit-name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder={t("createUser.namePlaceholder")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">{t("users.email")}</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  placeholder={t("createUser.emailPlaceholder")}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSaveProfile} disabled={submitting}>
+                  {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                  {tc("save")}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setEditing(false)} disabled={submitting}>
+                  <X className="mr-2 h-4 w-4" />
+                  {tc("cancel")}
+                </Button>
+              </div>
+            </div>
+          ) : (
 
           <div className="mt-6 space-y-6">
             {/* User info */}
@@ -360,6 +441,7 @@ export function UserDetailSheet({
               )}
             </div>
           </div>
+          )}
         </SheetContent>
       </Sheet>
 

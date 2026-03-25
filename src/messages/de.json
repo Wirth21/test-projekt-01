@@ -346,6 +346,8 @@
       "disable": "Deaktivieren",
       "reactivate": "Reaktivieren",
       "deleteUser": "Löschen",
+      "editProfile": "Profil bearbeiten",
+      "editProfileDescription": "Name und E-Mail-Adresse des Nutzers ändern.",
       "selfProtection": "Du kannst deinen eigenen Account nicht deaktivieren oder löschen.",
       "projectAccess": "Projektzugriffe",
       "loadingProjects": "Laden...",
@@ -380,7 +382,8 @@
       "addToProjectFailed": "Hinzufügen fehlgeschlagen",
       "removedFromProject": "Nutzer wurde aus \u201E{project}\u201C entfernt",
       "removeFromProjectFailed": "Entfernen fehlgeschlagen",
-      "createFailed": "Fehler beim Erstellen"
+      "createFailed": "Fehler beim Erstellen",
+      "profileUpdated": "Profil wurde aktualisiert"
     }
   },
   "limits": {

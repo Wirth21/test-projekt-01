@@ -17,7 +17,7 @@ export function AuthCard({ title, description, children }: AuthCardProps) {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-primary">PlanLink</h1>
+          <h1 className="text-2xl font-bold text-primary">Link2Plan</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Technische Pläne verwalten
           </p>

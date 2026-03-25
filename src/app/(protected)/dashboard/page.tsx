@@ -137,7 +137,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b sticky top-0 bg-background z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-primary">PlanLink</h1>
+          <h1 className="text-xl font-semibold text-primary">Link2Plan</h1>
           <div className="flex items-center gap-2">
             {isAdmin && (
               <Button

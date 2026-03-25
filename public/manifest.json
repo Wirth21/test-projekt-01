@@ -1,6 +1,6 @@
 {
-  "name": "PlanLink",
-  "short_name": "PlanLink",
+  "name": "Link2Plan",
+  "short_name": "Link2Plan",
   "description": "Technische PDF-Pläne verwalten und verknüpfen",
   "start_url": "/dashboard",
   "display": "standalone",

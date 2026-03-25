@@ -1,7 +1,7 @@
 {
-  "name": "ai-coding-starter-kit",
+  "name": "link2plan",
   "version": "1.0.0",
-  "description": "AI Coding Starter Kit with AI Agent Team System for Claude Code",
+  "description": "Technische PDF-Pläne verwalten und verknüpfen – Link2Plan",
   "private": true,
   "scripts": {
     "dev": "next dev",

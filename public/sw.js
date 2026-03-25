@@ -1,4 +1,4 @@
-const CACHE_NAME = "planlink-v1";
+const CACHE_NAME = "link2plan-v1";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

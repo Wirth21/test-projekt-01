@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PlanLink",
+  title: "Link2Plan",
   description: "Technische PDF-Pläne verwalten und verknüpfen",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "PlanLink",
+    title: "Link2Plan",
   },
 };
 

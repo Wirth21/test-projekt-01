@@ -305,6 +305,14 @@
       "createFailed": "Error creating user"
     }
   },
+  "limits": {
+    "storageExceeded": "Storage limit reached. Please upgrade your plan.",
+    "fileTooLarge": "The file is too large. Maximum file size: {max}.",
+    "projectLimitReached": "Project limit reached. Please upgrade your plan.",
+    "userLimitReached": "User limit reached. Please upgrade your plan.",
+    "storageUsage": "{used} of {total} used",
+    "upgradeRequired": "Upgrade required"
+  },
   "notFound": {
     "title": "404",
     "heading": "Organization not found",

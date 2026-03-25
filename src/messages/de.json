@@ -383,6 +383,14 @@
       "createFailed": "Fehler beim Erstellen"
     }
   },
+  "limits": {
+    "storageExceeded": "Speicherlimit erreicht. Bitte Plan upgraden.",
+    "fileTooLarge": "Die Datei ist zu groß. Maximale Dateigröße: {max}.",
+    "projectLimitReached": "Projektlimit erreicht. Bitte Plan upgraden.",
+    "userLimitReached": "Nutzerlimit erreicht. Bitte Plan upgraden.",
+    "storageUsage": "{used} von {total} verwendet",
+    "upgradeRequired": "Upgrade erforderlich"
+  },
   "notFound": {
     "title": "404",
     "heading": "Organisation nicht gefunden",

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { inviteMemberSchema } from "@/lib/validations/project";
+import { getTenantContext } from "@/lib/tenant";
+import { getTenantUsage, getLimitsForPlan } from "@/lib/check-limits";
+import type { PlanType } from "@/lib/types/tenant";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -36,6 +39,25 @@ export async function POST(request: Request, { params }: RouteParams) {
   }
 
   const { email } = result.data;
+
+  // Check user limit for this tenant
+  const { tenantId } = await getTenantContext();
+  const { data: tenant } = await supabase
+    .from("tenants")
+    .select("plan")
+    .eq("id", tenantId)
+    .single();
+
+  const plan = (tenant?.plan as PlanType) ?? "free";
+  const limits = getLimitsForPlan(plan);
+  const usage = await getTenantUsage(supabase, tenantId);
+
+  if (usage.userCount >= limits.maxUsers) {
+    return NextResponse.json(
+      { error: "Nutzerlimit erreicht. Bitte Plan upgraden." },
+      { status: 403 }
+    );
+  }
 
   // Self-invite check (case-insensitive)
   if (user.email?.toLowerCase() === email.toLowerCase()) {

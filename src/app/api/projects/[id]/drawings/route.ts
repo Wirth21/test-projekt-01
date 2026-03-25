@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { createDrawingSchema } from "@/lib/validations/drawing";
+import { getTenantContext } from "@/lib/tenant";
+import { checkFileSize, checkStorageLimit } from "@/lib/check-limits";
+import { formatBytes } from "@/lib/plan-limits";
+import type { PlanType } from "@/lib/types/tenant";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -144,6 +148,32 @@ export async function POST(request: Request, { params }: RouteParams) {
   }
 
   const { display_name, storage_path, file_size, page_count } = result.data;
+
+  // Check plan limits for file size and storage
+  const { tenantId } = await getTenantContext();
+  const { data: tenant } = await supabase
+    .from("tenants")
+    .select("plan")
+    .eq("id", tenantId)
+    .single();
+
+  const plan = (tenant?.plan as PlanType) ?? "free";
+
+  const fileSizeCheck = checkFileSize(plan, file_size);
+  if (!fileSizeCheck.allowed) {
+    return NextResponse.json(
+      { error: `Die Datei ist zu groß. Maximale Dateigröße: ${formatBytes(fileSizeCheck.maxBytes)}.` },
+      { status: 413 }
+    );
+  }
+
+  const storageCheck = await checkStorageLimit(supabase, tenantId, plan, file_size);
+  if (!storageCheck.allowed) {
+    return NextResponse.json(
+      { error: "Speicherlimit erreicht. Bitte Plan upgraden." },
+      { status: 403 }
+    );
+  }
 
   // Validate storage_path belongs to this project (prevents IDOR)
   const expectedPrefix = `${projectId}/`;

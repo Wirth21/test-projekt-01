@@ -11,6 +11,11 @@ export async function middleware(request: NextRequest) {
   // 1. Root domain (no subdomain) → Landing Page + Superadmin
   // ──────────────────────────────────────────────
   if (!subdomain) {
+    // Superadmin login page is public
+    if (pathname === "/superadmin/login") {
+      return NextResponse.next();
+    }
+
     // Superadmin routes require is_superadmin = true
     if (pathname.startsWith("/superadmin")) {
       let supabaseResponse = NextResponse.next({ request });
@@ -42,7 +47,7 @@ export async function middleware(request: NextRequest) {
 
       if (!user) {
         const url = request.nextUrl.clone();
-        url.pathname = "/";
+        url.pathname = "/superadmin/login";
         return NextResponse.redirect(url);
       }
 
@@ -63,13 +68,13 @@ export async function middleware(request: NextRequest) {
 
         if (!profile?.is_superadmin || profile.status !== "active") {
           const url = request.nextUrl.clone();
-          url.pathname = "/";
+          url.pathname = "/superadmin/login";
           return NextResponse.redirect(url);
         }
       } else {
         // No service role key configured — deny access
         const url = request.nextUrl.clone();
-        url.pathname = "/";
+        url.pathname = "/superadmin/login";
         return NextResponse.redirect(url);
       }
 

@@ -321,5 +321,87 @@
     "permissionDenied": "Permission denied",
     "notFound": "Not found",
     "serverError": "An error occurred"
+  },
+  "landing": {
+    "hero": {
+      "title": "Link plans. Navigate faster.",
+      "subtitle": "Link2Plan connects technical PDF plans with intelligent markers. Your team navigates between floor plans, sections, and details with a single click — no more searching.",
+      "cta": "Try for free",
+      "ctaSecondary": "Learn more"
+    },
+    "features": {
+      "title": "Everything your team needs",
+      "subtitle": "Manage technical plan documents centrally and link them intelligently.",
+      "pdfViewer": {
+        "title": "PDF Viewer in browser",
+        "description": "Upload technical plans and view them directly in the browser — no external software needed."
+      },
+      "markers": {
+        "title": "Intelligent markers",
+        "description": "Place markers on PDFs that act as clickable links to other plans. With hover preview."
+      },
+      "navigation": {
+        "title": "Navigation history",
+        "description": "Jump between linked documents with a click and return to your starting point at any time."
+      },
+      "teams": {
+        "title": "Team collaboration",
+        "description": "Create projects, invite team members, and work together on plan documents."
+      },
+      "versioning": {
+        "title": "PDF versioning",
+        "description": "Upload new versions — markers are automatically carried over. Old versions are preserved."
+      },
+      "archive": {
+        "title": "Archiving system",
+        "description": "Archive completed projects and drawings. Nothing is lost, the overview stays clean."
+      }
+    },
+    "pricing": {
+      "title": "Simple, fair pricing",
+      "subtitle": "Start for free and grow with your team.",
+      "monthly": "/month",
+      "free": {
+        "name": "Free",
+        "price": "€0",
+        "description": "To get started",
+        "features": ["1 project", "2 users", "500 MB storage", "20 MB max per PDF"],
+        "cta": "Start for free"
+      },
+      "team": {
+        "name": "Team",
+        "price": "€39",
+        "description": "For small teams",
+        "features": ["10 projects", "10 users", "10 GB storage", "50 MB max per PDF", "Versioning", "Archiving"],
+        "cta": "Get started"
+      },
+      "business": {
+        "name": "Business",
+        "price": "€119",
+        "description": "For growing companies",
+        "features": ["Unlimited projects", "50 users", "100 GB storage", "100 MB max per PDF", "Versioning", "Archiving", "Priority support"],
+        "cta": "Get started"
+      }
+    },
+    "cta": {
+      "title": "Ready to link your plans?",
+      "subtitle": "Start for free today — no credit card required.",
+      "button": "Try for free"
+    },
+    "footer": {
+      "product": "Product",
+      "features": "Features",
+      "pricing": "Pricing",
+      "legal": "Legal",
+      "imprint": "Imprint",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "copyright": "© 2026 Link2Plan. All rights reserved."
+    },
+    "nav": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "login": "Log in"
+    }
   }
 }

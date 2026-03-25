@@ -27,7 +27,7 @@
 | PROJ-9 | Landing Page | Planned | [PROJ-9-landing-page.md](PROJ-9-landing-page.md) | 2026-03-24 | 9 |
 | PROJ-10 | Multi-Tenancy mit Subdomains | In Progress | [PROJ-10-multi-tenancy.md](PROJ-10-multi-tenancy.md) | 2026-03-24 | 10 |
 | PROJ-11 | Globaler Admin-Bereich | Planned | [PROJ-11-global-admin.md](PROJ-11-global-admin.md) | 2026-03-24 | 11 |
-| PROJ-12 | Mehrsprachigkeit (i18n) | Planned | [PROJ-12-i18n.md](PROJ-12-i18n.md) | 2026-03-24 | 12 |
+| PROJ-12 | Mehrsprachigkeit (i18n) | In Progress | [PROJ-12-i18n.md](PROJ-12-i18n.md) | 2026-03-24 | 12 |
 | PROJ-13 | Speicherbegrenzung & PDF-Limits | Planned | [PROJ-13-storage-limits.md](PROJ-13-storage-limits.md) | 2026-03-24 | 13 |
 | PROJ-14 | Monetarisierung & Stripe-Integration | Planned | [PROJ-14-stripe-monetization.md](PROJ-14-stripe-monetization.md) | 2026-03-24 | 14 |
 

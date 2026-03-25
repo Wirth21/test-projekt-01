@@ -35,8 +35,8 @@ export default function SuperadminLoginPage() {
       return;
     }
 
-    router.push("/superadmin");
-    router.refresh();
+    // Full page reload to ensure session cookies are picked up by middleware
+    window.location.href = "/superadmin";
   }
 
   return (

@@ -20,12 +20,16 @@ export default function SuperadminDashboardPage() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const res = await fetch("/api/superadmin/stats");
-        if (!res.ok) throw new Error("Failed to load stats");
+        const res = await fetch("/api/superadmin/stats", { credentials: "include" });
+        if (res.status === 401) {
+          window.location.href = "/superadmin/login";
+          return;
+        }
         const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to load stats");
         setStats(data.stats);
-      } catch {
-        setError(t("errors.loadFailed"));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t("errors.loadFailed"));
       } finally {
         setLoading(false);
       }

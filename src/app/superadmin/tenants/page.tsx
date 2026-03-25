@@ -36,12 +36,16 @@ export default function SuperadminTenantsPage() {
   useEffect(() => {
     async function fetchTenants() {
       try {
-        const res = await fetch("/api/superadmin/tenants");
-        if (!res.ok) throw new Error("Failed to load tenants");
+        const res = await fetch("/api/superadmin/tenants", { credentials: "include" });
+        if (res.status === 401) {
+          window.location.href = "/superadmin/login";
+          return;
+        }
         const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to load tenants");
         setTenants(data.tenants);
-      } catch {
-        setError(t("errors.loadFailed"));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t("errors.loadFailed"));
       } finally {
         setLoading(false);
       }

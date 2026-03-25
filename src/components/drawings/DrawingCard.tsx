@@ -124,7 +124,7 @@ export function DrawingCard({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 w-7 p-0"
+                  className="h-8 w-8 p-0 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 transition-opacity"
                   onClick={(e) => e.stopPropagation()}
                   aria-label="Aktionen"
                 >

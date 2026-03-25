@@ -71,6 +71,7 @@
     "projects": "Meine Projekte",
     "admin": "Admin",
     "active": "Aktiv",
+    "inactive": "Inaktiv",
     "archive": "Archiv"
   },
   "projects": {
@@ -92,6 +93,26 @@
       "title": "Kein archiviertes Projekt",
       "description": "Archivierte Projekte erscheinen hier."
     },
+    "emptyInactive": {
+      "title": "Keine weiteren Projekte",
+      "description": "Es gibt keine Projekte, denen du beitreten k\u00F6nntest."
+    },
+    "join": "Beitreten",
+    "leave": "Projekt verlassen",
+    "leaveConfirm": {
+      "title": "Projekt verlassen?",
+      "description": "Du wirst aus \u201E{name}\u201C entfernt und hast keinen Zugriff mehr auf die Zeichnungen.",
+      "submit": "Verlassen"
+    },
+    "memberCount": "{count} Mitglied",
+    "memberCountPlural": "{count} Mitglieder",
+    "joinedAt": "Beigetreten am {date}",
+    "alreadyMember": "Bereits Mitglied",
+    "removeConfirm": {
+      "title": "Mitglied entfernen?",
+      "description": "\u201E{name}\u201C wird aus dem Projekt entfernt und hat keinen Zugriff mehr.",
+      "submit": "Entfernen"
+    },
     "create": {
       "title": "Neues Projekt anlegen",
       "description": "Gib deinem Projekt einen Namen und eine optionale Beschreibung.",
@@ -110,7 +131,10 @@
       "description": "Lade einen Nutzer zum Projekt \u201E{projectName}\u201C ein.",
       "emailLabel": "E-Mail-Adresse",
       "emailPlaceholder": "nutzer@beispiel.de",
-      "submit": "Einladen"
+      "submit": "Einladen",
+      "searchPlaceholder": "Name oder E-Mail suchen...",
+      "noUsersAvailable": "Keine weiteren Nutzer verf\u00FCgbar",
+      "loadingUsers": "Nutzer werden geladen..."
     },
     "archiveConfirm": {
       "title": "Projekt archivieren?",
@@ -127,7 +151,13 @@
       "archived": "\u201E{name}\u201C wurde archiviert",
       "archiveFailed": "Archivierung fehlgeschlagen",
       "restored": "\u201E{name}\u201C wurde wiederhergestellt",
-      "restoreFailed": "Wiederherstellung fehlgeschlagen"
+      "restoreFailed": "Wiederherstellung fehlgeschlagen",
+      "joined": "Du bist \u201E{name}\u201C beigetreten",
+      "joinFailed": "Beitreten fehlgeschlagen",
+      "left": "Du hast \u201E{name}\u201C verlassen",
+      "leaveFailed": "Verlassen fehlgeschlagen",
+      "memberRemoved": "{name} wurde entfernt",
+      "memberRemoveFailed": "Entfernen fehlgeschlagen"
     },
     "validation": {
       "nameRequired": "Projektname darf nicht leer sein",
@@ -168,6 +198,20 @@
     "editModeHint": "Bearbeitungsmodus -- Klicke auf die Zeichnung um einen Marker zu setzen. Rechtsklick auf Marker zum Bearbeiten.",
     "editMode": "Bearbeiten",
     "viewMode": "Ansicht",
+    "fullscreen": "Vollbild",
+    "fullscreenEnter": "Vollbildmodus aktivieren",
+    "fullscreenExit": "Vollbild verlassen",
+    "fullscreenToolbar": {
+      "versions": "Versionen",
+      "editMode": "Bearbeitungsmodus",
+      "viewMode": "Ansichtsmodus",
+      "previousPage": "Vorherige Seite",
+      "nextPage": "Nächste Seite",
+      "zoomIn": "Hineinzoomen",
+      "zoomOut": "Herauszoomen",
+      "resetZoom": "Zoom zurücksetzen",
+      "exitFullscreen": "Vollbild verlassen"
+    },
     "drawing": "Zeichnung",
     "rename": {
       "title": "Zeichnung umbenennen",
@@ -587,6 +631,41 @@
     "errors": {
       "loadFailed": "Daten konnten nicht geladen werden",
       "notFound": "Tenant nicht gefunden"
+    }
+  },
+  "activity": {
+    "title": "Aenderungsprotokoll",
+    "filter": "Filter",
+    "allUsers": "Alle Nutzer",
+    "unknownUser": "Unbekannter Nutzer",
+    "empty": "Noch keine Aktivitaeten in diesem Projekt.",
+    "loadMore": "Weitere Eintraege laden",
+    "loadingMore": "Wird geladen...",
+    "retry": "Erneut versuchen",
+    "uploadedBy": "Hochgeladen von {name} am {date}",
+    "filterGroups": {
+      "all": "Alle Aktionen",
+      "drawings": "Zeichnungen",
+      "versions": "Versionen",
+      "members": "Mitglieder",
+      "markers": "Marker",
+      "project": "Projekt"
+    },
+    "actions": {
+      "drawingUploaded": "{name} hat \u201E{file}\u201C hochgeladen",
+      "drawingRenamed": "{name} hat \u201E{oldName}\u201C in \u201E{newName}\u201C umbenannt",
+      "drawingArchived": "{name} hat \u201E{file}\u201C archiviert",
+      "drawingRestored": "{name} hat \u201E{file}\u201C wiederhergestellt",
+      "versionUploaded": "{name} hat Version {version} von \u201E{drawing}\u201C hochgeladen",
+      "versionArchived": "{name} hat Version {version} von \u201E{drawing}\u201C archiviert",
+      "projectCreated": "{name} hat das Projekt \u201E{project}\u201C erstellt",
+      "projectUpdated": "{name} hat das Projekt von \u201E{oldName}\u201C in \u201E{newName}\u201C umbenannt",
+      "projectArchived": "{name} hat das Projekt \u201E{project}\u201C archiviert",
+      "projectRestored": "{name} hat das Projekt \u201E{project}\u201C wiederhergestellt",
+      "memberInvited": "{name} hat {invited} eingeladen",
+      "memberRemoved": "{name} hat {removed} entfernt",
+      "markerCreated": "{name} hat Marker \u201E{marker}\u201C auf \u201E{drawing}\u201C erstellt",
+      "markerDeleted": "{name} hat Marker \u201E{marker}\u201C von \u201E{drawing}\u201C geloescht"
     }
   }
 }

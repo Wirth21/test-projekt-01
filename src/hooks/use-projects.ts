@@ -143,6 +143,42 @@ export function useProjects() {
     await fetchArchivedProjects();
   };
 
+  // --- Inactive projects (projects the user is NOT a member of) ---
+  const [inactiveProjects, setInactiveProjects] = useState<ProjectWithRole[]>([]);
+  const [inactiveLoading, setInactiveLoading] = useState(false);
+
+  const fetchInactiveProjects = useCallback(async () => {
+    setInactiveLoading(true);
+    try {
+      const res = await fetch("/api/projects/inactive");
+      const json = await res.json();
+      if (!res.ok) {
+        setInactiveLoading(false);
+        return;
+      }
+      setInactiveProjects(json.projects ?? []);
+    } catch {
+      // silently fail
+    } finally {
+      setInactiveLoading(false);
+    }
+  }, []);
+
+  const joinProject = async (projectId: string) => {
+    const res = await fetch(`/api/projects/${projectId}/join`, { method: "POST" });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? "Beitreten fehlgeschlagen");
+    await fetchProjects();
+    await fetchInactiveProjects();
+  };
+
+  const leaveProject = async (projectId: string) => {
+    const res = await fetch(`/api/projects/${projectId}/leave`, { method: "POST" });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? "Verlassen fehlgeschlagen");
+    await fetchProjects();
+  };
+
   const [archivedProjects, setArchivedProjects] = useState<ProjectWithRole[]>([]);
   const [archivedLoading, setArchivedLoading] = useState(false);
 
@@ -196,12 +232,17 @@ export function useProjects() {
     projects,
     loading,
     error,
+    inactiveProjects,
+    inactiveLoading,
     archivedProjects,
     archivedLoading,
     createProject,
     updateProject,
     archiveProject,
     restoreProject,
+    joinProject,
+    leaveProject,
+    fetchInactiveProjects,
     fetchArchivedProjects,
     refetch: fetchProjects,
   };

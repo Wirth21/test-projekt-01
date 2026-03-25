@@ -1,31 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search, UserPlus, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { inviteMemberSchema, type InviteMemberInput } from "@/lib/validations/project";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ProjectWithRole } from "@/lib/types/project";
+
+interface AvailableUser {
+  id: string;
+  display_name: string | null;
+  email: string;
+}
 
 interface InviteMemberDialogProps {
   project: ProjectWithRole | null;
@@ -35,37 +32,70 @@ interface InviteMemberDialogProps {
 }
 
 export function InviteMemberDialog({ project, open, onOpenChange, onSubmit }: InviteMemberDialogProps) {
-  const [submitting, setSubmitting] = useState(false);
+  const [users, setUsers] = useState<AvailableUser[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [invitingId, setInvitingId] = useState<string | null>(null);
+  const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
   const [serverError, setServerError] = useState<string | null>(null);
   const tc = useTranslations("common");
   const tp = useTranslations("projects");
 
-  const form = useForm<InviteMemberInput>({
-    resolver: zodResolver(inviteMemberSchema),
-    defaultValues: { email: "" },
-  });
+  const fetchAvailableUsers = useCallback(async () => {
+    if (!project) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/users/available?projectId=${project.id}`);
+      const json = await res.json();
+      if (res.ok) {
+        setUsers(json.users ?? []);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false);
+    }
+  }, [project]);
 
-  async function handleSubmit(data: InviteMemberInput) {
-    setSubmitting(true);
+  useEffect(() => {
+    if (open && project) {
+      fetchAvailableUsers();
+      setSearchQuery("");
+      setServerError(null);
+      setInvitedIds(new Set());
+    }
+  }, [open, project, fetchAvailableUsers]);
+
+  async function handleInvite(user: AvailableUser) {
+    setInvitingId(user.id);
     setServerError(null);
     try {
-      await onSubmit(data.email);
-      form.reset();
-      onOpenChange(false);
+      await onSubmit(user.email);
+      setInvitedIds((prev) => new Set(prev).add(user.id));
     } catch (err) {
       setServerError(err instanceof Error ? err.message : tp("toasts.inviteFailed"));
     } finally {
-      setSubmitting(false);
+      setInvitingId(null);
     }
   }
 
   function handleOpenChange(open: boolean) {
     if (!open) {
-      form.reset();
+      setSearchQuery("");
       setServerError(null);
     }
     onOpenChange(open);
   }
+
+  const filteredUsers = users.filter((user) => {
+    if (invitedIds.has(user.id)) return true; // keep invited users visible with checkmark
+    const query = searchQuery.toLowerCase();
+    if (!query) return true;
+    return (
+      (user.display_name?.toLowerCase().includes(query)) ||
+      user.email.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -76,42 +106,95 @@ export function InviteMemberDialog({ project, open, onOpenChange, onSubmit }: In
             {project && tp("invite.description", { projectName: project.name })}
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            {serverError && (
-              <Alert variant="destructive">
-                <AlertDescription>{serverError}</AlertDescription>
-              </Alert>
-            )}
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{tp("invite.emailLabel")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder={tp("invite.emailPlaceholder")}
-                      autoFocus
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-                {tc("cancel")}
-              </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {tp("invite.submit")}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+
+        {serverError && (
+          <Alert variant="destructive">
+            <AlertDescription>{serverError}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={tp("invite.searchPlaceholder")}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+            autoFocus
+          />
+        </div>
+
+        {loading ? (
+          <div className="space-y-2 py-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-2 py-2">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <div className="space-y-1 flex-1">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredUsers.length === 0 ? (
+          <div className="py-8 text-center text-sm text-muted-foreground">
+            {tp("invite.noUsersAvailable")}
+          </div>
+        ) : (
+          <ScrollArea className="max-h-[300px]">
+            <div className="divide-y">
+              {filteredUsers.map((user) => {
+                const isInvited = invitedIds.has(user.id);
+                const isInviting = invitingId === user.id;
+                const displayName = user.display_name || user.email;
+
+                return (
+                  <div
+                    key={user.id}
+                    className="flex items-center gap-3 px-2 py-3"
+                  >
+                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-xs font-medium text-muted-foreground">
+                      {(user.display_name || user.email).charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{displayName}</p>
+                      {user.display_name && user.display_name !== user.email && (
+                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      )}
+                    </div>
+                    {isInvited ? (
+                      <Badge variant="secondary" className="gap-1 shrink-0">
+                        <Check className="h-3 w-3" />
+                        {tp("alreadyMember")}
+                      </Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="shrink-0"
+                        disabled={isInviting}
+                        onClick={() => handleInvite(user)}
+                      >
+                        {isInviting ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+                        )}
+                        {tp("invite.submit")}
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        )}
+
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+            {tc("close")}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

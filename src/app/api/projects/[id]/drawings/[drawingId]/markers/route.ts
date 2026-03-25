@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { createMarkerSchema } from "@/lib/validations/marker";
+import { logActivity } from "@/lib/activity-log";
 
 interface RouteParams {
   params: Promise<{ id: string; drawingId: string }>;
@@ -195,7 +196,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   // Verify source drawing belongs to this project
   const { data: sourceDrawing, error: sourceError } = await supabase
     .from("drawings")
-    .select("id, project_id")
+    .select("id, project_id, display_name")
     .eq("id", drawingId)
     .eq("project_id", projectId)
     .maybeSingle();
@@ -264,6 +265,19 @@ export async function POST(request: Request, { params }: RouteParams) {
   if (insertError) {
     return NextResponse.json({ error: "Marker konnte nicht erstellt werden" }, { status: 500 });
   }
+
+  // Log activity: marker created
+  await logActivity(supabase, {
+    projectId,
+    userId: user.id,
+    actionType: "marker.created",
+    targetType: "marker",
+    targetId: marker.id,
+    metadata: {
+      marker_name: name,
+      drawing_name: sourceDrawing.display_name,
+    },
+  });
 
   return NextResponse.json({ marker }, { status: 201 });
 }

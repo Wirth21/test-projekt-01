@@ -5,6 +5,7 @@ import { getTenantContext } from "@/lib/tenant";
 import { checkFileSize, checkStorageLimit } from "@/lib/check-limits";
 import { formatBytes } from "@/lib/plan-limits";
 import type { PlanType } from "@/lib/types/tenant";
+import { logActivity } from "@/lib/activity-log";
 
 interface RouteParams {
   params: Promise<{ id: string; drawingId: string }>;
@@ -109,7 +110,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   // Verify drawing belongs to this project and is not archived
   const { data: drawing, error: drawingError } = await supabase
     .from("drawings")
-    .select("id, is_archived")
+    .select("id, is_archived, display_name")
     .eq("id", drawingId)
     .eq("project_id", projectId)
     .maybeSingle();
@@ -264,6 +265,19 @@ export async function POST(request: Request, { params }: RouteParams) {
       markerCopyFailed = true;
     }
   }
+
+  // Log activity: version uploaded
+  await logActivity(supabase, {
+    projectId,
+    userId: user.id,
+    actionType: "version.uploaded",
+    targetType: "version",
+    targetId: newVersion.id,
+    metadata: {
+      drawing_name: drawing.display_name,
+      version_number: nextVersionNumber,
+    },
+  });
 
   return NextResponse.json(
     {

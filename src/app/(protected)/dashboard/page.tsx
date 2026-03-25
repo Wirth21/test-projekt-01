@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Plus, LogOut, FolderOpen, Loader2, ShieldAlert, Archive, RotateCcw } from "lucide-react";
+import { Plus, LogOut, FolderOpen, Loader2, ShieldAlert, Archive, RotateCcw, EyeOff, Users, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -39,16 +39,21 @@ export default function DashboardPage() {
     projects,
     loading,
     error,
+    inactiveProjects,
+    inactiveLoading,
     archivedProjects,
     archivedLoading,
     createProject,
     updateProject,
     archiveProject,
     restoreProject,
+    joinProject,
+    fetchInactiveProjects,
     fetchArchivedProjects,
   } = useProjects();
   const [activeTab, setActiveTab] = useState("active");
   const [restoring, setRestoring] = useState<string | null>(null);
+  const [joining, setJoining] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -132,8 +137,23 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleJoin(project: ProjectWithRole) {
+    setJoining(project.id);
+    try {
+      await joinProject(project.id);
+      toast.success(tp("toasts.joined", { name: project.name }));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : tp("toasts.joinFailed"));
+    } finally {
+      setJoining(null);
+    }
+  }
+
   function handleTabChange(tab: string) {
     setActiveTab(tab);
+    if (tab === "inactive") {
+      fetchInactiveProjects();
+    }
     if (tab === "archived") {
       fetchArchivedProjects();
     }
@@ -142,45 +162,50 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b sticky top-0 bg-background z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-primary">{tc("appName")}</h1>
-          <div className="flex items-center gap-2">
+        <div className="max-w-6xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <h1 className="text-lg sm:text-xl font-semibold text-primary truncate">{tc("appName")}</h1>
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {isAdmin && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => router.push("/admin")}
+                className="h-9 w-9 p-0 sm:h-auto sm:w-auto sm:px-3 sm:py-1.5"
               >
-                <ShieldAlert className="mr-2 h-4 w-4" />
-                {tn("admin")}
+                <ShieldAlert className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{tn("admin")}</span>
               </Button>
             )}
             <LanguageSwitcher />
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              {ta("logout")}
+            <Button variant="outline" size="sm" onClick={handleLogout} className="h-9 w-9 p-0 sm:h-auto sm:w-auto sm:px-3 sm:py-1.5">
+              <LogOut className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{ta("logout")}</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+      <main className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <div>
-            <h2 className="text-2xl font-bold">{tp("title")}</h2>
+            <h2 className="text-xl sm:text-2xl font-bold">{tp("title")}</h2>
             <p className="text-sm text-muted-foreground mt-0.5">{tp("subtitle")}</p>
           </div>
-          <Button onClick={() => setCreateOpen(true)}>
+          <Button onClick={() => setCreateOpen(true)} className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             {tp("newProject")}
           </Button>
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="mb-4">
+          <TabsList className="mb-4 w-full sm:w-auto overflow-x-auto">
             <TabsTrigger value="active" className="gap-1.5">
               <FolderOpen className="h-3.5 w-3.5" />
               {tn("active")}
+            </TabsTrigger>
+            <TabsTrigger value="inactive" className="gap-1.5">
+              <EyeOff className="h-3.5 w-3.5" />
+              {tn("inactive")}
             </TabsTrigger>
             <TabsTrigger value="archived" className="gap-1.5">
               <Archive className="h-3.5 w-3.5" />
@@ -235,6 +260,68 @@ export default function DashboardPage() {
                     onInvite={(p) => setInviteProject(p)}
                     onArchive={(p) => setArchiveTarget(p)}
                   />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="inactive">
+            {inactiveLoading && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="rounded-lg border bg-card p-6 space-y-3">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!inactiveLoading && inactiveProjects.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <EyeOff className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                <h3 className="text-lg font-medium mb-1">{tp("emptyInactive.title")}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {tp("emptyInactive.description")}
+                </p>
+              </div>
+            )}
+
+            {!inactiveLoading && inactiveProjects.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {inactiveProjects.map((project) => (
+                  <div key={project.id} className="rounded-lg border bg-card p-6 space-y-3">
+                    <div className="min-w-0">
+                      <h3 className="font-medium truncate">{project.name}</h3>
+                      {project.description && (
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          {project.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Users className="h-3.5 w-3.5" />
+                      <span>
+                        {(project.member_count ?? 0) === 1
+                          ? tp("memberCount", { count: project.member_count ?? 0 })
+                          : tp("memberCountPlural", { count: project.member_count ?? 0 })}
+                      </span>
+                    </div>
+                    <Button
+                      className="w-full"
+                      disabled={joining === project.id}
+                      onClick={() => handleJoin(project)}
+                    >
+                      {joining === project.id ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <LogIn className="mr-2 h-4 w-4" />
+                      )}
+                      {tp("join")}
+                    </Button>
+                  </div>
                 ))}
               </div>
             )}

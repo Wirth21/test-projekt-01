@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { logActivity } from "@/lib/activity-log";
 
 interface RouteParams {
   params: Promise<{ id: string; memberId: string }>;
@@ -31,6 +32,13 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Mitglied nicht gefunden" }, { status: 404 });
   }
 
+  // Fetch removed member's profile info for activity log
+  const { data: removedProfile } = await supabase
+    .from("profiles")
+    .select("email, display_name")
+    .eq("id", memberToRemove.user_id)
+    .single();
+
   // Prevent removal of the last owner
   if (memberToRemove.role === "owner") {
     const { count } = await supabase
@@ -55,6 +63,19 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
   if (removeError) {
     return NextResponse.json({ error: "Mitglied konnte nicht entfernt werden" }, { status: 500 });
   }
+
+  // Log activity: member removed
+  await logActivity(supabase, {
+    projectId,
+    userId: user.id,
+    actionType: "member.removed",
+    targetType: "member",
+    targetId: memberToRemove.user_id,
+    metadata: {
+      removed_email: removedProfile?.email || "unbekannt",
+      removed_name: removedProfile?.display_name || removedProfile?.email || "Unbekannter Nutzer",
+    },
+  });
 
   return NextResponse.json({ success: true });
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { updateMarkerSchema } from "@/lib/validations/marker";
+import { logActivity } from "@/lib/activity-log";
 
 interface RouteParams {
   params: Promise<{ id: string; drawingId: string; markerId: string }>;
@@ -143,6 +144,23 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Kein Zugriff auf dieses Projekt" }, { status: 403 });
   }
 
+  // Fetch marker info for activity log before deleting
+  const { data: markerToDelete } = await supabase
+    .from("markers")
+    .select("name")
+    .eq("id", markerId)
+    .eq("drawing_id", drawingId)
+    .eq("project_id", projectId)
+    .single();
+
+  // Fetch drawing name for activity log
+  const { data: drawingInfo } = await supabase
+    .from("drawings")
+    .select("display_name")
+    .eq("id", drawingId)
+    .eq("project_id", projectId)
+    .single();
+
   // Delete marker
   const { error: deleteError } = await supabase
     .from("markers")
@@ -154,6 +172,19 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
   if (deleteError) {
     return NextResponse.json({ error: "Marker konnte nicht gelöscht werden" }, { status: 500 });
   }
+
+  // Log activity: marker deleted
+  await logActivity(supabase, {
+    projectId,
+    userId: user.id,
+    actionType: "marker.deleted",
+    targetType: "marker",
+    targetId: markerId,
+    metadata: {
+      marker_name: markerToDelete?.name || "Unbekannt",
+      drawing_name: drawingInfo?.display_name || "Unbekannt",
+    },
+  });
 
   return NextResponse.json({ success: true });
 }

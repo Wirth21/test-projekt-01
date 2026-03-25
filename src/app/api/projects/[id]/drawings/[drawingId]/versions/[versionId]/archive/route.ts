@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { logActivity } from "@/lib/activity-log";
 
 interface RouteParams {
   params: Promise<{ id: string; drawingId: string; versionId: string }>;
@@ -41,8 +42,9 @@ export async function POST(_request: Request, { params }: RouteParams) {
     .select(`
       id,
       drawing_id,
+      version_number,
       is_archived,
-      drawings!inner ( project_id )
+      drawings!inner ( project_id, display_name )
     `)
     .eq("id", versionId)
     .eq("drawing_id", drawingId)
@@ -52,7 +54,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Version nicht gefunden" }, { status: 404 });
   }
 
-  const drawingData = version.drawings as unknown as { project_id: string };
+  const drawingData = version.drawings as unknown as { project_id: string; display_name: string };
   if (drawingData.project_id !== projectId) {
     return NextResponse.json({ error: "Version gehört nicht zu diesem Projekt" }, { status: 403 });
   }
@@ -90,6 +92,19 @@ export async function POST(_request: Request, { params }: RouteParams) {
   if (updateError) {
     return NextResponse.json({ error: "Version konnte nicht archiviert werden" }, { status: 500 });
   }
+
+  // Log activity: version archived
+  await logActivity(supabase, {
+    projectId,
+    userId: user.id,
+    actionType: "version.archived",
+    targetType: "version",
+    targetId: versionId,
+    metadata: {
+      drawing_name: drawingData.display_name,
+      version_number: version.version_number,
+    },
+  });
 
   return NextResponse.json({ version: archivedVersion });
 }

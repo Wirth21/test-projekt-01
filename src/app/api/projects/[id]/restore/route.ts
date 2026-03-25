@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { logActivity } from "@/lib/activity-log";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -57,6 +58,16 @@ export async function POST(_request: Request, { params }: RouteParams) {
       { status: 500 }
     );
   }
+
+  // Log activity: project restored
+  await logActivity(supabase, {
+    projectId: id,
+    userId: user.id,
+    actionType: "project.restored",
+    targetType: "project",
+    targetId: id,
+    metadata: { name: project.name },
+  });
 
   return NextResponse.json({ project });
 }

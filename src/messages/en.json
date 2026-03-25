@@ -71,6 +71,7 @@
     "projects": "My Projects",
     "admin": "Admin",
     "active": "Active",
+    "inactive": "Inactive",
     "archive": "Archive"
   },
   "projects": {
@@ -92,6 +93,26 @@
       "title": "No archived projects",
       "description": "Archived projects will appear here."
     },
+    "emptyInactive": {
+      "title": "No more projects",
+      "description": "There are no projects you could join."
+    },
+    "join": "Join",
+    "leave": "Leave project",
+    "leaveConfirm": {
+      "title": "Leave project?",
+      "description": "You will be removed from \"{name}\" and lose access to its drawings.",
+      "submit": "Leave"
+    },
+    "memberCount": "{count} member",
+    "memberCountPlural": "{count} members",
+    "joinedAt": "Joined on {date}",
+    "alreadyMember": "Already a member",
+    "removeConfirm": {
+      "title": "Remove member?",
+      "description": "\"{name}\" will be removed from the project and lose access.",
+      "submit": "Remove"
+    },
     "create": {
       "title": "Create new project",
       "description": "Give your project a name and an optional description.",
@@ -110,7 +131,10 @@
       "description": "Invite a user to the project \"{projectName}\".",
       "emailLabel": "Email address",
       "emailPlaceholder": "user@company.com",
-      "submit": "Invite"
+      "submit": "Invite",
+      "searchPlaceholder": "Search name or email...",
+      "noUsersAvailable": "No more users available",
+      "loadingUsers": "Loading users..."
     },
     "archiveConfirm": {
       "title": "Archive project?",
@@ -127,7 +151,13 @@
       "archived": "\"{name}\" was archived",
       "archiveFailed": "Archiving failed",
       "restored": "\"{name}\" was restored",
-      "restoreFailed": "Restore failed"
+      "restoreFailed": "Restore failed",
+      "joined": "You joined \"{name}\"",
+      "joinFailed": "Could not join project",
+      "left": "You left \"{name}\"",
+      "leaveFailed": "Could not leave project",
+      "memberRemoved": "{name} was removed",
+      "memberRemoveFailed": "Could not remove member"
     },
     "validation": {
       "nameRequired": "Project name must not be empty",
@@ -168,6 +198,20 @@
     "editModeHint": "Edit mode — Click on the drawing to place a marker. Right-click on markers to edit.",
     "editMode": "Edit",
     "viewMode": "View",
+    "fullscreen": "Fullscreen",
+    "fullscreenEnter": "Enter fullscreen mode",
+    "fullscreenExit": "Exit fullscreen",
+    "fullscreenToolbar": {
+      "versions": "Versions",
+      "editMode": "Edit mode",
+      "viewMode": "View mode",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "resetZoom": "Reset zoom",
+      "exitFullscreen": "Exit fullscreen"
+    },
     "drawing": "Drawing",
     "rename": {
       "title": "Rename drawing",
@@ -587,6 +631,41 @@
     "errors": {
       "loadFailed": "Failed to load data",
       "notFound": "Tenant not found"
+    }
+  },
+  "activity": {
+    "title": "Activity Log",
+    "filter": "Filter",
+    "allUsers": "All users",
+    "unknownUser": "Unknown user",
+    "empty": "No activity in this project yet.",
+    "loadMore": "Load more",
+    "loadingMore": "Loading...",
+    "retry": "Retry",
+    "uploadedBy": "Uploaded by {name} on {date}",
+    "filterGroups": {
+      "all": "All actions",
+      "drawings": "Drawings",
+      "versions": "Versions",
+      "members": "Members",
+      "markers": "Markers",
+      "project": "Project"
+    },
+    "actions": {
+      "drawingUploaded": "{name} uploaded \"{file}\"",
+      "drawingRenamed": "{name} renamed \"{oldName}\" to \"{newName}\"",
+      "drawingArchived": "{name} archived \"{file}\"",
+      "drawingRestored": "{name} restored \"{file}\"",
+      "versionUploaded": "{name} uploaded version {version} of \"{drawing}\"",
+      "versionArchived": "{name} archived version {version} of \"{drawing}\"",
+      "projectCreated": "{name} created the project \"{project}\"",
+      "projectUpdated": "{name} renamed the project from \"{oldName}\" to \"{newName}\"",
+      "projectArchived": "{name} archived the project \"{project}\"",
+      "projectRestored": "{name} restored the project \"{project}\"",
+      "memberInvited": "{name} invited {invited}",
+      "memberRemoved": "{name} removed {removed}",
+      "markerCreated": "{name} created marker \"{marker}\" on \"{drawing}\"",
+      "markerDeleted": "{name} deleted marker \"{marker}\" from \"{drawing}\""
     }
   }
 }

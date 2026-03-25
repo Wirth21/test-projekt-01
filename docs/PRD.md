@@ -20,6 +20,10 @@ Ein webbasiertes Team-Tool zur Verwaltung technischer PDF-Pläne (z.B. Baupläne
 | P1 | Archivierungssystem (Projekte & Zeichnungen, kein Löschen) | Planned |
 | P1 | PDF-Versionierung | In Review |
 | P1 | Zeichnungsgruppen | In Review |
+| P1 | Änderungsprotokoll (Audit Log) | Planned |
+| P1 | PDF Vollbildansicht | Planned |
+| P1 | Projektmitgliedschaft & Selbstverwaltung | Planned |
+| P1 | Mobile Optimierung (Responsive) | Planned |
 
 ## Success Metrics
 - Teams können Projekte mit PDFs anlegen und gemeinsam nutzen

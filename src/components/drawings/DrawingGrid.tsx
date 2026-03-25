@@ -39,7 +39,7 @@ export function DrawingGrid({
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
       {drawings.map((drawing) => (
         <DrawingCard
           key={drawing.id}

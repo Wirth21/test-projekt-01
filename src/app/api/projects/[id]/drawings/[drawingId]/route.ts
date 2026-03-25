@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { updateDrawingSchema } from "@/lib/validations/drawing";
+import { logActivity } from "@/lib/activity-log";
 
 interface RouteParams {
   params: Promise<{ id: string; drawingId: string }>;
@@ -54,6 +55,18 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   const { display_name, group_id } = result.data;
 
+  // Fetch old drawing name for activity log (before update)
+  let oldDisplayName: string | null = null;
+  if (display_name !== undefined) {
+    const { data: existingDrawing } = await supabase
+      .from("drawings")
+      .select("display_name")
+      .eq("id", drawingId)
+      .eq("project_id", projectId)
+      .single();
+    oldDisplayName = existingDrawing?.display_name ?? null;
+  }
+
   // Build the update payload — only include fields that were provided
   const updatePayload: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -100,6 +113,18 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   if (updateError) {
     return NextResponse.json({ error: "Zeichnung konnte nicht aktualisiert werden" }, { status: 500 });
+  }
+
+  // Log activity if display_name was changed
+  if (display_name !== undefined && oldDisplayName !== null && oldDisplayName !== display_name) {
+    await logActivity(supabase, {
+      projectId,
+      userId: user.id,
+      actionType: "drawing.renamed",
+      targetType: "drawing",
+      targetId: drawingId,
+      metadata: { old_name: oldDisplayName, new_name: display_name },
+    });
   }
 
   return NextResponse.json({ drawing });

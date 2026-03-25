@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { editProjectSchema } from "@/lib/validations/project";
+import { logActivity } from "@/lib/activity-log";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -37,6 +38,15 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   const { name, description } = result.data;
 
+  // Fetch old project name for activity log
+  const { data: existingProject } = await supabase
+    .from("projects")
+    .select("name")
+    .eq("id", id)
+    .single();
+
+  const oldName = existingProject?.name ?? null;
+
   const { data: project, error: updateError } = await supabase
     .from("projects")
     .update({ name, description: description || null, updated_at: new Date().toISOString() })
@@ -46,6 +56,18 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   if (updateError) {
     return NextResponse.json({ error: "Projekt konnte nicht aktualisiert werden" }, { status: 500 });
+  }
+
+  // Log activity: project updated (only if name changed)
+  if (oldName && oldName !== name) {
+    await logActivity(supabase, {
+      projectId: id,
+      userId: user.id,
+      actionType: "project.updated",
+      targetType: "project",
+      targetId: id,
+      metadata: { old_name: oldName, new_name: name },
+    });
   }
 
   return NextResponse.json({ project });

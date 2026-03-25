@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { logActivity } from "@/lib/activity-log";
 
 interface RouteParams {
   params: Promise<{ id: string; drawingId: string }>;
@@ -47,6 +48,16 @@ export async function POST(_request: Request, { params }: RouteParams) {
   if (updateError) {
     return NextResponse.json({ error: "Zeichnung konnte nicht archiviert werden" }, { status: 500 });
   }
+
+  // Log activity: drawing archived
+  await logActivity(supabase, {
+    projectId,
+    userId: user.id,
+    actionType: "drawing.archived",
+    targetType: "drawing",
+    targetId: drawingId,
+    metadata: { display_name: drawing.display_name },
+  });
 
   return NextResponse.json({ drawing });
 }

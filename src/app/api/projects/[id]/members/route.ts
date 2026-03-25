@@ -4,6 +4,7 @@ import { inviteMemberSchema } from "@/lib/validations/project";
 import { getTenantContext } from "@/lib/tenant";
 import { getTenantUsage, getLimitsForPlan } from "@/lib/check-limits";
 import type { PlanType } from "@/lib/types/tenant";
+import { logActivity } from "@/lib/activity-log";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -67,7 +68,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   // Find target user by email (case-insensitive)
   const { data: profiles, error: profileError } = await supabase
     .from("profiles")
-    .select("id, email")
+    .select("id, email, display_name")
     .ilike("email", email)
     .limit(1);
 
@@ -96,6 +97,19 @@ export async function POST(request: Request, { params }: RouteParams) {
   if (inviteError) {
     return NextResponse.json({ error: "Einladung konnte nicht gesendet werden" }, { status: 500 });
   }
+
+  // Log activity: member invited
+  await logActivity(supabase, {
+    projectId,
+    userId: user.id,
+    actionType: "member.invited",
+    targetType: "member",
+    targetId: targetUser.id,
+    metadata: {
+      invited_email: targetUser.email,
+      invited_name: targetUser.display_name || targetUser.email,
+    },
+  });
 
   return NextResponse.json({ success: true }, { status: 201 });
 }

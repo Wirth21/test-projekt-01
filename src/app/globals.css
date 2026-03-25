@@ -83,3 +83,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fullscreen mode styles for the PDF viewer */
+:fullscreen {
+  background-color: hsl(0 0% 9%);
+}
+
+:-webkit-full-screen {
+  background-color: hsl(0 0% 9%);
+}

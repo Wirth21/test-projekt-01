@@ -30,7 +30,11 @@
 | PROJ-12 | Mehrsprachigkeit (i18n) | In Review | [PROJ-12-i18n.md](PROJ-12-i18n.md) | 2026-03-24 | 12 |
 | PROJ-13 | Speicherbegrenzung & PDF-Limits | In Review | [PROJ-13-storage-limits.md](PROJ-13-storage-limits.md) | 2026-03-24 | 13 |
 | PROJ-14 | Monetarisierung & Stripe-Integration | In Review | [PROJ-14-stripe-monetization.md](PROJ-14-stripe-monetization.md) | 2026-03-24 | 14 |
+| PROJ-15 | Änderungsprotokoll (Audit Log) | In Review | [PROJ-15-audit-log.md](PROJ-15-audit-log.md) | 2026-03-25 | 15 |
+| PROJ-16 | PDF Vollbildansicht | In Review | [PROJ-16-pdf-fullscreen.md](PROJ-16-pdf-fullscreen.md) | 2026-03-25 | 16 |
+| PROJ-17 | Projektmitgliedschaft & Selbstverwaltung | In Review | [PROJ-17-project-membership.md](PROJ-17-project-membership.md) | 2026-03-25 | 17 |
+| PROJ-18 | Mobile Optimierung (Responsive) | In Review | [PROJ-18-mobile-optimization.md](PROJ-18-mobile-optimization.md) | 2026-03-25 | 18 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-15
+## Next Available ID: PROJ-19

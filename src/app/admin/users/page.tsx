@@ -99,14 +99,14 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="text-2xl font-bold">{t("users.title")}</h2>
+          <h2 className="text-xl sm:text-2xl font-bold">{t("users.title")}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             {t("users.subtitle")}
           </p>
         </div>
-        <Button onClick={() => setCreateUserOpen(true)}>
+        <Button onClick={() => setCreateUserOpen(true)} className="w-full sm:w-auto shrink-0">
           <UserPlus className="mr-1.5 h-4 w-4" />
           {t("users.addUser")}
         </Button>
@@ -138,7 +138,7 @@ export default function AdminUsersPage() {
 
       {/* Loading */}
       {loading && (
-        <div className="rounded-lg border">
+        <div className="rounded-lg border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -204,7 +204,7 @@ export default function AdminUsersPage() {
 
       {/* Users table */}
       {!loading && !error && users.length > 0 && (
-        <div className="rounded-lg border">
+        <div className="rounded-lg border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>

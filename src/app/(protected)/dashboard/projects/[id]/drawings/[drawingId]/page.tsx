@@ -22,6 +22,7 @@ import {
   Eye,
   Archive,
   History,
+  Maximize,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,9 @@ import {
   type NavHistoryEntry,
 } from "@/components/drawings/NavigationBreadcrumb";
 import { VersionSidePanel } from "@/components/drawings/VersionSidePanel";
+import { FloatingToolbar } from "@/components/drawings/FloatingToolbar";
+import { useFullscreen } from "@/hooks/use-fullscreen";
+import { UploadInfo } from "@/components/drawings/UploadInfo";
 import type { MarkerWithTarget } from "@/lib/types/marker";
 import { useTranslations } from "next-intl";
 
@@ -116,6 +120,8 @@ export default function DrawingViewerPage({ params }: PageProps) {
   const [navHistory, setNavHistory] = useState<NavHistoryEntry[]>([]);
 
   const pageContainerRef = useRef<HTMLDivElement>(null);
+  const viewerContainerRef = useRef<HTMLDivElement>(null);
+  const { isFullscreen, isSupported: fullscreenSupported, toggleFullscreen, exitFullscreen: exitFs } = useFullscreen(viewerContainerRef);
 
   const drawing = drawings.find((d) => d.id === activeDrawingId);
 
@@ -429,17 +435,18 @@ export default function DrawingViewerPage({ params }: PageProps) {
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="border-b shrink-0 bg-background z-10">
-        <div className="px-4 py-2 flex items-center gap-2 flex-wrap">
-          {/* Back button */}
+        {/* Row 1: Back button + drawing name */}
+        <div className="px-3 sm:px-4 py-2 flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={() =>
               router.push(`/dashboard/projects/${projectId}`)
             }
+            className="shrink-0 h-9 w-9 p-0 sm:h-auto sm:w-auto sm:px-3 sm:py-1.5"
           >
-            <ArrowLeft className="mr-1.5 h-4 w-4" />
-            Zurueck
+            <ArrowLeft className="h-4 w-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">Zurueck</span>
           </Button>
 
           <Separator
@@ -447,85 +454,169 @@ export default function DrawingViewerPage({ params }: PageProps) {
             className="h-5 hidden sm:block"
           />
 
-          {/* Drawing name + version indicator */}
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-sm font-medium truncate max-w-[200px] sm:max-w-none">
-              {displayName}
-            </span>
-            {versionLabel && (
-              <Badge
-                variant={isArchivedVersion ? "secondary" : "outline"}
-                className="text-[10px] h-5 px-1.5 font-mono shrink-0"
-              >
-                {versionLabel}
-              </Badge>
-            )}
+          {/* Drawing name + version indicator + upload info */}
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-medium truncate">
+                  {displayName}
+                </span>
+                {versionLabel && (
+                  <Badge
+                    variant={isArchivedVersion ? "secondary" : "outline"}
+                    className="text-[10px] h-5 px-1.5 font-mono shrink-0"
+                  >
+                    {versionLabel}
+                  </Badge>
+                )}
+              </div>
+              <div className="hidden sm:block">
+                <UploadInfo projectId={projectId} drawingId={activeDrawingId} />
+              </div>
+            </div>
           </div>
 
-          {/* Spacer */}
-          <div className="flex-1" />
+          {/* Desktop-only: controls inline */}
+          <div className="hidden sm:flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setVersionPanelOpen(true)}
+              className="gap-1.5"
+              aria-label="Versionspanel oeffnen"
+            >
+              <History className="h-3.5 w-3.5" />
+              <span>Versionen</span>
+              {versions.filter((v) => !v.is_archived).length > 1 && (
+                <Badge variant="secondary" className="text-[10px] h-4 px-1 ml-0.5">
+                  {versions.filter((v) => !v.is_archived).length}
+                </Badge>
+              )}
+            </Button>
 
-          {/* Version panel toggle */}
+            <Separator orientation="vertical" className="h-5" />
+
+            <Button
+              variant={editMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setEditMode(!editMode)}
+              className="gap-1.5"
+            >
+              {editMode ? (
+                <>
+                  <Pencil className="h-3.5 w-3.5" />
+                  Bearbeiten
+                </>
+              ) : (
+                <>
+                  <Eye className="h-3.5 w-3.5" />
+                  Ansicht
+                </>
+              )}
+            </Button>
+
+            <Separator orientation="vertical" className="h-5" />
+
+            {numPages && numPages > 1 && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToPreviousPage}
+                  disabled={currentPage <= 1}
+                  aria-label="Vorherige Seite"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm tabular-nums px-2 min-w-[60px] text-center">
+                  {currentPage} / {numPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToNextPage}
+                  disabled={currentPage >= numPages}
+                  aria-label="Naechste Seite"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            {fullscreenSupported && (
+              <>
+                <Separator orientation="vertical" className="h-5" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleFullscreen}
+                  className="gap-1.5"
+                  aria-label="Vollbildmodus aktivieren"
+                >
+                  <Maximize className="h-3.5 w-3.5" />
+                  <span>Vollbild</span>
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Row 2: Mobile-only controls toolbar */}
+        <div className="flex sm:hidden items-center gap-1.5 px-3 py-1.5 border-t overflow-x-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setVersionPanelOpen(true)}
-            className="gap-1.5"
+            className="gap-1 shrink-0 h-8"
             aria-label="Versionspanel oeffnen"
           >
             <History className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Versionen</span>
             {versions.filter((v) => !v.is_archived).length > 1 && (
-              <Badge variant="secondary" className="text-[10px] h-4 px-1 ml-0.5">
+              <Badge variant="secondary" className="text-[10px] h-4 px-1">
                 {versions.filter((v) => !v.is_archived).length}
               </Badge>
             )}
           </Button>
 
-          <Separator
-            orientation="vertical"
-            className="h-5 hidden sm:block"
-          />
-
-          {/* Edit mode toggle */}
           <Button
             variant={editMode ? "default" : "outline"}
             size="sm"
             onClick={() => setEditMode(!editMode)}
-            className="gap-1.5"
+            className="gap-1 shrink-0 h-8"
           >
             {editMode ? (
-              <>
-                <Pencil className="h-3.5 w-3.5" />
-                Bearbeiten
-              </>
+              <Pencil className="h-3.5 w-3.5" />
             ) : (
-              <>
-                <Eye className="h-3.5 w-3.5" />
-                Ansicht
-              </>
+              <Eye className="h-3.5 w-3.5" />
             )}
           </Button>
 
-          <Separator
-            orientation="vertical"
-            className="h-5 hidden sm:block"
-          />
+          {fullscreenSupported && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleFullscreen}
+              className="shrink-0 h-8 w-8 p-0"
+              aria-label="Vollbildmodus aktivieren"
+            >
+              <Maximize className="h-3.5 w-3.5" />
+            </Button>
+          )}
 
-          {/* Page navigation */}
           {numPages && numPages > 1 && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0 ml-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={goToPreviousPage}
                 disabled={currentPage <= 1}
                 aria-label="Vorherige Seite"
+                className="h-8 w-8 p-0"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm tabular-nums px-2 min-w-[60px] text-center">
-                {currentPage} / {numPages}
+              <span className="text-xs tabular-nums px-1 min-w-[44px] text-center">
+                {currentPage}/{numPages}
               </span>
               <Button
                 variant="outline"
@@ -533,6 +624,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
                 onClick={goToNextPage}
                 disabled={currentPage >= numPages}
                 aria-label="Naechste Seite"
+                className="h-8 w-8 p-0"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -566,7 +658,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
       )}
 
       {/* PDF Viewer */}
-      <div className="flex-1 overflow-hidden relative">
+      <div ref={viewerContainerRef} className={`flex-1 overflow-hidden relative ${isFullscreen ? "bg-neutral-900" : ""}`}>
         {pdfError ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <FileWarning className="h-12 w-12 text-muted-foreground/40 mb-4" />
@@ -590,25 +682,43 @@ export default function DrawingViewerPage({ params }: PageProps) {
           >
             {({ zoomIn, zoomOut, resetTransform }) => (
               <>
-                {/* Zoom controls */}
-                <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1 bg-background/90 backdrop-blur-sm border rounded-lg p-1 shadow-sm">
+                {/* Floating toolbar -- fullscreen only */}
+                {isFullscreen && (
+                  <FloatingToolbar
+                    currentPage={currentPage}
+                    numPages={numPages}
+                    editMode={editMode}
+                    activeVersionCount={versions.filter((v) => !v.is_archived).length}
+                    onPreviousPage={goToPreviousPage}
+                    onNextPage={goToNextPage}
+                    onZoomIn={() => zoomIn()}
+                    onZoomOut={() => zoomOut()}
+                    onResetZoom={() => resetTransform()}
+                    onToggleEditMode={() => setEditMode(!editMode)}
+                    onExitFullscreen={exitFs}
+                    onOpenVersionPanel={() => setVersionPanelOpen(true)}
+                  />
+                )}
+
+                {/* Zoom controls -- hidden in fullscreen (handled by floating toolbar) */}
+                <div className={`absolute bottom-4 right-4 sm:bottom-4 sm:right-4 z-10 flex items-center gap-1 bg-background/90 backdrop-blur-sm border rounded-lg p-1 shadow-sm ${isFullscreen ? "hidden" : ""}`}>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => zoomIn()}
                     aria-label="Hineinzoomen"
-                    className="h-8 w-8 p-0"
+                    className="h-11 w-11 sm:h-8 sm:w-8 p-0"
                   >
-                    <ZoomIn className="h-4 w-4" />
+                    <ZoomIn className="h-5 w-5 sm:h-4 sm:w-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => zoomOut()}
                     aria-label="Herauszoomen"
-                    className="h-8 w-8 p-0"
+                    className="h-11 w-11 sm:h-8 sm:w-8 p-0"
                   >
-                    <ZoomOut className="h-4 w-4" />
+                    <ZoomOut className="h-5 w-5 sm:h-4 sm:w-4" />
                   </Button>
                   <Separator orientation="vertical" className="h-5" />
                   <Button
@@ -616,9 +726,9 @@ export default function DrawingViewerPage({ params }: PageProps) {
                     size="sm"
                     onClick={() => resetTransform()}
                     aria-label="Zoom zuruecksetzen"
-                    className="h-8 w-8 p-0"
+                    className="h-11 w-11 sm:h-8 sm:w-8 p-0"
                   >
-                    <RotateCcw className="h-4 w-4" />
+                    <RotateCcw className="h-5 w-5 sm:h-4 sm:w-4" />
                   </Button>
                 </div>
 

@@ -8,6 +8,7 @@ export interface Project {
   updated_at: string;
   is_archived: boolean;
   pdf_count?: number;
+  member_count?: number;
 }
 
 export interface ProjectMember {

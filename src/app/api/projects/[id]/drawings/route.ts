@@ -5,6 +5,7 @@ import { getTenantContext } from "@/lib/tenant";
 import { checkFileSize, checkStorageLimit } from "@/lib/check-limits";
 import { formatBytes } from "@/lib/plan-limits";
 import type { PlanType } from "@/lib/types/tenant";
+import { logActivity } from "@/lib/activity-log";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -219,6 +220,16 @@ export async function POST(request: Request, { params }: RouteParams) {
     await supabase.from("drawings").delete().eq("id", drawing.id);
     return NextResponse.json({ error: "Version konnte nicht erstellt werden" }, { status: 500 });
   }
+
+  // Log activity: drawing uploaded
+  await logActivity(supabase, {
+    projectId,
+    userId: user.id,
+    actionType: "drawing.uploaded",
+    targetType: "drawing",
+    targetId: drawing.id,
+    metadata: { display_name, file_size },
+  });
 
   return NextResponse.json(
     {

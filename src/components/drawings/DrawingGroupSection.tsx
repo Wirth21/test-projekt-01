@@ -87,7 +87,7 @@ export function DrawingGroupSection({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 w-7 p-0 shrink-0"
+                  className="h-8 w-8 p-0 shrink-0"
                   aria-label={`Aktionen fuer Gruppe ${title}`}
                 >
                   <MoreVertical className="h-4 w-4" />
@@ -111,7 +111,7 @@ export function DrawingGroupSection({
         </div>
 
         <CollapsibleContent>
-          <div className="pl-6 pt-2 pb-4">
+          <div className="pl-2 sm:pl-6 pt-2 pb-4">
             <DrawingGrid
               drawings={drawings}
               projectId={projectId}

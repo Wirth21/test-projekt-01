@@ -5,6 +5,7 @@ import { getTenantContext } from "@/lib/tenant";
 import { getTenantUsage } from "@/lib/check-limits";
 import { PLAN_LIMITS } from "@/lib/plan-limits";
 import type { PlanType } from "@/lib/types/tenant";
+import { logActivity } from "@/lib/activity-log";
 
 // POST /api/projects — create a new project
 export async function POST(request: Request) {
@@ -73,6 +74,16 @@ export async function POST(request: Request) {
   if (memberError) {
     return NextResponse.json({ error: "Mitgliedschaft konnte nicht erstellt werden", detail: memberError.message }, { status: 500 });
   }
+
+  // Log activity: project created
+  await logActivity(supabase, {
+    projectId: project.id,
+    userId: user.id,
+    actionType: "project.created",
+    targetType: "project",
+    targetId: project.id,
+    metadata: { name },
+  });
 
   return NextResponse.json({ project }, { status: 201 });
 }

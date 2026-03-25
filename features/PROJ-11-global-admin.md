@@ -1,7 +1,7 @@
 ---
 id: PROJ-11
 title: Globaler Admin-Bereich
-status: Planned
+status: In Review
 created: 2026-03-24
 ---
 

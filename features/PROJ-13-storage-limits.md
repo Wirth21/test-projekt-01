@@ -1,7 +1,7 @@
 ---
 id: PROJ-13
 title: Speicherbegrenzung & PDF-Limits
-status: Planned
+status: In Review
 created: 2026-03-24
 ---
 

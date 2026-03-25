@@ -1,7 +1,7 @@
 ---
 id: PROJ-12
 title: Mehrsprachigkeit (i18n)
-status: In Progress
+status: In Review
 created: 2026-03-24
 ---
 

@@ -1,7 +1,7 @@
 ---
 id: PROJ-9
 title: Landing Page
-status: Planned
+status: In Review
 created: 2026-03-24
 ---
 

@@ -1,7 +1,7 @@
 ---
 id: PROJ-14
 title: Monetarisierung & Stripe-Integration
-status: Planned
+status: In Review
 created: 2026-03-24
 ---
 

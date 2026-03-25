@@ -138,11 +138,37 @@
     }
   },
   "drawings": {
+    "title": "Drawings",
     "upload": "Upload PDF",
     "uploadDragDrop": "Drag PDF here or click",
     "uploadMaxSize": "Maximum 50 MB, PDF files only",
     "uploadInProgress": "Uploading...",
     "selectFile": "Select file",
+    "ariaUpload": "Upload PDF",
+    "ariaUploadFull": "Upload PDF file via drag and drop or click",
+    "notFound": "Project not found",
+    "notFoundDescription": "This project does not exist or you don't have access.",
+    "backToOverview": "Back to overview",
+    "overview": "Overview",
+    "addGroup": "Add group",
+    "noArchivedDrawings": "No archived drawings",
+    "members": "Members",
+    "invite": "Invite",
+    "remove": "Remove",
+    "memberRemoveFailed": "Could not remove member",
+    "lastModified": "Last modified:",
+    "unknown": "Unknown",
+    "archivedDrawing": "This drawing is archived",
+    "archivedDrawingDescription": "\"{name}\" has been archived and cannot be displayed in the viewer. You can find it in the archive tab of the project.",
+    "backToProject": "Back to project",
+    "pdfLoadFailed": "Could not load PDF",
+    "pdfCannotDisplay": "Cannot display PDF",
+    "pdfCorruptDescription": "The file may be corrupted or in an unsupported format.",
+    "archivedVersionBanner": "Archived version — this version has been archived and is no longer the current version.",
+    "editModeHint": "Edit mode — Click on the drawing to place a marker. Right-click on markers to edit.",
+    "editMode": "Edit",
+    "viewMode": "View",
+    "drawing": "Drawing",
     "rename": {
       "title": "Rename drawing",
       "description": "Change the display name of the drawing. The filename in storage remains unchanged.",
@@ -152,7 +178,8 @@
     },
     "archiveConfirm": {
       "title": "Archive drawing?",
-      "description": "The drawing \"{name}\" will be archived and no longer visible in the active list. The file is preserved in storage and cannot be deleted."
+      "description": "The drawing \"{name}\" will be archived and no longer visible in the active list. The file is preserved in storage and cannot be deleted.",
+      "submit": "Archive"
     },
     "groups": {
       "create": {
@@ -171,10 +198,12 @@
         "descriptionSingular": "1 drawing will be moved to \"Ungrouped\".",
         "descriptionPlural": "{count} drawings will be moved to \"Ungrouped\".",
         "descriptionPermanent": "The group cannot be restored later.",
-        "descriptionEmpty": "The empty group will be archived and removed from the overview."
+        "descriptionEmpty": "The empty group will be archived and removed from the overview.",
+        "submit": "Archive"
       }
     },
     "versions": {
+      "title": "Versions",
       "upload": {
         "title": "Upload new version",
         "description": "Upload a new PDF version for \"{name}\". The current version is preserved and markers are automatically carried over."
@@ -206,6 +235,8 @@
       "versionUploadedWithMarkers": "New version uploaded, {count} markers carried over",
       "versionUploadedMarkersWarning": "Version created, markers could not be carried over.",
       "versionRenamed": "Version renamed",
+      "versionArchived": "Version archived",
+      "versionArchiveFailed": "Archiving failed",
       "pdfUrlFailed": "Could not load PDF URL"
     },
     "validation": {
@@ -219,6 +250,12 @@
     }
   },
   "markers": {
+    "created": "Marker created",
+    "renamed": "Marker renamed",
+    "targetChanged": "Target changed",
+    "deleted": "Marker deleted",
+    "targetDeletedNavError": "Target document was deleted. Please relink the marker.",
+    "targetArchivedNavError": "This drawing is archived.",
     "create": {
       "title": "New Marker",
       "description": "Place a marker that links to another drawing.",
@@ -258,7 +295,16 @@
       "searchPlaceholder": "Search name or email...",
       "allStatus": "All statuses",
       "noName": "No name",
-      "badge": "Admin"
+      "noUsersFound": "No users found",
+      "noUsersRegistered": "No users registered yet.",
+      "adjustSearch": "Adjust your search criteria.",
+      "badge": "Admin",
+      "name": "Name",
+      "email": "Email",
+      "tableStatus": "Status",
+      "tableRegistered": "Registered",
+      "tableProjects": "Projects",
+      "userCreated": "User {email} was created"
     },
     "pending": {
       "title": "Pending Approvals",
@@ -266,7 +312,14 @@
       "empty": "No pending requests",
       "emptyDescription": "All registrations have been processed.",
       "requestCount": "{count} request",
-      "requestCountPlural": "{count} requests"
+      "requestCountPlural": "{count} requests",
+      "registeredAt": "Registered on {date}",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approveConfirm": "Approve user?",
+      "rejectConfirm": "Reject registration?",
+      "approveDescription": "{name} will be activated and can log in immediately.",
+      "rejectDescription": "The registration of {name} will be rejected. The account will be deactivated."
     },
     "createUser": {
       "title": "Add user",
@@ -289,7 +342,32 @@
       "status": "Status",
       "registered": "Registered",
       "projects": "Projects",
-      "actions": "Actions"
+      "actions": "Actions",
+      "disable": "Disable",
+      "reactivate": "Reactivate",
+      "deleteUser": "Delete",
+      "selfProtection": "You cannot deactivate or delete your own account.",
+      "projectAccess": "Project access",
+      "loadingProjects": "Loading...",
+      "allProjectsAssigned": "All projects assigned",
+      "selectProject": "Select project...",
+      "addToProject": "Add to project",
+      "noProjectAccess": "No project access",
+      "creator": "Creator",
+      "memberRole": "Member",
+      "joinedAt": "since {date}",
+      "removeFromProject": "Remove from {project}",
+      "disableConfirm": "Disable user?",
+      "removeProjectConfirm": "Remove from project?",
+      "disableDescription": "{name} will no longer be able to log in after deactivation. Data is preserved.",
+      "removeProjectDescription": "{name} will be removed from the project \"{project}\".",
+      "ownerWarning": "Warning: This user is the project creator!",
+      "deleteConfirm": "Delete user?",
+      "deleteDescription": "{name} will be permanently marked as deleted. The user can no longer log in.",
+      "continue": "Continue",
+      "deleteFinalConfirm": "Really delete permanently?",
+      "deleteFinalDescription": "This action cannot be undone. {name} will be permanently blocked.",
+      "deleteFinal": "Delete permanently"
     },
     "toasts": {
       "approved": "User approved",

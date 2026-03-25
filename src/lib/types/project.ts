@@ -3,6 +3,7 @@ export interface Project {
   name: string;
   description: string | null;
   created_by: string;
+  tenant_id: string;
   created_at: string;
   updated_at: string;
   is_archived: boolean;

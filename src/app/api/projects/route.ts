@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { createProjectSchema } from "@/lib/validations/project";
+import { getTenantContext } from "@/lib/tenant";
 
 // POST /api/projects — create a new project
 export async function POST(request: Request) {
@@ -32,9 +33,11 @@ export async function POST(request: Request) {
 
   const { name, description } = result.data;
 
+  const { tenantId } = await getTenantContext();
+
   const { data: project, error: createError } = await supabase
     .from("projects")
-    .insert({ name, description: description || null, created_by: user.id })
+    .insert({ name, description: description || null, created_by: user.id, tenant_id: tenantId })
     .select()
     .single();
 

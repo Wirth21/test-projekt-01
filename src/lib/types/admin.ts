@@ -6,6 +6,7 @@ export interface AdminProfile {
   email: string;
   status: UserStatus;
   is_admin: boolean;
+  tenant_id: string;
   created_at: string;
   updated_at: string;
   project_count?: number;

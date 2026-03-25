@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { getAuthenticatedAdmin } from "@/lib/admin";
 import { createUserSchema } from "@/lib/validations/admin";
+import { getTenantContext } from "@/lib/tenant";
 
 // GET /api/admin/users — list all users (admin only)
 // Query params: ?search=term&status=active
@@ -126,12 +127,15 @@ export async function POST(request: Request) {
     serviceRoleKey
   );
 
+  // Get tenant context for the new user
+  const { tenantId } = await getTenantContext();
+
   // Create user in Supabase Auth (auto-confirms email)
   const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
-    user_metadata: { display_name },
+    user_metadata: { display_name, tenant_id: tenantId },
   });
 
   if (authError) {

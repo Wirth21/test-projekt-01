@@ -540,7 +540,7 @@
       },
       "table": {
         "name": "Name",
-        "slug": "Slug",
+        "slug": "Web-Adresse",
         "plan": "Plan",
         "status": "Status",
         "users": "Nutzer",
@@ -555,7 +555,7 @@
       "tenantSectionDescription": "Name und Subdomain der Organisation.",
       "nameLabel": "Name",
       "namePlaceholder": "z.B. Musterfirma GmbH",
-      "slugLabel": "Subdomain",
+      "slugLabel": "Web-Adresse",
       "slugPlaceholder": "z.B. musterfirma",
       "planLabel": "Plan",
       "adminSection": "Administrator",

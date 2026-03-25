@@ -540,7 +540,7 @@
       },
       "table": {
         "name": "Name",
-        "slug": "Slug",
+        "slug": "Web address",
         "plan": "Plan",
         "status": "Status",
         "users": "Users",
@@ -555,7 +555,7 @@
       "tenantSectionDescription": "Name and subdomain of the organization.",
       "nameLabel": "Name",
       "namePlaceholder": "e.g. Acme Corp",
-      "slugLabel": "Subdomain",
+      "slugLabel": "Web address",
       "slugPlaceholder": "e.g. acme",
       "planLabel": "Plan",
       "adminSection": "Administrator",

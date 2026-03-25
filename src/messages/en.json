@@ -403,5 +403,87 @@
       "pricing": "Pricing",
       "login": "Log in"
     }
+  },
+  "superadmin": {
+    "nav": {
+      "title": "Platform Admin",
+      "dashboard": "Dashboard",
+      "tenants": "Tenants",
+      "logout": "Log out",
+      "back": "Back",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Platform statistics at a glance"
+    },
+    "stats": {
+      "totalTenants": "Total Tenants",
+      "totalUsers": "Total Users",
+      "totalProjects": "Total Projects"
+    },
+    "tenants": {
+      "title": "Tenants",
+      "subtitle": "Manage all organizations",
+      "create": "Create new tenant",
+      "empty": "No tenants yet",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "plans": {
+        "free": "Free",
+        "team": "Team",
+        "business": "Business"
+      },
+      "table": {
+        "name": "Name",
+        "slug": "Slug",
+        "plan": "Plan",
+        "status": "Status",
+        "users": "Users",
+        "projects": "Projects",
+        "created": "Created"
+      }
+    },
+    "createTenant": {
+      "title": "Create new tenant",
+      "description": "Create a new organization with an initial administrator.",
+      "tenantSection": "Organization",
+      "tenantSectionDescription": "Name and subdomain of the organization.",
+      "nameLabel": "Name",
+      "namePlaceholder": "e.g. Acme Corp",
+      "slugLabel": "Subdomain",
+      "slugPlaceholder": "e.g. acme",
+      "planLabel": "Plan",
+      "adminSection": "Administrator",
+      "adminSectionDescription": "First admin user for this organization.",
+      "adminNameLabel": "Name",
+      "adminNamePlaceholder": "John Doe",
+      "adminEmailLabel": "Email",
+      "adminEmailPlaceholder": "admin@acme.com",
+      "adminPasswordLabel": "Password",
+      "adminPasswordPlaceholder": "At least 8 characters",
+      "submit": "Create tenant"
+    },
+    "tenantDetail": {
+      "editTitle": "Edit tenant",
+      "editDescription": "Change name, subdomain, plan and status.",
+      "activeLabel": "Active",
+      "deactivate": "Deactivate",
+      "deactivateConfirm": "Deactivate tenant?",
+      "deactivateDescription": "\"{name}\" will be deactivated. All users will lose access."
+    },
+    "toasts": {
+      "tenantCreated": "Tenant created",
+      "createFailed": "Could not create tenant",
+      "tenantUpdated": "Tenant updated",
+      "updateFailed": "Update failed",
+      "tenantDeactivated": "Tenant deactivated",
+      "deactivateFailed": "Deactivation failed"
+    },
+    "errors": {
+      "loadFailed": "Failed to load data",
+      "notFound": "Tenant not found"
+    }
   }
 }

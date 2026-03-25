@@ -8,10 +8,76 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ──────────────────────────────────────────────
-  // 1. Root domain (no subdomain) → Landing Page
-  //    No auth checks needed for the public site
+  // 1. Root domain (no subdomain) → Landing Page + Superadmin
   // ──────────────────────────────────────────────
   if (!subdomain) {
+    // Superadmin routes require is_superadmin = true
+    if (pathname.startsWith("/superadmin")) {
+      let supabaseResponse = NextResponse.next({ request });
+
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll();
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value }) =>
+                request.cookies.set(name, value)
+              );
+              supabaseResponse = NextResponse.next({ request });
+              cookiesToSet.forEach(({ name, value, options }) =>
+                supabaseResponse.cookies.set(name, value, options)
+              );
+            },
+          },
+        }
+      );
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/";
+        return NextResponse.redirect(url);
+      }
+
+      // Check superadmin status — use service role to bypass RLS
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (serviceRoleKey) {
+        const { createClient } = await import("@supabase/supabase-js");
+        const serviceClient = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          serviceRoleKey
+        );
+
+        const { data: profile } = await serviceClient
+          .from("profiles")
+          .select("is_superadmin, status")
+          .eq("id", user.id)
+          .single();
+
+        if (!profile?.is_superadmin || profile.status !== "active") {
+          const url = request.nextUrl.clone();
+          url.pathname = "/";
+          return NextResponse.redirect(url);
+        }
+      } else {
+        // No service role key configured — deny access
+        const url = request.nextUrl.clone();
+        url.pathname = "/";
+        return NextResponse.redirect(url);
+      }
+
+      return supabaseResponse;
+    }
+
+    // Superadmin API routes also need protection (handled by route handlers)
+    // All other root domain routes are public (landing page, etc.)
     return NextResponse.next();
   }
 

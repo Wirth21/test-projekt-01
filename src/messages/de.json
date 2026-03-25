@@ -481,5 +481,87 @@
       "pricing": "Preise",
       "login": "Anmelden"
     }
+  },
+  "superadmin": {
+    "nav": {
+      "title": "Platform Admin",
+      "dashboard": "Dashboard",
+      "tenants": "Tenants",
+      "logout": "Abmelden",
+      "back": "Zurueck",
+      "cancel": "Abbrechen",
+      "save": "Speichern"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Plattform-Statistiken im Ueberblick"
+    },
+    "stats": {
+      "totalTenants": "Tenants gesamt",
+      "totalUsers": "Nutzer gesamt",
+      "totalProjects": "Projekte gesamt"
+    },
+    "tenants": {
+      "title": "Tenants",
+      "subtitle": "Alle Organisationen verwalten",
+      "create": "Neuen Tenant anlegen",
+      "empty": "Noch keine Tenants vorhanden",
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv",
+      "plans": {
+        "free": "Free",
+        "team": "Team",
+        "business": "Business"
+      },
+      "table": {
+        "name": "Name",
+        "slug": "Slug",
+        "plan": "Plan",
+        "status": "Status",
+        "users": "Nutzer",
+        "projects": "Projekte",
+        "created": "Erstellt"
+      }
+    },
+    "createTenant": {
+      "title": "Neuen Tenant anlegen",
+      "description": "Erstelle eine neue Organisation mit initialem Administrator.",
+      "tenantSection": "Organisation",
+      "tenantSectionDescription": "Name und Subdomain der Organisation.",
+      "nameLabel": "Name",
+      "namePlaceholder": "z.B. Musterfirma GmbH",
+      "slugLabel": "Subdomain",
+      "slugPlaceholder": "z.B. musterfirma",
+      "planLabel": "Plan",
+      "adminSection": "Administrator",
+      "adminSectionDescription": "Erster Admin-Nutzer fuer diese Organisation.",
+      "adminNameLabel": "Name",
+      "adminNamePlaceholder": "Max Mustermann",
+      "adminEmailLabel": "E-Mail",
+      "adminEmailPlaceholder": "admin@musterfirma.de",
+      "adminPasswordLabel": "Passwort",
+      "adminPasswordPlaceholder": "Mindestens 8 Zeichen",
+      "submit": "Tenant erstellen"
+    },
+    "tenantDetail": {
+      "editTitle": "Tenant bearbeiten",
+      "editDescription": "Name, Subdomain, Plan und Status aendern.",
+      "activeLabel": "Aktiv",
+      "deactivate": "Deaktivieren",
+      "deactivateConfirm": "Tenant deaktivieren?",
+      "deactivateDescription": "\"{name}\" wird deaktiviert. Alle Nutzer verlieren den Zugang."
+    },
+    "toasts": {
+      "tenantCreated": "Tenant wurde erstellt",
+      "createFailed": "Tenant konnte nicht erstellt werden",
+      "tenantUpdated": "Tenant wurde aktualisiert",
+      "updateFailed": "Aktualisierung fehlgeschlagen",
+      "tenantDeactivated": "Tenant wurde deaktiviert",
+      "deactivateFailed": "Deaktivierung fehlgeschlagen"
+    },
+    "errors": {
+      "loadFailed": "Daten konnten nicht geladen werden",
+      "notFound": "Tenant nicht gefunden"
+    }
   }
 }

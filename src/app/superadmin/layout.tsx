@@ -24,7 +24,13 @@ export default function SuperadminLayout({
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    window.location.href = "/";
+    router.push("/superadmin/login");
+    router.refresh();
+  }
+
+  // Don't render layout chrome on login page
+  if (pathname === "/superadmin/login") {
+    return <>{children}</>;
   }
 
   return (

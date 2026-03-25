@@ -81,7 +81,27 @@ export async function middleware(request: NextRequest) {
       return supabaseResponse;
     }
 
-    // Superadmin API routes also need protection (handled by route handlers)
+    // Superadmin API routes: refresh session cookies (auth checked in route handlers)
+    if (pathname.startsWith("/api/superadmin")) {
+      let apiResponse = NextResponse.next({ request });
+      const supabaseApi = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() { return request.cookies.getAll(); },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+              apiResponse = NextResponse.next({ request });
+              cookiesToSet.forEach(({ name, value, options }) => apiResponse.cookies.set(name, value, options));
+            },
+          },
+        }
+      );
+      await supabaseApi.auth.getUser();
+      return apiResponse;
+    }
+
     // All other root domain routes are public (landing page, etc.)
     return NextResponse.next();
   }

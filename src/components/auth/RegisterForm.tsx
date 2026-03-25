@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ export function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const t = useTranslations("auth");
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -57,9 +59,9 @@ export function RegisterForm() {
 
     if (authError) {
       if (authError.message.toLowerCase().includes("already registered")) {
-        setError("Diese E-Mail-Adresse ist bereits vergeben.");
+        setError(t("errors.emailTaken"));
       } else {
-        setError("Registrierung fehlgeschlagen. Bitte versuche es erneut.");
+        setError(t("errors.registrationFailed"));
       }
       setIsLoading(false);
       return;
@@ -67,7 +69,7 @@ export function RegisterForm() {
 
     // Supabase returns 200 with empty identities for already-registered emails
     if (data.user?.identities?.length === 0) {
-      setError("Diese E-Mail-Adresse ist bereits vergeben.");
+      setError(t("errors.emailTaken"));
       setIsLoading(false);
       return;
     }
@@ -80,9 +82,7 @@ export function RegisterForm() {
     return (
       <Alert>
         <AlertDescription>
-          <strong>Fast geschafft!</strong> Wir haben dir eine
-          Bestätigungs-E-Mail geschickt. Bitte klicke auf den Link in der
-          E-Mail, um dein Konto zu aktivieren.
+          <strong>{t("almostDone")}</strong> {t("confirmEmailSent")}
         </AlertDescription>
       </Alert>
     );
@@ -102,11 +102,11 @@ export function RegisterForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>E-Mail</FormLabel>
+              <FormLabel>{t("email")}</FormLabel>
               <FormControl>
                 <Input
                   type="email"
-                  placeholder="name@beispiel.de"
+                  placeholder={t("emailPlaceholder")}
                   autoComplete="email"
                   {...field}
                 />
@@ -121,11 +121,11 @@ export function RegisterForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Passwort</FormLabel>
+              <FormLabel>{t("password")}</FormLabel>
               <FormControl>
                 <Input
                   type="password"
-                  placeholder="Mindestens 8 Zeichen"
+                  placeholder={t("passwordPlaceholder")}
                   autoComplete="new-password"
                   {...field}
                 />
@@ -140,11 +140,11 @@ export function RegisterForm() {
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Passwort bestätigen</FormLabel>
+              <FormLabel>{t("confirmPassword")}</FormLabel>
               <FormControl>
                 <Input
                   type="password"
-                  placeholder="••••••••"
+                  placeholder={t("confirmPasswordPlaceholder")}
                   autoComplete="new-password"
                   {...field}
                 />
@@ -155,16 +155,16 @@ export function RegisterForm() {
         />
 
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Registrierung läuft..." : "Registrieren"}
+          {isLoading ? t("registerLoading") : t("register")}
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">
-          Bereits ein Konto?{" "}
+          {t("hasAccount")}{" "}
           <Link
             href="/login"
             className="text-primary hover:underline font-medium"
           >
-            Einloggen
+            {t("login")}
           </Link>
         </p>
       </form>

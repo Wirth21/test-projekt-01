@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { useTranslations } from "next-intl";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
@@ -20,19 +21,20 @@ export function PdfUploadZone({
   progress,
   compact = false,
 }: PdfUploadZoneProps) {
+  const t = useTranslations("drawings");
   const [dragOver, setDragOver] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = useCallback((file: File): string | null => {
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      return "Nur PDF-Dateien sind erlaubt";
+      return t("validation.pdfOnly");
     }
     if (file.size > MAX_FILE_SIZE) {
-      return "Die Datei darf maximal 50 MB gross sein";
+      return t("validation.maxFileSize");
     }
     return null;
-  }, []);
+  }, [t]);
 
   const handleFile = useCallback(
     (file: File) => {
@@ -106,7 +108,7 @@ export function PdfUploadZone({
         onClick={() => !uploading && inputRef.current?.click()}
         role="button"
         tabIndex={0}
-        aria-label="PDF hochladen"
+        aria-label={t("ariaUpload")}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
@@ -131,7 +133,7 @@ export function PdfUploadZone({
           ) : (
             <>
               <Upload className="h-4 w-4" />
-              <span>PDF hierher ziehen oder klicken</span>
+              <span>{t("uploadDragDrop")}</span>
             </>
           )}
         </div>
@@ -158,7 +160,7 @@ export function PdfUploadZone({
       onClick={() => !uploading && inputRef.current?.click()}
       role="button"
       tabIndex={0}
-      aria-label="PDF-Datei hochladen per Drag and Drop oder Klick"
+      aria-label={t("ariaUploadFull")}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -179,7 +181,7 @@ export function PdfUploadZone({
         {uploading ? (
           <>
             <Upload className="h-8 w-8 text-primary mb-3 animate-pulse" />
-            <p className="text-sm font-medium mb-1">Upload laeuft...</p>
+            <p className="text-sm font-medium mb-1">{t("uploadInProgress")}</p>
             <div className="w-full max-w-xs">
               <Progress value={progress} className="h-2" />
               <p className="text-xs text-muted-foreground mt-1">
@@ -191,10 +193,10 @@ export function PdfUploadZone({
           <>
             <Upload className="h-8 w-8 text-muted-foreground/60 mb-3" />
             <p className="text-sm font-medium">
-              PDF hierher ziehen oder klicken
+              {t("uploadDragDrop")}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Maximal 50 MB, nur PDF-Dateien
+              {t("uploadMaxSize")}
             </p>
             <Button
               type="button"
@@ -206,7 +208,7 @@ export function PdfUploadZone({
                 inputRef.current?.click();
               }}
             >
-              Datei auswaehlen
+              {t("selectFile")}
             </Button>
           </>
         )}

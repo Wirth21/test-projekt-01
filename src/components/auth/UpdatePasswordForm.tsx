@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ export function UpdatePasswordForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const t = useTranslations("auth");
 
   const form = useForm<UpdatePasswordInput>({
     resolver: zodResolver(updatePasswordSchema),
@@ -42,7 +44,7 @@ export function UpdatePasswordForm() {
     });
 
     if (updateError) {
-      setError("Passwort konnte nicht aktualisiert werden. Bitte versuche es erneut.");
+      setError(t("errors.updatePasswordFailed"));
       setIsLoading(false);
       return;
     }
@@ -66,11 +68,11 @@ export function UpdatePasswordForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Neues Passwort</FormLabel>
+              <FormLabel>{t("newPassword")}</FormLabel>
               <FormControl>
                 <Input
                   type="password"
-                  placeholder="Mindestens 8 Zeichen"
+                  placeholder={t("passwordPlaceholder")}
                   autoComplete="new-password"
                   {...field}
                 />
@@ -85,11 +87,11 @@ export function UpdatePasswordForm() {
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Passwort bestätigen</FormLabel>
+              <FormLabel>{t("confirmPassword")}</FormLabel>
               <FormControl>
                 <Input
                   type="password"
-                  placeholder="Passwort wiederholen"
+                  placeholder={t("confirmPasswordPlaceholder")}
                   autoComplete="new-password"
                   {...field}
                 />
@@ -100,7 +102,7 @@ export function UpdatePasswordForm() {
         />
 
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Wird aktualisiert..." : "Passwort aktualisieren"}
+          {isLoading ? t("updatePasswordLoading") : t("updatePassword")}
         </Button>
       </form>
     </Form>

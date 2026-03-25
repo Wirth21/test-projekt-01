@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -36,6 +37,8 @@ interface InviteMemberDialogProps {
 export function InviteMemberDialog({ project, open, onOpenChange, onSubmit }: InviteMemberDialogProps) {
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const tc = useTranslations("common");
+  const tp = useTranslations("projects");
 
   const form = useForm<InviteMemberInput>({
     resolver: zodResolver(inviteMemberSchema),
@@ -50,7 +53,7 @@ export function InviteMemberDialog({ project, open, onOpenChange, onSubmit }: In
       form.reset();
       onOpenChange(false);
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : "Einladung fehlgeschlagen");
+      setServerError(err instanceof Error ? err.message : tp("toasts.inviteFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -68,11 +71,9 @@ export function InviteMemberDialog({ project, open, onOpenChange, onSubmit }: In
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Mitglied einladen</DialogTitle>
+          <DialogTitle>{tp("invite.title")}</DialogTitle>
           <DialogDescription>
-            {project && (
-              <>Lade einen Nutzer zum Projekt <strong>{project.name}</strong> ein.</>
-            )}
+            {project && tp("invite.description", { projectName: project.name })}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -87,11 +88,11 @@ export function InviteMemberDialog({ project, open, onOpenChange, onSubmit }: In
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>E-Mail-Adresse</FormLabel>
+                  <FormLabel>{tp("invite.emailLabel")}</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
-                      placeholder="nutzer@beispiel.de"
+                      placeholder={tp("invite.emailPlaceholder")}
                       autoFocus
                       {...field}
                     />
@@ -102,11 +103,11 @@ export function InviteMemberDialog({ project, open, onOpenChange, onSubmit }: In
             />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-                Abbrechen
+                {tc("cancel")}
               </Button>
               <Button type="submit" disabled={submitting}>
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Einladen
+                {tp("invite.submit")}
               </Button>
             </DialogFooter>
           </form>

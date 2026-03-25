@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Plus, LogOut, FolderOpen, Loader2, ShieldAlert, Archive, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,11 +25,16 @@ import { ProjectCard } from "@/components/projects/ProjectCard";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { InviteMemberDialog } from "@/components/projects/InviteMemberDialog";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import type { ProjectWithRole } from "@/lib/types/project";
 import type { CreateProjectInput, EditProjectInput } from "@/lib/validations/project";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const tc = useTranslations("common");
+  const tp = useTranslations("projects");
+  const tn = useTranslations("nav");
+  const ta = useTranslations("auth");
   const {
     projects,
     loading,
@@ -78,9 +84,9 @@ export default function DashboardPage() {
   async function handleCreate(data: CreateProjectInput) {
     try {
       await createProject(data);
-      toast.success("Projekt wurde angelegt");
+      toast.success(tp("toasts.created"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Projekt konnte nicht angelegt werden");
+      toast.error(err instanceof Error ? err.message : tp("toasts.createFailed"));
       throw err;
     }
   }
@@ -88,16 +94,16 @@ export default function DashboardPage() {
   async function handleEdit(id: string, data: EditProjectInput) {
     try {
       await updateProject(id, data);
-      toast.success("Projekt wurde aktualisiert");
+      toast.success(tp("toasts.updated"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Projekt konnte nicht aktualisiert werden");
+      toast.error(err instanceof Error ? err.message : tp("toasts.updateFailed"));
       throw err;
     }
   }
 
   async function handleInvite(email: string) {
     await inviteMember(email);
-    toast.success(`${email} wurde eingeladen`);
+    toast.success(tp("toasts.invited", { email }));
   }
 
   async function handleArchive() {
@@ -105,10 +111,10 @@ export default function DashboardPage() {
     setArchiving(true);
     try {
       await archiveProject(archiveTarget.id);
-      toast.success(`„${archiveTarget.name}" wurde archiviert`);
+      toast.success(tp("toasts.archived", { name: archiveTarget.name }));
       setArchiveTarget(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Archivierung fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : tp("toasts.archiveFailed"));
     } finally {
       setArchiving(false);
     }
@@ -118,9 +124,9 @@ export default function DashboardPage() {
     setRestoring(project.id);
     try {
       await restoreProject(project.id);
-      toast.success(`„${project.name}" wurde wiederhergestellt`);
+      toast.success(tp("toasts.restored", { name: project.name }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Wiederherstellung fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : tp("toasts.restoreFailed"));
     } finally {
       setRestoring(null);
     }
@@ -137,7 +143,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b sticky top-0 bg-background z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-primary">Link2Plan</h1>
+          <h1 className="text-xl font-semibold text-primary">{tc("appName")}</h1>
           <div className="flex items-center gap-2">
             {isAdmin && (
               <Button
@@ -146,12 +152,13 @@ export default function DashboardPage() {
                 onClick={() => router.push("/admin")}
               >
                 <ShieldAlert className="mr-2 h-4 w-4" />
-                Admin
+                {tn("admin")}
               </Button>
             )}
+            <LanguageSwitcher />
             <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
-              Abmelden
+              {ta("logout")}
             </Button>
           </div>
         </div>
@@ -160,12 +167,12 @@ export default function DashboardPage() {
       <main className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold">Meine Projekte</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">Eigene und geteilte Projekte</p>
+            <h2 className="text-2xl font-bold">{tp("title")}</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">{tp("subtitle")}</p>
           </div>
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Neues Projekt
+            {tp("newProject")}
           </Button>
         </div>
 
@@ -173,11 +180,11 @@ export default function DashboardPage() {
           <TabsList className="mb-4">
             <TabsTrigger value="active" className="gap-1.5">
               <FolderOpen className="h-3.5 w-3.5" />
-              Aktiv
+              {tn("active")}
             </TabsTrigger>
             <TabsTrigger value="archived" className="gap-1.5">
               <Archive className="h-3.5 w-3.5" />
-              Archiv
+              {tn("archive")}
             </TabsTrigger>
           </TabsList>
 
@@ -199,7 +206,7 @@ export default function DashboardPage() {
               <div className="text-center py-16 text-muted-foreground">
                 <p className="text-sm">{error}</p>
                 <Button variant="outline" size="sm" className="mt-4" onClick={() => window.location.reload()}>
-                  Erneut versuchen
+                  {tc("retry")}
                 </Button>
               </div>
             )}
@@ -207,13 +214,13 @@ export default function DashboardPage() {
             {!loading && !error && projects.length === 0 && (
               <div className="flex flex-col items-center justify-center py-24 text-center">
                 <FolderOpen className="h-12 w-12 text-muted-foreground/40 mb-4" />
-                <h3 className="text-lg font-medium mb-1">Noch keine Projekte</h3>
+                <h3 className="text-lg font-medium mb-1">{tp("empty.title")}</h3>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Leg dein erstes Projekt an, um PDFs hochzuladen und Marker zu setzen.
+                  {tp("empty.description")}
                 </p>
                 <Button onClick={() => setCreateOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Erstes Projekt anlegen
+                  {tp("firstProject")}
                 </Button>
               </div>
             )}
@@ -248,9 +255,9 @@ export default function DashboardPage() {
             {!archivedLoading && archivedProjects.length === 0 && (
               <div className="flex flex-col items-center justify-center py-24 text-center">
                 <Archive className="h-12 w-12 text-muted-foreground/40 mb-4" />
-                <h3 className="text-lg font-medium mb-1">Kein archiviertes Projekt</h3>
+                <h3 className="text-lg font-medium mb-1">{tp("emptyArchive.title")}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Archivierte Projekte erscheinen hier.
+                  {tp("emptyArchive.description")}
                 </p>
               </div>
             )}
@@ -269,7 +276,7 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <Badge variant="secondary" className="ml-2 shrink-0">
-                        Archiviert
+                        {tp("archived")}
                       </Badge>
                     </div>
                     <Button
@@ -284,7 +291,7 @@ export default function DashboardPage() {
                       ) : (
                         <RotateCcw className="mr-2 h-4 w-4" />
                       )}
-                      Wiederherstellen
+                      {tp("restore")}
                     </Button>
                   </div>
                 ))}
@@ -298,21 +305,20 @@ export default function DashboardPage() {
       <AlertDialog open={archiveTarget !== null} onOpenChange={(open) => { if (!open) setArchiveTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Projekt archivieren?</AlertDialogTitle>
+            <AlertDialogTitle>{tp("archiveConfirm.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              „{archiveTarget?.name}" wird archiviert. Alle PDFs und Marker bleiben erhalten,
-              aber das Projekt wird aus der Übersicht ausgeblendet.
+              {tp("archiveConfirm.description", { name: archiveTarget?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={archiving}>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel disabled={archiving}>{tc("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleArchive}
               disabled={archiving}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {archiving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Archivieren
+              {tp("archiveConfirm.submit")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

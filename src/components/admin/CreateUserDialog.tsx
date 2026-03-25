@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTranslations } from "next-intl";
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -25,6 +26,8 @@ export function CreateUserDialog({
   onOpenChange,
   onSubmit,
 }: CreateUserDialogProps) {
+  const t = useTranslations("admin");
+  const tc = useTranslations("common");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -48,7 +51,7 @@ export function CreateUserDialog({
       resetForm();
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Fehler beim Erstellen");
+      setError(err instanceof Error ? err.message : t("toasts.createFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -64,46 +67,45 @@ export function CreateUserDialog({
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Nutzer hinzufuegen</DialogTitle>
+          <DialogTitle>{t("createUser.title")}</DialogTitle>
           <DialogDescription>
-            Erstellt einen neuen Nutzer mit sofortigem Zugang (keine
-            E-Mail-Bestaetigung noetig).
+            {t("createUser.description")}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="create-name">Name</Label>
+            <Label htmlFor="create-name">{t("createUser.nameLabel")}</Label>
             <Input
               id="create-name"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Max Mustermann"
+              placeholder={t("createUser.namePlaceholder")}
               required
               autoFocus
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="create-email">E-Mail</Label>
+            <Label htmlFor="create-email">{t("createUser.emailLabel")}</Label>
             <Input
               id="create-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="max@firma.de"
+              placeholder={t("createUser.emailPlaceholder")}
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="create-password">Passwort</Label>
+            <Label htmlFor="create-password">{t("createUser.passwordLabel")}</Label>
             <Input
               id="create-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mindestens 8 Zeichen"
+              placeholder={t("createUser.passwordPlaceholder")}
               minLength={8}
               required
             />
@@ -122,11 +124,11 @@ export function CreateUserDialog({
               onClick={() => onOpenChange(false)}
               disabled={submitting}
             >
-              Abbrechen
+              {tc("cancel")}
             </Button>
             <Button type="submit" disabled={submitting}>
               {submitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-              Nutzer erstellen
+              {t("createUser.submit")}
             </Button>
           </DialogFooter>
         </form>

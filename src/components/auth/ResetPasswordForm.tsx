@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ export function ResetPasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const t = useTranslations("auth");
 
   const form = useForm<ResetFormValues>({
     resolver: zodResolver(resetSchema),
@@ -51,7 +53,7 @@ export function ResetPasswordForm() {
     );
 
     if (authError) {
-      setError("Fehler beim Senden der E-Mail. Bitte versuche es erneut.");
+      setError(t("errors.resetEmailFailed"));
       setIsLoading(false);
       return;
     }
@@ -64,8 +66,7 @@ export function ResetPasswordForm() {
     return (
       <Alert>
         <AlertDescription>
-          Falls ein Konto mit dieser E-Mail existiert, erhältst du in Kürze
-          eine E-Mail mit einem Link zum Zurücksetzen deines Passworts.
+          {t("resetEmailSent")}
         </AlertDescription>
       </Alert>
     );
@@ -85,11 +86,11 @@ export function ResetPasswordForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>E-Mail</FormLabel>
+              <FormLabel>{t("email")}</FormLabel>
               <FormControl>
                 <Input
                   type="email"
-                  placeholder="name@beispiel.de"
+                  placeholder={t("emailPlaceholder")}
                   autoComplete="email"
                   {...field}
                 />
@@ -100,12 +101,12 @@ export function ResetPasswordForm() {
         />
 
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Sende E-Mail..." : "Zurücksetz-Link senden"}
+          {isLoading ? t("sendResetLinkLoading") : t("sendResetLink")}
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">
           <Link href="/login" className="text-primary hover:underline">
-            Zurück zum Login
+            {t("backToLogin")}
           </Link>
         </p>
       </form>

@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -13,13 +16,15 @@ interface AuthCardProps {
 }
 
 export function AuthCard({ title, description, children }: AuthCardProps) {
+  const t = useTranslations("common");
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-primary">Link2Plan</h1>
+          <h1 className="text-2xl font-bold text-primary">{t("appName")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Technische Pläne verwalten
+            {t("tagline")}
           </p>
         </div>
 

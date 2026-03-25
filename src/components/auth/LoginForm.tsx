@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,20 +36,17 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const t = useTranslations("auth");
 
   // Show status-based error messages from middleware redirects
   useEffect(() => {
     const errorParam = searchParams.get("error");
     if (errorParam === "pending") {
-      setError(
-        "Dein Account wartet noch auf Freigabe durch einen Administrator."
-      );
+      setError(t("errors.accountPending"));
     } else if (errorParam === "disabled") {
-      setError(
-        "Dein Account wurde deaktiviert. Kontaktiere den Administrator."
-      );
+      setError(t("errors.accountDisabled"));
     }
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -67,11 +65,9 @@ export function LoginForm() {
 
     if (authError) {
       if (authError.code === "email_not_confirmed") {
-        setError(
-          "E-Mail-Adresse noch nicht bestätigt. Bitte prüfe deinen Posteingang und klicke auf den Bestätigungslink."
-        );
+        setError(t("errors.emailNotConfirmed"));
       } else {
-        setError("E-Mail oder Passwort ist nicht korrekt.");
+        setError(t("errors.loginFailed"));
       }
       setIsLoading(false);
       return;
@@ -95,11 +91,11 @@ export function LoginForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>E-Mail</FormLabel>
+              <FormLabel>{t("email")}</FormLabel>
               <FormControl>
                 <Input
                   type="email"
-                  placeholder="name@beispiel.de"
+                  placeholder={t("emailPlaceholder")}
                   autoComplete="email"
                   {...field}
                 />
@@ -114,7 +110,7 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Passwort</FormLabel>
+              <FormLabel>{t("password")}</FormLabel>
               <FormControl>
                 <Input
                   type="password"
@@ -133,21 +129,21 @@ export function LoginForm() {
             href="/auth/reset-password"
             className="text-sm text-primary hover:underline"
           >
-            Passwort vergessen?
+            {t("forgotPassword")}
           </Link>
         </div>
 
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Anmeldung läuft..." : "Einloggen"}
+          {isLoading ? t("loginLoading") : t("login")}
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">
-          Noch kein Konto?{" "}
+          {t("noAccount")}{" "}
           <Link
             href="/register"
             className="text-primary hover:underline font-medium"
           >
-            Registrieren
+            {t("register")}
           </Link>
         </p>
       </form>

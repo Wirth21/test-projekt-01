@@ -27,18 +27,7 @@ import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 import { createClient } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { AdminProfile } from "@/lib/types/admin";
-
-const statusLabels: Record<
-  string,
-  {
-    label: string;
-    variant: "default" | "secondary" | "destructive" | "outline";
-  }
-> = {
-  active: { label: "Aktiv", variant: "default" },
-  pending: { label: "Ausstehend", variant: "secondary" },
-  disabled: { label: "Deaktiviert", variant: "destructive" },
-};
+import { useTranslations } from "next-intl";
 
 const STATUS_ALL = "__all__";
 
@@ -51,12 +40,26 @@ function formatDate(dateStr: string) {
 }
 
 export default function AdminUsersPage() {
+  const t = useTranslations("admin");
+  const tc = useTranslations("common");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState(STATUS_ALL);
   const [selectedUser, setSelectedUser] = useState<AdminProfile | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [createUserOpen, setCreateUserOpen] = useState(false);
+
+  const statusLabels: Record<
+    string,
+    {
+      label: string;
+      variant: "default" | "secondary" | "destructive" | "outline";
+    }
+  > = {
+    active: { label: t("status.active"), variant: "default" },
+    pending: { label: t("status.pending"), variant: "secondary" },
+    disabled: { label: t("status.disabled"), variant: "destructive" },
+  };
 
   const { users, loading, error, updateUserStatus, createUser, refetch } = useAdminUsers(
     debouncedSearch,
@@ -98,14 +101,14 @@ export default function AdminUsersPage() {
     <div>
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Nutzerverwaltung</h2>
+          <h2 className="text-2xl font-bold">{t("users.title")}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Alle registrierten Nutzer verwalten
+            {t("users.subtitle")}
           </p>
         </div>
         <Button onClick={() => setCreateUserOpen(true)}>
           <UserPlus className="mr-1.5 h-4 w-4" />
-          Nutzer hinzufuegen
+          {t("users.addUser")}
         </Button>
       </div>
 
@@ -114,7 +117,7 @@ export default function AdminUsersPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Name oder E-Mail suchen..."
+            placeholder={t("users.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -122,13 +125,13 @@ export default function AdminUsersPage() {
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full sm:w-44">
-            <SelectValue placeholder="Alle Status" />
+            <SelectValue placeholder={t("users.allStatus")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={STATUS_ALL}>Alle Status</SelectItem>
-            <SelectItem value="active">Aktiv</SelectItem>
-            <SelectItem value="pending">Ausstehend</SelectItem>
-            <SelectItem value="disabled">Deaktiviert</SelectItem>
+            <SelectItem value={STATUS_ALL}>{t("users.allStatus")}</SelectItem>
+            <SelectItem value="active">{t("status.active")}</SelectItem>
+            <SelectItem value="pending">{t("status.pending")}</SelectItem>
+            <SelectItem value="disabled">{t("status.disabled")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -139,11 +142,11 @@ export default function AdminUsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="hidden sm:table-cell">E-Mail</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden md:table-cell">Registriert</TableHead>
-                <TableHead className="hidden md:table-cell text-right">Projekte</TableHead>
+                <TableHead>{t("users.name")}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t("users.email")}</TableHead>
+                <TableHead>{t("users.tableStatus")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("users.tableRegistered")}</TableHead>
+                <TableHead className="hidden md:table-cell text-right">{t("users.tableProjects")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -181,7 +184,7 @@ export default function AdminUsersPage() {
             className="mt-4"
             onClick={refetch}
           >
-            Erneut versuchen
+            {tc("retry")}
           </Button>
         </div>
       )}
@@ -190,11 +193,11 @@ export default function AdminUsersPage() {
       {!loading && !error && users.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Users className="h-12 w-12 text-muted-foreground/40 mb-4" />
-          <h3 className="text-lg font-medium mb-1">Keine Nutzer gefunden</h3>
+          <h3 className="text-lg font-medium mb-1">{t("users.noUsersFound")}</h3>
           <p className="text-sm text-muted-foreground">
             {debouncedSearch || statusFilter !== STATUS_ALL
-              ? "Passe die Suchkriterien an."
-              : "Es sind noch keine Nutzer registriert."}
+              ? t("users.adjustSearch")
+              : t("users.noUsersRegistered")}
           </p>
         </div>
       )}
@@ -205,14 +208,14 @@ export default function AdminUsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="hidden sm:table-cell">E-Mail</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t("users.name")}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t("users.email")}</TableHead>
+                <TableHead>{t("users.tableStatus")}</TableHead>
                 <TableHead className="hidden md:table-cell">
-                  Registriert
+                  {t("users.tableRegistered")}
                 </TableHead>
                 <TableHead className="hidden md:table-cell text-right">
-                  Projekte
+                  {t("users.tableProjects")}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -231,7 +234,7 @@ export default function AdminUsersPage() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className="font-medium truncate max-w-[200px]">
-                          {user.display_name || "Kein Name"}
+                          {user.display_name || t("users.noName")}
                         </span>
                         {user.is_admin && (
                           <ShieldAlert className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -281,7 +284,7 @@ export default function AdminUsersPage() {
         onOpenChange={setCreateUserOpen}
         onSubmit={async (email, password, displayName) => {
           await createUser(email, password, displayName);
-          toast.success(`Nutzer ${email} wurde erstellt`);
+          toast.success(t("users.userCreated", { email }));
         }}
       />
     </div>

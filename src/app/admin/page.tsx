@@ -17,8 +17,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { usePendingUsers } from "@/hooks/use-admin";
+import { useTranslations } from "next-intl";
 
 export default function AdminPendingPage() {
+  const t = useTranslations("admin");
+  const tc = useTranslations("common");
   const { users, loading, error, approveUser, rejectUser, refetch } =
     usePendingUsers();
 
@@ -34,14 +37,14 @@ export default function AdminPendingPage() {
     try {
       if (actionType === "approve") {
         await approveUser(actionUserId);
-        toast.success("Nutzer wurde freigegeben");
+        toast.success(t("toasts.approved"));
       } else {
         await rejectUser(actionUserId);
-        toast.success("Registrierung wurde abgelehnt");
+        toast.success(t("toasts.rejected"));
       }
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Aktion fehlgeschlagen"
+        err instanceof Error ? err.message : t("toasts.actionFailed")
       );
     } finally {
       setSubmitting(false);
@@ -63,9 +66,9 @@ export default function AdminPendingPage() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold">Ausstehende Freigaben</h2>
+        <h2 className="text-2xl font-bold">{t("pending.title")}</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Neue Registrierungen, die auf Freigabe warten
+          {t("pending.subtitle")}
         </p>
       </div>
 
@@ -100,7 +103,7 @@ export default function AdminPendingPage() {
             className="mt-4"
             onClick={refetch}
           >
-            Erneut versuchen
+            {tc("retry")}
           </Button>
         </div>
       )}
@@ -110,10 +113,10 @@ export default function AdminPendingPage() {
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Inbox className="h-12 w-12 text-muted-foreground/40 mb-4" />
           <h3 className="text-lg font-medium mb-1">
-            Keine ausstehenden Anfragen
+            {t("pending.empty")}
           </h3>
           <p className="text-sm text-muted-foreground">
-            Alle Registrierungen wurden bereits bearbeitet.
+            {t("pending.emptyDescription")}
           </p>
         </div>
       )}
@@ -122,8 +125,9 @@ export default function AdminPendingPage() {
       {!loading && !error && users.length > 0 && (
         <div className="space-y-3">
           <Badge variant="secondary" className="mb-2">
-            {users.length}{" "}
-            {users.length === 1 ? "Anfrage" : "Anfragen"}
+            {users.length === 1
+              ? t("pending.requestCount", { count: users.length })
+              : t("pending.requestCountPlural", { count: users.length })}
           </Badge>
           {users.map((user) => (
             <div
@@ -133,7 +137,7 @@ export default function AdminPendingPage() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-medium truncate">
-                    {user.display_name || "Kein Name"}
+                    {user.display_name || t("users.noName")}
                   </p>
                   <Clock className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                 </div>
@@ -141,7 +145,7 @@ export default function AdminPendingPage() {
                   {user.email}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Registriert am {formatDate(user.created_at)}
+                  {t("pending.registeredAt", { date: formatDate(user.created_at) })}
                 </p>
               </div>
               <div className="flex gap-2 shrink-0">
@@ -153,7 +157,7 @@ export default function AdminPendingPage() {
                   }}
                 >
                   <Check className="mr-1.5 h-4 w-4" />
-                  Freigeben
+                  {t("pending.approve")}
                 </Button>
                 <Button
                   size="sm"
@@ -164,7 +168,7 @@ export default function AdminPendingPage() {
                   }}
                 >
                   <X className="mr-1.5 h-4 w-4" />
-                  Ablehnen
+                  {t("pending.reject")}
                 </Button>
               </div>
             </div>
@@ -186,27 +190,22 @@ export default function AdminPendingPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>
               {actionType === "approve"
-                ? "Nutzer freigeben?"
-                : "Registrierung ablehnen?"}
+                ? t("pending.approveConfirm")
+                : t("pending.rejectConfirm")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {actionType === "approve" ? (
-                <>
-                  <strong>{targetUser?.display_name || targetUser?.email}</strong>{" "}
-                  wird freigeschaltet und kann sich ab sofort einloggen.
-                </>
-              ) : (
-                <>
-                  Die Registrierung von{" "}
-                  <strong>{targetUser?.display_name || targetUser?.email}</strong>{" "}
-                  wird abgelehnt. Der Account wird deaktiviert.
-                </>
-              )}
+              {actionType === "approve"
+                ? t.rich("pending.approveDescription", {
+                    name: targetUser?.display_name || targetUser?.email || "",
+                  })
+                : t.rich("pending.rejectDescription", {
+                    name: targetUser?.display_name || targetUser?.email || "",
+                  })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submitting}>
-              Abbrechen
+              {tc("cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirm}
@@ -220,7 +219,7 @@ export default function AdminPendingPage() {
               {submitting && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              {actionType === "approve" ? "Freigeben" : "Ablehnen"}
+              {actionType === "approve" ? t("pending.approve") : t("pending.reject")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

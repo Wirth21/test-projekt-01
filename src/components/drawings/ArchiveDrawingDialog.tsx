@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 
 interface ArchiveDrawingDialogProps {
   open: boolean;
@@ -25,6 +26,8 @@ export function ArchiveDrawingDialog({
   drawingName,
   onConfirm,
 }: ArchiveDrawingDialogProps) {
+  const t = useTranslations("drawings");
+  const tc = useTranslations("common");
   const [submitting, setSubmitting] = useState(false);
 
   async function handleConfirm() {
@@ -43,11 +46,11 @@ export function ArchiveDrawingDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Zeichnung archivieren?</AlertDialogTitle>
+          <AlertDialogTitle>{t("archiveConfirm.title")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Die Zeichnung <strong>&quot;{drawingName}&quot;</strong> wird
-            archiviert und ist nicht mehr in der aktiven Liste sichtbar. Die
-            Datei bleibt im Speicher erhalten und kann nicht geloescht werden.
+            {t.rich("archiveConfirm.description", {
+              name: drawingName,
+            })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -56,7 +59,7 @@ export function ArchiveDrawingDialog({
             onClick={() => onOpenChange(false)}
             disabled={submitting}
           >
-            Abbrechen
+            {tc("cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -66,7 +69,7 @@ export function ArchiveDrawingDialog({
             {submitting && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Archivieren
+            {t("archiveConfirm.submit")}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

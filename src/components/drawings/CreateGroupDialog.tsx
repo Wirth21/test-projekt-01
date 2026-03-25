@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTranslations } from "next-intl";
 
 interface CreateGroupDialogProps {
   open: boolean;
@@ -27,6 +28,8 @@ export function CreateGroupDialog({
   onSubmit,
   existingNames,
 }: CreateGroupDialogProps) {
+  const t = useTranslations("drawings");
+  const tc = useTranslations("common");
   const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +61,7 @@ export function CreateGroupDialog({
       onOpenChange(false);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Gruppe konnte nicht erstellt werden"
+        err instanceof Error ? err.message : t("toasts.groupCreateFailed")
       );
     } finally {
       setSubmitting(false);
@@ -69,14 +72,14 @@ export function CreateGroupDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Neue Gruppe erstellen</DialogTitle>
+          <DialogTitle>{t("groups.create.title")}</DialogTitle>
           <DialogDescription>
-            Gib einen Namen fuer die neue Zeichnungsgruppe ein.
+            {t("groups.create.description")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-2 py-4">
-            <Label htmlFor="group-name">Gruppenname</Label>
+            <Label htmlFor="group-name">{t("groups.create.label")}</Label>
             <Input
               id="group-name"
               value={name}
@@ -84,14 +87,14 @@ export function CreateGroupDialog({
                 setName(e.target.value);
                 setError(null);
               }}
-              placeholder="z.B. Erdgeschoss"
+              placeholder={t("groups.create.placeholder")}
               maxLength={100}
               autoFocus
               disabled={submitting}
             />
             {isDuplicate && (
               <p className="text-sm text-destructive">
-                Eine Gruppe mit diesem Namen existiert bereits.
+                {t("groups.create.duplicateError")}
               </p>
             )}
             {error && (
@@ -105,11 +108,11 @@ export function CreateGroupDialog({
               onClick={() => handleOpenChange(false)}
               disabled={submitting}
             >
-              Abbrechen
+              {tc("cancel")}
             </Button>
             <Button type="submit" disabled={!isValid || submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Erstellen
+              {tc("create")}
             </Button>
           </DialogFooter>
         </form>

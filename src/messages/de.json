@@ -1,0 +1,403 @@
+{
+  "common": {
+    "appName": "Link2Plan",
+    "tagline": "Technische Pläne verwalten",
+    "metaDescription": "Technische PDF-Pläne verwalten und verknüpfen",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "create": "Erstellen",
+    "close": "Schließen",
+    "loading": "Wird geladen...",
+    "retry": "Erneut versuchen",
+    "back": "Zurück",
+    "search": "Suchen",
+    "options": "Optionen",
+    "toStartPage": "Zur Startseite"
+  },
+  "auth": {
+    "login": "Einloggen",
+    "loginLoading": "Anmeldung läuft...",
+    "register": "Registrieren",
+    "registerLoading": "Registrierung läuft...",
+    "logout": "Abmelden",
+    "email": "E-Mail",
+    "emailPlaceholder": "name@beispiel.de",
+    "password": "Passwort",
+    "passwordPlaceholder": "Mindestens 8 Zeichen",
+    "confirmPassword": "Passwort bestätigen",
+    "confirmPasswordPlaceholder": "Passwort wiederholen",
+    "forgotPassword": "Passwort vergessen?",
+    "noAccount": "Noch kein Konto?",
+    "hasAccount": "Bereits ein Konto?",
+    "welcomeBack": "Willkommen zurück",
+    "resetPassword": "Passwort zurücksetzen",
+    "sendResetLink": "Zurücksetz-Link senden",
+    "sendResetLinkLoading": "Sende E-Mail...",
+    "backToLogin": "Zurück zum Login",
+    "newPassword": "Neues Passwort",
+    "updatePassword": "Passwort aktualisieren",
+    "updatePasswordLoading": "Wird aktualisiert...",
+    "createAccount": "Konto erstellen",
+    "createAccountDescription": "Registriere dich, um Zugang zu erhalten",
+    "loginDescription": "Melde dich mit deiner E-Mail-Adresse an",
+    "resetPasswordDescription": "Wir senden dir einen Link per E-Mail",
+    "setNewPassword": "Neues Passwort setzen",
+    "setNewPasswordDescription": "Gib dein neues Passwort ein.",
+    "almostDone": "Fast geschafft!",
+    "confirmEmailSent": "Wir haben dir eine Bestätigungs-E-Mail geschickt. Bitte klicke auf den Link in der E-Mail, um dein Konto zu aktivieren.",
+    "resetEmailSent": "Falls ein Konto mit dieser E-Mail existiert, erhältst du in Kürze eine E-Mail mit einem Link zum Zurücksetzen deines Passworts.",
+    "errors": {
+      "emailRequired": "E-Mail ist erforderlich",
+      "emailInvalid": "Ungültige E-Mail-Adresse",
+      "passwordRequired": "Passwort ist erforderlich",
+      "passwordMinLength": "Passwort muss mindestens 8 Zeichen lang sein",
+      "confirmPasswordRequired": "Bitte Passwort bestätigen",
+      "passwordsMismatch": "Passwörter stimmen nicht überein",
+      "emailTaken": "Diese E-Mail-Adresse ist bereits vergeben.",
+      "registrationFailed": "Registrierung fehlgeschlagen. Bitte versuche es erneut.",
+      "loginFailed": "E-Mail oder Passwort ist nicht korrekt.",
+      "emailNotConfirmed": "E-Mail-Adresse noch nicht bestätigt. Bitte prüfe deinen Posteingang und klicke auf den Bestätigungslink.",
+      "accountPending": "Dein Account wartet noch auf Freigabe durch einen Administrator.",
+      "accountDisabled": "Dein Account wurde deaktiviert. Kontaktiere den Administrator.",
+      "resetEmailFailed": "Fehler beim Senden der E-Mail. Bitte versuche es erneut.",
+      "updatePasswordFailed": "Passwort konnte nicht aktualisiert werden. Bitte versuche es erneut.",
+      "wrongTenant": "Du gehörst nicht zu dieser Organisation.",
+      "notAuthenticated": "Nicht authentifiziert"
+    }
+  },
+  "nav": {
+    "projects": "Meine Projekte",
+    "admin": "Admin",
+    "active": "Aktiv",
+    "archive": "Archiv"
+  },
+  "projects": {
+    "title": "Meine Projekte",
+    "subtitle": "Eigene und geteilte Projekte",
+    "newProject": "Neues Projekt",
+    "firstProject": "Erstes Projekt anlegen",
+    "open": "Öffnen",
+    "owner": "Eigentümer",
+    "member": "Mitglied",
+    "noDescription": "Keine Beschreibung",
+    "archived": "Archiviert",
+    "restore": "Wiederherstellen",
+    "empty": {
+      "title": "Noch keine Projekte",
+      "description": "Leg dein erstes Projekt an, um PDFs hochzuladen und Marker zu setzen."
+    },
+    "emptyArchive": {
+      "title": "Kein archiviertes Projekt",
+      "description": "Archivierte Projekte erscheinen hier."
+    },
+    "create": {
+      "title": "Neues Projekt anlegen",
+      "description": "Gib deinem Projekt einen Namen und eine optionale Beschreibung.",
+      "namePlaceholder": "z.B. Bauprojekt Musterstraße",
+      "nameLabel": "Projektname *",
+      "descriptionLabel": "Beschreibung",
+      "descriptionPlaceholder": "Kurze Beschreibung des Projekts (optional)",
+      "submit": "Projekt anlegen"
+    },
+    "edit": {
+      "title": "Projekt bearbeiten",
+      "description": "Ändere den Namen oder die Beschreibung des Projekts."
+    },
+    "invite": {
+      "title": "Mitglied einladen",
+      "description": "Lade einen Nutzer zum Projekt \u201E{projectName}\u201C ein.",
+      "emailLabel": "E-Mail-Adresse",
+      "emailPlaceholder": "nutzer@beispiel.de",
+      "submit": "Einladen"
+    },
+    "archiveConfirm": {
+      "title": "Projekt archivieren?",
+      "description": "\u201E{name}\u201C wird archiviert. Alle PDFs und Marker bleiben erhalten, aber das Projekt wird aus der Übersicht ausgeblendet.",
+      "submit": "Archivieren"
+    },
+    "toasts": {
+      "created": "Projekt wurde angelegt",
+      "createFailed": "Projekt konnte nicht angelegt werden",
+      "updated": "Projekt wurde aktualisiert",
+      "updateFailed": "Projekt konnte nicht aktualisiert werden",
+      "invited": "{email} wurde eingeladen",
+      "inviteFailed": "Einladung fehlgeschlagen",
+      "archived": "\u201E{name}\u201C wurde archiviert",
+      "archiveFailed": "Archivierung fehlgeschlagen",
+      "restored": "\u201E{name}\u201C wurde wiederhergestellt",
+      "restoreFailed": "Wiederherstellung fehlgeschlagen"
+    },
+    "validation": {
+      "nameRequired": "Projektname darf nicht leer sein",
+      "nameMaxLength": "Projektname darf maximal 100 Zeichen lang sein",
+      "descriptionMaxLength": "Beschreibung darf maximal 500 Zeichen lang sein",
+      "emailRequired": "E-Mail darf nicht leer sein",
+      "emailInvalid": "Bitte eine gültige E-Mail-Adresse eingeben"
+    }
+  },
+  "drawings": {
+    "title": "Zeichnungen",
+    "upload": "PDF hochladen",
+    "uploadDragDrop": "PDF hierher ziehen oder klicken",
+    "uploadMaxSize": "Maximal 50 MB, nur PDF-Dateien",
+    "uploadInProgress": "Upload läuft...",
+    "selectFile": "Datei auswählen",
+    "ariaUpload": "PDF hochladen",
+    "ariaUploadFull": "PDF-Datei hochladen per Drag and Drop oder Klick",
+    "notFound": "Projekt nicht gefunden",
+    "notFoundDescription": "Dieses Projekt existiert nicht oder du hast keinen Zugriff.",
+    "backToOverview": "Zurück zur Übersicht",
+    "overview": "Übersicht",
+    "addGroup": "Gruppe hinzufügen",
+    "noArchivedDrawings": "Keine archivierten Zeichnungen",
+    "members": "Mitglieder",
+    "invite": "Einladen",
+    "remove": "Entfernen",
+    "memberRemoveFailed": "Mitglied konnte nicht entfernt werden",
+    "lastModified": "Zuletzt geändert:",
+    "unknown": "Unbekannt",
+    "archivedDrawing": "Diese Zeichnung ist archiviert",
+    "archivedDrawingDescription": "\u201E{name}\u201C wurde archiviert und kann nicht im Viewer angezeigt werden. Du findest sie im Archiv-Tab des Projekts.",
+    "backToProject": "Zurück zum Projekt",
+    "pdfLoadFailed": "PDF konnte nicht geladen werden",
+    "pdfCannotDisplay": "PDF kann nicht angezeigt werden",
+    "pdfCorruptDescription": "Die Datei ist möglicherweise beschädigt oder in einem nicht unterstützten Format.",
+    "archivedVersionBanner": "Archivierte Version -- diese Version wurde archiviert und ist nicht mehr die aktuelle Version.",
+    "editModeHint": "Bearbeitungsmodus -- Klicke auf die Zeichnung um einen Marker zu setzen. Rechtsklick auf Marker zum Bearbeiten.",
+    "editMode": "Bearbeiten",
+    "viewMode": "Ansicht",
+    "drawing": "Zeichnung",
+    "rename": {
+      "title": "Zeichnung umbenennen",
+      "description": "Ändere den Anzeigenamen der Zeichnung. Der Dateiname im Speicher bleibt unverändert.",
+      "label": "Anzeigename",
+      "placeholder": "z.B. Grundriss Erdgeschoss",
+      "submit": "Umbenennen"
+    },
+    "archiveConfirm": {
+      "title": "Zeichnung archivieren?",
+      "description": "Die Zeichnung \u201E{name}\u201C wird archiviert und ist nicht mehr in der aktiven Liste sichtbar. Die Datei bleibt im Speicher erhalten und kann nicht gelöscht werden.",
+      "submit": "Archivieren"
+    },
+    "groups": {
+      "create": {
+        "title": "Neue Gruppe erstellen",
+        "description": "Gib einen Namen für die neue Zeichnungsgruppe ein.",
+        "label": "Gruppenname",
+        "placeholder": "z.B. Erdgeschoss",
+        "duplicateError": "Eine Gruppe mit diesem Namen existiert bereits."
+      },
+      "rename": {
+        "title": "Gruppe umbenennen",
+        "description": "Gib einen neuen Namen für die Gruppe ein."
+      },
+      "archiveConfirm": {
+        "title": "Gruppe \u201E{name}\u201C archivieren?",
+        "descriptionSingular": "1 Zeichnung wird nach \"Ohne Gruppe\" verschoben.",
+        "descriptionPlural": "{count} Zeichnungen werden nach \"Ohne Gruppe\" verschoben.",
+        "descriptionPermanent": "Die Gruppe kann später nicht wiederhergestellt werden.",
+        "descriptionEmpty": "Die leere Gruppe wird archiviert und aus der Übersicht entfernt.",
+        "submit": "Archivieren"
+      }
+    },
+    "versions": {
+      "title": "Versionen",
+      "upload": {
+        "title": "Neue Version hochladen",
+        "description": "Lade eine neue PDF-Version f\u00FCr \u201E{name}\u201C hoch. Die aktuelle Version wird beibehalten und Marker werden automatisch \u00FCbernommen."
+      },
+      "rename": {
+        "title": "Version v{number} umbenennen",
+        "description": "Gib ein neues Label für diese Version ein.",
+        "label": "Label"
+      }
+    },
+    "toasts": {
+      "uploaded": "Zeichnung wurde hochgeladen",
+      "uploadFailed": "Upload fehlgeschlagen",
+      "renamed": "Zeichnung wurde umbenannt",
+      "renameFailed": "Umbenennung fehlgeschlagen",
+      "archived": "Zeichnung wurde archiviert",
+      "archiveFailed": "Archivierung fehlgeschlagen",
+      "restored": "Zeichnung wurde wiederhergestellt",
+      "restoreFailed": "Wiederherstellung fehlgeschlagen",
+      "groupCreated": "Gruppe wurde erstellt",
+      "groupCreateFailed": "Gruppe konnte nicht erstellt werden",
+      "groupRenamed": "Gruppe wurde umbenannt",
+      "groupRenameFailed": "Umbenennung fehlgeschlagen",
+      "groupArchived": "Gruppe wurde archiviert",
+      "groupArchiveFailed": "Archivierung fehlgeschlagen",
+      "groupAssigned": "Gruppe wurde zugewiesen",
+      "groupAssignFailed": "Zuweisung fehlgeschlagen",
+      "versionUploaded": "Neue Version hochgeladen",
+      "versionUploadedWithMarkers": "Neue Version hochgeladen, {count} Marker übernommen",
+      "versionUploadedMarkersWarning": "Version angelegt, Marker konnten nicht übernommen werden.",
+      "versionRenamed": "Version umbenannt",
+      "versionArchived": "Version archiviert",
+      "versionArchiveFailed": "Archivierung fehlgeschlagen",
+      "pdfUrlFailed": "PDF-URL konnte nicht geladen werden"
+    },
+    "validation": {
+      "pdfOnly": "Nur PDF-Dateien sind erlaubt",
+      "maxFileSize": "Die Datei darf maximal 50 MB groß sein",
+      "fileSizeInteger": "Dateigröße muss eine ganze Zahl sein",
+      "fileSizePositive": "Dateigröße muss positiv sein",
+      "labelRequired": "Label darf nicht leer sein",
+      "labelMaxLength": "Label darf maximal 100 Zeichen lang sein",
+      "invalidGroupId": "Ungültige Gruppen-ID"
+    }
+  },
+  "markers": {
+    "created": "Marker erstellt",
+    "renamed": "Marker umbenannt",
+    "targetChanged": "Ziel geändert",
+    "deleted": "Marker gelöscht",
+    "targetDeletedNavError": "Zieldokument wurde gelöscht. Bitte Marker neu verknüpfen.",
+    "targetArchivedNavError": "Diese Zeichnung ist archiviert.",
+    "create": {
+      "title": "Neuer Marker",
+      "description": "Setze einen Marker, der auf eine andere Zeichnung verweist.",
+      "nameLabel": "Name",
+      "namePlaceholder": "z.B. Detail A - Schnitt 1",
+      "charCount": "{count}/50 Zeichen",
+      "targetLabel": "Ziel-Zeichnung",
+      "targetPlaceholder": "Zeichnung auswählen...",
+      "noTargets": "Keine anderen Zeichnungen vorhanden",
+      "submit": "Marker erstellen"
+    },
+    "context": {
+      "rename": "Umbenennen",
+      "changeTarget": "Ziel ändern"
+    },
+    "tooltip": {
+      "targetDeleted": "Zieldokument gelöscht",
+      "targetArchived": "Zeichnung archiviert"
+    },
+    "resetNavigation": "Navigation zurücksetzen",
+    "toasts": {
+      "loadFailed": "Marker konnten nicht geladen werden",
+      "createFailed": "Fehler beim Erstellen",
+      "updateFailed": "Marker konnte nicht aktualisiert werden",
+      "deleteFailed": "Marker konnte nicht gelöscht werden"
+    },
+    "errors": {
+      "unexpected": "Ein unerwarteter Fehler ist aufgetreten"
+    }
+  },
+  "admin": {
+    "title": "Admin",
+    "users": {
+      "title": "Nutzerverwaltung",
+      "subtitle": "Alle registrierten Nutzer verwalten",
+      "addUser": "Nutzer hinzufügen",
+      "searchPlaceholder": "Name oder E-Mail suchen...",
+      "allStatus": "Alle Status",
+      "noName": "Kein Name",
+      "noUsersFound": "Keine Nutzer gefunden",
+      "noUsersRegistered": "Es sind noch keine Nutzer registriert.",
+      "adjustSearch": "Passe die Suchkriterien an.",
+      "badge": "Admin",
+      "name": "Name",
+      "email": "E-Mail",
+      "tableStatus": "Status",
+      "tableRegistered": "Registriert",
+      "tableProjects": "Projekte",
+      "userCreated": "Nutzer {email} wurde erstellt"
+    },
+    "pending": {
+      "title": "Ausstehende Freigaben",
+      "subtitle": "Neue Registrierungen, die auf Freigabe warten",
+      "empty": "Keine ausstehenden Anfragen",
+      "emptyDescription": "Alle Registrierungen wurden bereits bearbeitet.",
+      "requestCount": "{count} Anfrage",
+      "requestCountPlural": "{count} Anfragen",
+      "registeredAt": "Registriert am {date}",
+      "approve": "Freigeben",
+      "reject": "Ablehnen",
+      "approveConfirm": "Nutzer freigeben?",
+      "rejectConfirm": "Registrierung ablehnen?",
+      "approveDescription": "{name} wird freigeschaltet und kann sich ab sofort einloggen.",
+      "rejectDescription": "Die Registrierung von {name} wird abgelehnt. Der Account wird deaktiviert."
+    },
+    "createUser": {
+      "title": "Nutzer hinzufügen",
+      "description": "Erstellt einen neuen Nutzer mit sofortigem Zugang (keine E-Mail-Bestätigung nötig).",
+      "nameLabel": "Name",
+      "namePlaceholder": "Max Mustermann",
+      "emailLabel": "E-Mail",
+      "emailPlaceholder": "max@firma.de",
+      "passwordLabel": "Passwort",
+      "passwordPlaceholder": "Mindestens 8 Zeichen",
+      "submit": "Nutzer erstellen"
+    },
+    "status": {
+      "active": "Aktiv",
+      "pending": "Ausstehend",
+      "disabled": "Deaktiviert",
+      "deleted": "Gelöscht"
+    },
+    "detail": {
+      "status": "Status",
+      "registered": "Registriert",
+      "projects": "Projekte",
+      "actions": "Aktionen",
+      "disable": "Deaktivieren",
+      "reactivate": "Reaktivieren",
+      "deleteUser": "Löschen",
+      "selfProtection": "Du kannst deinen eigenen Account nicht deaktivieren oder löschen.",
+      "projectAccess": "Projektzugriffe",
+      "loadingProjects": "Laden...",
+      "allProjectsAssigned": "Alle Projekte zugewiesen",
+      "selectProject": "Projekt auswählen...",
+      "addToProject": "Zum Projekt hinzufügen",
+      "noProjectAccess": "Kein Projektzugriff vorhanden",
+      "creator": "Ersteller",
+      "memberRole": "Mitglied",
+      "joinedAt": "seit {date}",
+      "removeFromProject": "Aus {project} entfernen",
+      "disableConfirm": "Nutzer deaktivieren?",
+      "removeProjectConfirm": "Aus Projekt entfernen?",
+      "disableDescription": "{name} kann sich nach der Deaktivierung nicht mehr einloggen. Die Daten bleiben erhalten.",
+      "removeProjectDescription": "{name} wird aus dem Projekt \"{project}\" entfernt.",
+      "ownerWarning": "Achtung: Dieser Nutzer ist Ersteller des Projekts!",
+      "deleteConfirm": "Nutzer löschen?",
+      "deleteDescription": "{name} wird dauerhaft als gelöscht markiert. Der Nutzer kann sich nicht mehr einloggen.",
+      "continue": "Weiter",
+      "deleteFinalConfirm": "Wirklich endgültig löschen?",
+      "deleteFinalDescription": "Diese Aktion kann nicht rückgängig gemacht werden. {name} wird permanent gesperrt.",
+      "deleteFinal": "Endgültig löschen"
+    },
+    "toasts": {
+      "approved": "Nutzer wurde freigegeben",
+      "rejected": "Registrierung wurde abgelehnt",
+      "actionFailed": "Aktion fehlgeschlagen",
+      "activated": "Nutzer wurde aktiviert",
+      "deactivated": "Nutzer wurde deaktiviert",
+      "deleted": "Nutzer wurde gelöscht",
+      "addedToProject": "Nutzer wurde zu \u201E{project}\u201C hinzugef\u00FCgt",
+      "addToProjectFailed": "Hinzufügen fehlgeschlagen",
+      "removedFromProject": "Nutzer wurde aus \u201E{project}\u201C entfernt",
+      "removeFromProjectFailed": "Entfernen fehlgeschlagen",
+      "createFailed": "Fehler beim Erstellen"
+    }
+  },
+  "notFound": {
+    "title": "404",
+    "heading": "Organisation nicht gefunden",
+    "description": "Die aufgerufene Adresse konnte keiner Organisation zugeordnet werden. Bitte prüfe die URL oder wende dich an deinen Administrator."
+  },
+  "language": {
+    "de": "Deutsch",
+    "en": "English",
+    "switchLanguage": "Sprache wechseln"
+  },
+  "api": {
+    "invalidBody": "Ungültiger Request-Body",
+    "validationError": "Validierungsfehler",
+    "permissionDenied": "Keine Berechtigung",
+    "notFound": "Nicht gefunden",
+    "serverError": "Ein Fehler ist aufgetreten"
+  }
+}

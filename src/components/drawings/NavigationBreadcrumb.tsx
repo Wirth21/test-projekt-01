@@ -10,6 +10,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Fragment } from "react";
+import { useTranslations } from "next-intl";
 
 export interface NavHistoryEntry {
   drawingId: string;
@@ -29,6 +30,8 @@ export function NavigationBreadcrumb({
   onNavigate,
   onClear,
 }: NavigationBreadcrumbProps) {
+  const t = useTranslations("markers");
+
   if (history.length === 0) return null;
 
   return (
@@ -59,7 +62,7 @@ export function NavigationBreadcrumb({
         size="sm"
         className="h-5 w-5 p-0 ml-auto shrink-0"
         onClick={onClear}
-        aria-label="Navigation zurücksetzen"
+        aria-label={t("resetNavigation")}
       >
         <X className="h-3 w-3" />
       </Button>

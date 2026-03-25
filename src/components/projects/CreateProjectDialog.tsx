@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -33,6 +34,8 @@ interface CreateProjectDialogProps {
 
 export function CreateProjectDialog({ open, onOpenChange, onSubmit }: CreateProjectDialogProps) {
   const [submitting, setSubmitting] = useState(false);
+  const tc = useTranslations("common");
+  const tp = useTranslations("projects");
 
   const form = useForm<CreateProjectInput>({
     resolver: zodResolver(createProjectSchema),
@@ -59,9 +62,9 @@ export function CreateProjectDialog({ open, onOpenChange, onSubmit }: CreateProj
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Neues Projekt anlegen</DialogTitle>
+          <DialogTitle>{tp("create.title")}</DialogTitle>
           <DialogDescription>
-            Gib deinem Projekt einen Namen und eine optionale Beschreibung.
+            {tp("create.description")}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -71,9 +74,9 @@ export function CreateProjectDialog({ open, onOpenChange, onSubmit }: CreateProj
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Projektname *</FormLabel>
+                  <FormLabel>{tp("create.nameLabel")}</FormLabel>
                   <FormControl>
-                    <Input placeholder="z.B. Bauprojekt Musterstraße" autoFocus {...field} />
+                    <Input placeholder={tp("create.namePlaceholder")} autoFocus {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -84,10 +87,10 @@ export function CreateProjectDialog({ open, onOpenChange, onSubmit }: CreateProj
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Beschreibung</FormLabel>
+                  <FormLabel>{tp("create.descriptionLabel")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Kurze Beschreibung des Projekts (optional)"
+                      placeholder={tp("create.descriptionPlaceholder")}
                       rows={3}
                       {...field}
                     />
@@ -98,11 +101,11 @@ export function CreateProjectDialog({ open, onOpenChange, onSubmit }: CreateProj
             />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-                Abbrechen
+                {tc("cancel")}
               </Button>
               <Button type="submit" disabled={submitting}>
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Projekt anlegen
+                {tp("create.submit")}
               </Button>
             </DialogFooter>
           </form>

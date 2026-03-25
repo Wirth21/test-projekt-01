@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { MoreVertical, FileText, Users, Calendar, Archive, Pencil, UserPlus } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,8 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project, onEdit, onInvite, onArchive }: ProjectCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const tc = useTranslations("common");
+  const tp = useTranslations("projects");
   const isOwner = project.role === "owner";
 
   const formattedDate = new Date(project.updated_at).toLocaleDateString("de-DE", {
@@ -48,7 +51,7 @@ export function ProjectCard({ project, onEdit, onInvite, onArchive }: ProjectCar
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 -mt-1 -mr-2">
                 <MoreVertical className="h-4 w-4" />
-                <span className="sr-only">Optionen</span>
+                <span className="sr-only">{tc("options")}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -56,11 +59,11 @@ export function ProjectCard({ project, onEdit, onInvite, onArchive }: ProjectCar
                 <>
                   <DropdownMenuItem onClick={() => { setMenuOpen(false); onEdit(project); }}>
                     <Pencil className="mr-2 h-4 w-4" />
-                    Bearbeiten
+                    {tc("edit")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => { setMenuOpen(false); onInvite(project); }}>
                     <UserPlus className="mr-2 h-4 w-4" />
-                    Mitglied einladen
+                    {tp("invite.title")}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -68,14 +71,14 @@ export function ProjectCard({ project, onEdit, onInvite, onArchive }: ProjectCar
                     onClick={() => { setMenuOpen(false); onArchive(project); }}
                   >
                     <Archive className="mr-2 h-4 w-4" />
-                    Archivieren
+                    {tp("archiveConfirm.submit")}
                   </DropdownMenuItem>
                 </>
               )}
               {!isOwner && (
                 <DropdownMenuItem asChild>
                   <Link href={`/dashboard/projects/${project.id}`}>
-                    Öffnen
+                    {tp("open")}
                   </Link>
                 </DropdownMenuItem>
               )}
@@ -83,7 +86,7 @@ export function ProjectCard({ project, onEdit, onInvite, onArchive }: ProjectCar
           </DropdownMenu>
         </div>
         <Badge variant="secondary" className="w-fit text-xs mt-1">
-          {isOwner ? "Eigentümer" : "Mitglied"}
+          {isOwner ? tp("owner") : tp("member")}
         </Badge>
       </CardHeader>
 
@@ -91,7 +94,7 @@ export function ProjectCard({ project, onEdit, onInvite, onArchive }: ProjectCar
         {project.description ? (
           <p className="text-sm text-muted-foreground line-clamp-3">{project.description}</p>
         ) : (
-          <p className="text-sm text-muted-foreground italic">Keine Beschreibung</p>
+          <p className="text-sm text-muted-foreground italic">{tp("noDescription")}</p>
         )}
       </CardContent>
 

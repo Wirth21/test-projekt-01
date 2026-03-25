@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTranslations } from "next-intl";
 
 interface RenameGroupDialogProps {
   open: boolean;
@@ -29,6 +30,8 @@ export function RenameGroupDialog({
   onSubmit,
   existingNames,
 }: RenameGroupDialogProps) {
+  const t = useTranslations("drawings");
+  const tc = useTranslations("common");
   const [name, setName] = useState(currentName);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +76,7 @@ export function RenameGroupDialog({
       onOpenChange(false);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Umbenennung fehlgeschlagen"
+        err instanceof Error ? err.message : t("toasts.groupRenameFailed")
       );
     } finally {
       setSubmitting(false);
@@ -84,14 +87,14 @@ export function RenameGroupDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Gruppe umbenennen</DialogTitle>
+          <DialogTitle>{t("groups.rename.title")}</DialogTitle>
           <DialogDescription>
-            Gib einen neuen Namen fuer die Gruppe ein.
+            {t("groups.rename.description")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-2 py-4">
-            <Label htmlFor="rename-group-name">Gruppenname</Label>
+            <Label htmlFor="rename-group-name">{t("groups.create.label")}</Label>
             <Input
               id="rename-group-name"
               value={name}
@@ -105,7 +108,7 @@ export function RenameGroupDialog({
             />
             {isDuplicate && (
               <p className="text-sm text-destructive">
-                Eine Gruppe mit diesem Namen existiert bereits.
+                {t("groups.create.duplicateError")}
               </p>
             )}
             {error && (
@@ -119,11 +122,11 @@ export function RenameGroupDialog({
               onClick={() => handleOpenChange(false)}
               disabled={submitting}
             >
-              Abbrechen
+              {tc("cancel")}
             </Button>
             <Button type="submit" disabled={!isValid || submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Speichern
+              {tc("save")}
             </Button>
           </DialogFooter>
         </form>

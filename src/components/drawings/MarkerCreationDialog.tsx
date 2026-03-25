@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import type { Drawing } from "@/lib/types/drawing";
+import { useTranslations } from "next-intl";
 
 interface MarkerCreationDialogProps {
   open: boolean;
@@ -37,6 +38,8 @@ export function MarkerCreationDialog({
   currentDrawingId,
   onSubmit,
 }: MarkerCreationDialogProps) {
+  const t = useTranslations("markers");
+  const tc = useTranslations("common");
   const [name, setName] = useState("");
   const [targetId, setTargetId] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -59,7 +62,7 @@ export function MarkerCreationDialog({
       setTargetId("");
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Fehler beim Erstellen");
+      setError(err instanceof Error ? err.message : t("toasts.createFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -79,38 +82,38 @@ export function MarkerCreationDialog({
       <DialogContent className="sm:max-w-[400px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Neuer Marker</DialogTitle>
+            <DialogTitle>{t("create.title")}</DialogTitle>
             <DialogDescription>
-              Setze einen Marker, der auf eine andere Zeichnung verweist.
+              {t("create.description")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="marker-name">Name</Label>
+              <Label htmlFor="marker-name">{t("create.nameLabel")}</Label>
               <Input
                 id="marker-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="z.B. Detail A - Schnitt 1"
+                placeholder={t("create.namePlaceholder")}
                 maxLength={50}
                 autoFocus
               />
               <p className="text-xs text-muted-foreground">
-                {name.length}/50 Zeichen
+                {t("create.charCount", { count: name.length })}
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label>Ziel-Zeichnung</Label>
+              <Label>{t("create.targetLabel")}</Label>
               <Select value={targetId} onValueChange={setTargetId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Zeichnung auswählen..." />
+                  <SelectValue placeholder={t("create.targetPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableDrawings.length === 0 ? (
                     <div className="px-2 py-4 text-sm text-muted-foreground text-center">
-                      Keine anderen Zeichnungen vorhanden
+                      {t("create.noTargets")}
                     </div>
                   ) : (
                     availableDrawings.map((d) => (
@@ -134,14 +137,14 @@ export function MarkerCreationDialog({
               variant="outline"
               onClick={() => handleOpenChange(false)}
             >
-              Abbrechen
+              {tc("cancel")}
             </Button>
             <Button
               type="submit"
               disabled={!name.trim() || !targetId || submitting}
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Marker erstellen
+              {t("create.submit")}
             </Button>
           </DialogFooter>
         </form>

@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 
 interface ArchiveGroupDialogProps {
   open: boolean;
@@ -28,6 +29,8 @@ export function ArchiveGroupDialog({
   activeDrawingCount,
   onConfirm,
 }: ArchiveGroupDialogProps) {
+  const t = useTranslations("drawings");
+  const tc = useTranslations("common");
   const [submitting, setSubmitting] = useState(false);
 
   async function handleConfirm() {
@@ -47,30 +50,30 @@ export function ArchiveGroupDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            Gruppe &bdquo;{groupName}&ldquo; archivieren?
+            {t("groups.archiveConfirm.title", { name: groupName })}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {activeDrawingCount > 0 ? (
               <>
                 {activeDrawingCount === 1
-                  ? "1 Zeichnung wird nach \"Ohne Gruppe\" verschoben."
-                  : `${activeDrawingCount} Zeichnungen werden nach "Ohne Gruppe" verschoben.`}
-                {" "}Die Gruppe kann spaeter nicht wiederhergestellt werden.
+                  ? t("groups.archiveConfirm.descriptionSingular")
+                  : t("groups.archiveConfirm.descriptionPlural", { count: activeDrawingCount })}
+                {" "}{t("groups.archiveConfirm.descriptionPermanent")}
               </>
             ) : (
-              "Die leere Gruppe wird archiviert und aus der Uebersicht entfernt."
+              t("groups.archiveConfirm.descriptionEmpty")
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={submitting}>Abbrechen</AlertDialogCancel>
+          <AlertDialogCancel disabled={submitting}>{tc("cancel")}</AlertDialogCancel>
           <Button
             variant="destructive"
             onClick={handleConfirm}
             disabled={submitting}
           >
             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Archivieren
+            {t("groups.archiveConfirm.submit")}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTranslations } from "next-intl";
 
 interface RenameVersionDialogProps {
   open: boolean;
@@ -29,6 +30,8 @@ export function RenameVersionDialog({
   versionNumber,
   onSubmit,
 }: RenameVersionDialogProps) {
+  const t = useTranslations("drawings");
+  const tc = useTranslations("common");
   const [label, setLabel] = useState(currentLabel);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,11 +51,11 @@ export function RenameVersionDialog({
 
     const trimmed = label.trim();
     if (!trimmed) {
-      setError("Label darf nicht leer sein");
+      setError(t("validation.labelRequired"));
       return;
     }
     if (trimmed.length > 100) {
-      setError("Label darf maximal 100 Zeichen lang sein");
+      setError(t("validation.labelMaxLength"));
       return;
     }
 
@@ -63,7 +66,7 @@ export function RenameVersionDialog({
       onOpenChange(false);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Umbenennung fehlgeschlagen"
+        err instanceof Error ? err.message : t("toasts.renameFailed")
       );
     } finally {
       setSubmitting(false);
@@ -74,14 +77,14 @@ export function RenameVersionDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
-          <DialogTitle>Version v{versionNumber} umbenennen</DialogTitle>
+          <DialogTitle>{t("versions.rename.title", { number: versionNumber })}</DialogTitle>
           <DialogDescription>
-            Gib ein neues Label fuer diese Version ein.
+            {t("versions.rename.description")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="py-4">
-            <Label htmlFor="version-label">Label</Label>
+            <Label htmlFor="version-label">{t("versions.rename.label")}</Label>
             <Input
               id="version-label"
               value={label}
@@ -104,11 +107,11 @@ export function RenameVersionDialog({
               onClick={() => handleOpenChange(false)}
               disabled={submitting}
             >
-              Abbrechen
+              {tc("cancel")}
             </Button>
             <Button type="submit" disabled={submitting || !label.trim()}>
               {submitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-              Speichern
+              {tc("save")}
             </Button>
           </DialogFooter>
         </form>

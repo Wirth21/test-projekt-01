@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PdfUploadZone } from "@/components/drawings/PdfUploadZone";
+import { useTranslations } from "next-intl";
 
 interface VersionUploadDialogProps {
   open: boolean;
@@ -23,6 +24,7 @@ export function VersionUploadDialog({
   drawingName,
   onUpload,
 }: VersionUploadDialogProps) {
+  const t = useTranslations("drawings");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -50,11 +52,9 @@ export function VersionUploadDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>Neue Version hochladen</DialogTitle>
+          <DialogTitle>{t("versions.upload.title")}</DialogTitle>
           <DialogDescription>
-            Lade eine neue PDF-Version fuer &ldquo;{drawingName}&rdquo; hoch. Die
-            aktuelle Version wird beibehalten und Marker werden automatisch
-            uebernommen.
+            {t("versions.upload.description", { name: drawingName })}
           </DialogDescription>
         </DialogHeader>
         <div className="py-2">

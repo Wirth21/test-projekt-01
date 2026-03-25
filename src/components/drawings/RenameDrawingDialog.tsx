@@ -27,6 +27,7 @@ import {
   renameDrawingSchema,
   type RenameDrawingInput,
 } from "@/lib/validations/drawing";
+import { useTranslations } from "next-intl";
 
 interface RenameDrawingDialogProps {
   open: boolean;
@@ -41,6 +42,8 @@ export function RenameDrawingDialog({
   currentName,
   onSubmit,
 }: RenameDrawingDialogProps) {
+  const t = useTranslations("drawings");
+  const tc = useTranslations("common");
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -58,7 +61,7 @@ export function RenameDrawingDialog({
       onOpenChange(false);
     } catch (err) {
       setServerError(
-        err instanceof Error ? err.message : "Umbenennung fehlgeschlagen"
+        err instanceof Error ? err.message : t("toasts.renameFailed")
       );
     } finally {
       setSubmitting(false);
@@ -77,10 +80,9 @@ export function RenameDrawingDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Zeichnung umbenennen</DialogTitle>
+          <DialogTitle>{t("rename.title")}</DialogTitle>
           <DialogDescription>
-            Aendere den Anzeigenamen der Zeichnung. Der Dateiname im Speicher
-            bleibt unverändert.
+            {t("rename.description")}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -98,10 +100,10 @@ export function RenameDrawingDialog({
               name="display_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Anzeigename</FormLabel>
+                  <FormLabel>{t("rename.label")}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="z.B. Grundriss Erdgeschoss"
+                      placeholder={t("rename.placeholder")}
                       autoFocus
                       {...field}
                     />
@@ -116,13 +118,13 @@ export function RenameDrawingDialog({
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
               >
-                Abbrechen
+                {tc("cancel")}
               </Button>
               <Button type="submit" disabled={submitting}>
                 {submitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Umbenennen
+                {t("rename.submit")}
               </Button>
             </DialogFooter>
           </form>

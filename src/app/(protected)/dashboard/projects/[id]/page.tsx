@@ -18,6 +18,7 @@ import { PdfUploadZone } from "@/components/drawings/PdfUploadZone";
 import { GroupedDrawingList } from "@/components/drawings/GroupedDrawingList";
 import { CreateGroupDialog } from "@/components/drawings/CreateGroupDialog";
 import type { ProjectWithRole } from "@/lib/types/project";
+import { useTranslations } from "next-intl";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -26,6 +27,9 @@ interface PageProps {
 export default function ProjectDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const router = useRouter();
+  const t = useTranslations("drawings");
+  const tp = useTranslations("projects");
+  const tn = useTranslations("nav");
   const { projects, loading: projectsLoading } = useProjects();
   const { members, loading: membersLoading, inviteMember, removeMember } = useProjectMembers(id);
 
@@ -90,10 +94,10 @@ export default function ProjectDetailPage({ params }: PageProps) {
     setUploadProgress(0);
     try {
       await uploadDrawing(file, (pct) => setUploadProgress(pct));
-      toast.success("Zeichnung wurde hochgeladen");
+      toast.success(t("toasts.uploaded"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Upload fehlgeschlagen"
+        err instanceof Error ? err.message : t("toasts.uploadFailed")
       );
     } finally {
       setUploading(false);
@@ -104,10 +108,10 @@ export default function ProjectDetailPage({ params }: PageProps) {
   async function handleRename(drawingId: string, displayName: string) {
     try {
       await renameDrawing(drawingId, displayName);
-      toast.success("Zeichnung wurde umbenannt");
+      toast.success(t("toasts.renamed"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Umbenennung fehlgeschlagen"
+        err instanceof Error ? err.message : t("toasts.renameFailed")
       );
       throw err;
     }
@@ -116,10 +120,10 @@ export default function ProjectDetailPage({ params }: PageProps) {
   async function handleArchive(drawingId: string) {
     try {
       await archiveDrawing(drawingId);
-      toast.success("Zeichnung wurde archiviert");
+      toast.success(t("toasts.archived"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Archivierung fehlgeschlagen"
+        err instanceof Error ? err.message : t("toasts.archiveFailed")
       );
       throw err;
     }
@@ -129,10 +133,10 @@ export default function ProjectDetailPage({ params }: PageProps) {
     setRestoringDrawing(drawingId);
     try {
       await restoreDrawing(drawingId);
-      toast.success("Zeichnung wurde wiederhergestellt");
+      toast.success(t("toasts.restored"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Wiederherstellung fehlgeschlagen"
+        err instanceof Error ? err.message : t("toasts.restoreFailed")
       );
     } finally {
       setRestoringDrawing(null);
@@ -142,10 +146,10 @@ export default function ProjectDetailPage({ params }: PageProps) {
   async function handleCreateGroup(name: string) {
     try {
       await createGroup(name);
-      toast.success("Gruppe wurde erstellt");
+      toast.success(t("toasts.groupCreated"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Gruppe konnte nicht erstellt werden"
+        err instanceof Error ? err.message : t("toasts.groupCreateFailed")
       );
       throw err;
     }
@@ -154,10 +158,10 @@ export default function ProjectDetailPage({ params }: PageProps) {
   async function handleRenameGroup(groupId: string, name: string) {
     try {
       await renameGroup(groupId, name);
-      toast.success("Gruppe wurde umbenannt");
+      toast.success(t("toasts.groupRenamed"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Umbenennung fehlgeschlagen"
+        err instanceof Error ? err.message : t("toasts.groupRenameFailed")
       );
       throw err;
     }
@@ -167,10 +171,10 @@ export default function ProjectDetailPage({ params }: PageProps) {
     try {
       await archiveGroup(groupId);
       await refetchDrawings();
-      toast.success("Gruppe wurde archiviert");
+      toast.success(t("toasts.groupArchived"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Archivierung fehlgeschlagen"
+        err instanceof Error ? err.message : t("toasts.groupArchiveFailed")
       );
       throw err;
     }
@@ -180,10 +184,10 @@ export default function ProjectDetailPage({ params }: PageProps) {
     try {
       await assignDrawingToGroup(drawingId, groupId);
       await refetchDrawings();
-      toast.success("Gruppe wurde zugewiesen");
+      toast.success(t("toasts.groupAssigned"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Zuweisung fehlgeschlagen"
+        err instanceof Error ? err.message : t("toasts.groupAssignFailed")
       );
       throw err;
     }
@@ -205,7 +209,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
 
   async function handleInvite(email: string) {
     await inviteMember(email);
-    toast.success(`${email} wurde eingeladen`);
+    toast.success(tp("toasts.invited", { email }));
   }
 
   async function handleRemoveMember(memberId: string, memberEmail: string) {
@@ -214,7 +218,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
       await removeMember(memberId);
       toast.success(`${memberEmail} wurde entfernt`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Mitglied konnte nicht entfernt werden");
+      toast.error(err instanceof Error ? err.message : t("memberRemoveFailed"));
     } finally {
       setRemovingId(null);
     }
@@ -241,12 +245,12 @@ export default function ProjectDetailPage({ params }: PageProps) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center px-4">
         <FileText className="h-12 w-12 text-muted-foreground/40 mb-4" />
-        <h2 className="text-lg font-semibold mb-2">Projekt nicht gefunden</h2>
+        <h2 className="text-lg font-semibold mb-2">{t("notFound")}</h2>
         <p className="text-sm text-muted-foreground mb-6">
-          Dieses Projekt existiert nicht oder du hast keinen Zugriff.
+          {t("notFoundDescription")}
         </p>
         <Button variant="outline" onClick={() => router.push("/dashboard")}>
-          Zurück zur Übersicht
+          {t("backToOverview")}
         </Button>
       </div>
     );
@@ -259,7 +263,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
           <Link href="/dashboard">
             <Button variant="ghost" size="sm" className="-ml-2">
               <ArrowLeft className="mr-1.5 h-4 w-4" />
-              Übersicht
+              {t("overview")}
             </Button>
           </Link>
           <Separator orientation="vertical" className="h-5" />
@@ -278,10 +282,10 @@ export default function ProjectDetailPage({ params }: PageProps) {
               )}
               <div className="flex items-center gap-2 mt-3">
                 <Badge variant="secondary">
-                  {isOwner ? "Eigentümer" : "Mitglied"}
+                  {isOwner ? tp("owner") : tp("member")}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  Zuletzt geändert:{" "}
+                  {t("lastModified")}{" "}
                   {new Date(project.updated_at).toLocaleDateString("de-DE", {
                     day: "2-digit",
                     month: "2-digit",
@@ -296,7 +300,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
         {/* Drawings (PROJ-3) + Groups (PROJ-8) */}
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-semibold">Zeichnungen</h3>
+            <h3 className="text-base font-semibold">{t("title")}</h3>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -304,7 +308,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                 onClick={() => setCreateGroupOpen(true)}
               >
                 <Plus className="mr-1.5 h-4 w-4" />
-                Gruppe hinzufuegen
+                {t("addGroup")}
               </Button>
               <PdfUploadZone
                 onUpload={handleUpload}
@@ -318,11 +322,11 @@ export default function ProjectDetailPage({ params }: PageProps) {
             <TabsList className="mb-3">
               <TabsTrigger value="active" className="gap-1.5 text-xs">
                 <FileText className="h-3.5 w-3.5" />
-                Aktiv
+                {tn("active")}
               </TabsTrigger>
               <TabsTrigger value="archived" className="gap-1.5 text-xs">
                 <Archive className="h-3.5 w-3.5" />
-                Archiv
+                {tn("archive")}
                 {drawings.filter((d) => d.is_archived).length > 0 && (
                   <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] px-1 text-[10px]">
                     {drawings.filter((d) => d.is_archived).length}
@@ -367,7 +371,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <Archive className="h-10 w-10 text-muted-foreground/40 mb-3" />
                   <p className="text-sm text-muted-foreground">
-                    Keine archivierten Zeichnungen
+                    {t("noArchivedDrawings")}
                   </p>
                 </div>
               ) : (
@@ -388,7 +392,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                               {drawing.display_name}
                             </p>
                             <Badge variant="secondary" className="text-[10px] shrink-0">
-                              Archiviert
+                              {tp("archived")}
                             </Badge>
                           </div>
                           <Button
@@ -403,7 +407,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                             ) : (
                               <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
                             )}
-                            Wiederherstellen
+                            {tp("restore")}
                           </Button>
                         </div>
                       </div>
@@ -419,12 +423,12 @@ export default function ProjectDetailPage({ params }: PageProps) {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Mitglieder
+              {t("members")}
             </h3>
             {isOwner && (
               <Button size="sm" variant="outline" onClick={() => setInviteOpen(true)}>
                 <UserPlus className="mr-1.5 h-4 w-4" />
-                Einladen
+                {t("invite")}
               </Button>
             )}
           </div>
@@ -444,7 +448,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
           ) : (
             <div className="divide-y rounded-lg border">
               {members.map((member) => {
-                const displayName = member.profile?.display_name || member.profile?.email || "Unbekannt";
+                const displayName = member.profile?.display_name || member.profile?.email || t("unknown");
                 const email = member.profile?.email || "";
                 const isThisOwner = member.role === "owner";
 
@@ -463,7 +467,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                       )}
                     </div>
                     <Badge variant={isThisOwner ? "default" : "secondary"} className="text-xs">
-                      {isThisOwner ? "Eigentümer" : "Mitglied"}
+                      {isThisOwner ? tp("owner") : tp("member")}
                     </Badge>
                     {isOwner && !isThisOwner && (
                       <Button
@@ -475,7 +479,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                       >
                         {removingId === member.id
                           ? <Loader2 className="h-4 w-4 animate-spin" />
-                          : "Entfernen"
+                          : t("remove")
                         }
                       </Button>
                     )}

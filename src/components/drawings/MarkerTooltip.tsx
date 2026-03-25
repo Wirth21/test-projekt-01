@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { Loader2, FileWarning, Archive } from "lucide-react";
 import type { MarkerWithTarget } from "@/lib/types/marker";
+import { useTranslations } from "next-intl";
 
 interface MarkerTooltipProps {
   marker: MarkerWithTarget;
@@ -16,6 +17,7 @@ export function MarkerTooltip({
   anchorRect,
   getSignedUrl,
 }: MarkerTooltipProps) {
+  const t = useTranslations("markers");
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
@@ -68,12 +70,12 @@ export function MarkerTooltip({
         {isDeleted ? (
           <div className="flex items-center gap-1.5 text-destructive text-xs">
             <FileWarning className="h-3.5 w-3.5 shrink-0" />
-            <span>Zieldokument gelöscht</span>
+            <span>{t("tooltip.targetDeleted")}</span>
           </div>
         ) : isArchived ? (
           <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
             <Archive className="h-3.5 w-3.5 shrink-0" />
-            <span>Zeichnung archiviert</span>
+            <span>{t("tooltip.targetArchived")}</span>
           </div>
         ) : (
           <>

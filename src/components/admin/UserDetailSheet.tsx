@@ -41,6 +41,7 @@ import {
 import { toast } from "sonner";
 import { useUserProjects, useAdminProjects } from "@/hooks/use-admin";
 import type { AdminProfile, UserStatus } from "@/lib/types/admin";
+import { useTranslations } from "next-intl";
 
 interface UserDetailSheetProps {
   user: AdminProfile | null;
@@ -49,13 +50,6 @@ interface UserDetailSheetProps {
   onStatusChange: (userId: string, status: UserStatus) => Promise<unknown>;
   isSelf: boolean;
 }
-
-const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  active: { label: "Aktiv", variant: "default" },
-  pending: { label: "Ausstehend", variant: "secondary" },
-  disabled: { label: "Deaktiviert", variant: "destructive" },
-  deleted: { label: "Geloescht", variant: "destructive" },
-};
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("de-DE", {
@@ -72,6 +66,8 @@ export function UserDetailSheet({
   onStatusChange,
   isSelf,
 }: UserDetailSheetProps) {
+  const t = useTranslations("admin");
+  const tc = useTranslations("common");
   const { projects, loading: projectsLoading, error: projectsError, addToProject, removeFromProject } =
     useUserProjects(user?.id ?? null);
   const { projects: allProjects, loading: allProjectsLoading } = useAdminProjects();
@@ -86,6 +82,13 @@ export function UserDetailSheet({
   const [addProjectId, setAddProjectId] = useState<string>("");
 
   if (!user) return null;
+
+  const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    active: { label: t("status.active"), variant: "default" },
+    pending: { label: t("status.pending"), variant: "secondary" },
+    disabled: { label: t("status.disabled"), variant: "destructive" },
+    deleted: { label: t("status.deleted"), variant: "destructive" },
+  };
 
   const statusInfo = statusLabels[user.status] ?? {
     label: user.status,
@@ -105,14 +108,14 @@ export function UserDetailSheet({
       await onStatusChange(user.id, status);
       const actionLabel =
         status === "active"
-          ? "aktiviert"
+          ? t("toasts.activated")
           : status === "disabled"
-          ? "deaktiviert"
-          : "geloescht";
-      toast.success(`Nutzer wurde ${actionLabel}`);
+          ? t("toasts.deactivated")
+          : t("toasts.deleted");
+      toast.success(actionLabel);
       setConfirmAction(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Aktion fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : t("toasts.actionFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -125,10 +128,10 @@ export function UserDetailSheet({
       await addToProject(addProjectId);
       const projName =
         allProjects.find((p) => p.id === addProjectId)?.name ?? "Projekt";
-      toast.success(`Nutzer wurde zu "${projName}" hinzugefuegt`);
+      toast.success(t("toasts.addedToProject", { project: projName }));
       setAddProjectId("");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Hinzufuegen fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : t("toasts.addToProjectFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -140,11 +143,11 @@ export function UserDetailSheet({
     try {
       await removeFromProject(confirmAction.projectId);
       toast.success(
-        `Nutzer wurde aus "${confirmAction.projectName}" entfernt`
+        t("toasts.removedFromProject", { project: confirmAction.projectName ?? "" })
       );
       setConfirmAction(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Entfernen fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : t("toasts.removeFromProjectFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -156,11 +159,11 @@ export function UserDetailSheet({
         <SheetContent className="overflow-y-auto sm:max-w-md">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              {user.display_name || "Kein Name"}
+              {user.display_name || t("users.noName")}
               {user.is_admin && (
                 <Badge variant="outline" className="text-xs">
                   <ShieldAlert className="mr-1 h-3 w-3" />
-                  Admin
+                  {t("users.badge")}
                 </Badge>
               )}
             </SheetTitle>
@@ -171,17 +174,17 @@ export function UserDetailSheet({
             {/* User info */}
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <p className="text-muted-foreground">Status</p>
+                <p className="text-muted-foreground">{t("detail.status")}</p>
                 <Badge variant={statusInfo.variant} className="mt-1">
                   {statusInfo.label}
                 </Badge>
               </div>
               <div>
-                <p className="text-muted-foreground">Registriert</p>
+                <p className="text-muted-foreground">{t("detail.registered")}</p>
                 <p className="mt-1 font-medium">{formatDate(user.created_at)}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">Projekte</p>
+                <p className="text-muted-foreground">{t("detail.projects")}</p>
                 <p className="mt-1 font-medium">{user.project_count ?? 0}</p>
               </div>
             </div>
@@ -191,7 +194,7 @@ export function UserDetailSheet({
               <>
                 <Separator />
                 <div>
-                  <h4 className="text-sm font-medium mb-3">Aktionen</h4>
+                  <h4 className="text-sm font-medium mb-3">{t("detail.actions")}</h4>
                   <div className="flex flex-wrap gap-2">
                     {user.status === "active" && (
                       <Button
@@ -202,7 +205,7 @@ export function UserDetailSheet({
                         }
                       >
                         <UserX className="mr-1.5 h-4 w-4" />
-                        Deaktivieren
+                        {t("detail.disable")}
                       </Button>
                     )}
                     {user.status === "disabled" && (
@@ -212,7 +215,7 @@ export function UserDetailSheet({
                         onClick={() => handleStatusAction("active")}
                       >
                         <UserCheck className="mr-1.5 h-4 w-4" />
-                        Reaktivieren
+                        {t("detail.reactivate")}
                       </Button>
                     )}
                     {(user.status === "active" || user.status === "disabled") && (
@@ -222,7 +225,7 @@ export function UserDetailSheet({
                         onClick={() => setConfirmAction({ type: "delete" })}
                       >
                         <Trash2 className="mr-1.5 h-4 w-4" />
-                        Loeschen
+                        {t("detail.deleteUser")}
                       </Button>
                     )}
                   </div>
@@ -234,7 +237,7 @@ export function UserDetailSheet({
               <>
                 <Separator />
                 <p className="text-xs text-muted-foreground">
-                  Du kannst deinen eigenen Account nicht deaktivieren oder loeschen.
+                  {t("detail.selfProtection")}
                 </p>
               </>
             )}
@@ -242,7 +245,7 @@ export function UserDetailSheet({
             {/* Projects section */}
             <Separator />
             <div>
-              <h4 className="text-sm font-medium mb-3">Projektzugriffe</h4>
+              <h4 className="text-sm font-medium mb-3">{t("detail.projectAccess")}</h4>
 
               {/* Add to project */}
               <div className="flex gap-2 mb-4">
@@ -255,10 +258,10 @@ export function UserDetailSheet({
                     <SelectValue
                       placeholder={
                         allProjectsLoading
-                          ? "Laden..."
+                          ? t("detail.loadingProjects")
                           : availableProjects.length === 0
-                          ? "Alle Projekte zugewiesen"
-                          : "Projekt auswaehlen..."
+                          ? t("detail.allProjectsAssigned")
+                          : t("detail.selectProject")
                       }
                     />
                   </SelectTrigger>
@@ -275,7 +278,7 @@ export function UserDetailSheet({
                   variant="outline"
                   onClick={handleAddToProject}
                   disabled={!addProjectId || submitting}
-                  aria-label="Zum Projekt hinzufuegen"
+                  aria-label={t("detail.addToProject")}
                 >
                   {submitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -310,7 +313,7 @@ export function UserDetailSheet({
                 <div className="flex flex-col items-center py-8 text-center">
                   <FolderOpen className="h-8 w-8 text-muted-foreground/40 mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    Kein Projektzugriff vorhanden
+                    {t("detail.noProjectAccess")}
                   </p>
                 </div>
               )}
@@ -329,10 +332,10 @@ export function UserDetailSheet({
                         </p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <Badge variant="outline" className="text-xs">
-                            {proj.role === "owner" ? "Ersteller" : "Mitglied"}
+                            {proj.role === "owner" ? t("detail.creator") : t("detail.memberRole")}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
-                            seit {formatDate(proj.joined_at)}
+                            {t("detail.joinedAt", { date: formatDate(proj.joined_at) })}
                           </span>
                         </div>
                       </div>
@@ -347,7 +350,7 @@ export function UserDetailSheet({
                             projectName: proj.project_name,
                           })
                         }
-                        aria-label={`Aus ${proj.project_name} entfernen`}
+                        aria-label={t("detail.removeFromProject", { project: proj.project_name })}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -360,7 +363,7 @@ export function UserDetailSheet({
         </SheetContent>
       </Sheet>
 
-      {/* Confirmation dialog — disable / removeProject */}
+      {/* Confirmation dialog -- disable / removeProject */}
       <AlertDialog
         open={confirmAction !== null && confirmAction.type !== "delete"}
         onOpenChange={(open) => {
@@ -370,26 +373,23 @@ export function UserDetailSheet({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmAction?.type === "disable" && "Nutzer deaktivieren?"}
-              {confirmAction?.type === "removeProject" && "Aus Projekt entfernen?"}
+              {confirmAction?.type === "disable" && t("detail.disableConfirm")}
+              {confirmAction?.type === "removeProject" && t("detail.removeProjectConfirm")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmAction?.type === "disable" && (
-                <>
-                  <strong>{user.display_name || user.email}</strong> kann sich
-                  nach der Deaktivierung nicht mehr einloggen. Die Daten bleiben
-                  erhalten.
-                </>
-              )}
+              {confirmAction?.type === "disable" &&
+                t("detail.disableDescription", { name: user.display_name || user.email })}
               {confirmAction?.type === "removeProject" && (
                 <>
-                  <strong>{user.display_name || user.email}</strong> wird aus
-                  dem Projekt &quot;{confirmAction.projectName}&quot; entfernt.
+                  {t("detail.removeProjectDescription", {
+                    name: user.display_name || user.email,
+                    project: confirmAction.projectName ?? "",
+                  })}
                   {projects.find(
                     (p) => p.project_id === confirmAction.projectId
                   )?.role === "owner" && (
                     <span className="block mt-2 text-amber-600 font-medium">
-                      Achtung: Dieser Nutzer ist Ersteller des Projekts!
+                      {t("detail.ownerWarning")}
                     </span>
                   )}
                 </>
@@ -397,7 +397,7 @@ export function UserDetailSheet({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={submitting}>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel disabled={submitting}>{tc("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={submitting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -410,14 +410,14 @@ export function UserDetailSheet({
               }}
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {confirmAction?.type === "disable" && "Deaktivieren"}
-              {confirmAction?.type === "removeProject" && "Entfernen"}
+              {confirmAction?.type === "disable" && t("detail.disable")}
+              {confirmAction?.type === "removeProject" && t("drawings.remove")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Delete: step 1 — initial warning */}
+      {/* Delete: step 1 -- initial warning */}
       <AlertDialog
         open={confirmAction?.type === "delete" && !deleteStep2}
         onOpenChange={(open) => {
@@ -426,27 +426,26 @@ export function UserDetailSheet({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Nutzer loeschen?</AlertDialogTitle>
+            <AlertDialogTitle>{t("detail.deleteConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              <strong>{user.display_name || user.email}</strong> wird dauerhaft
-              als geloescht markiert. Der Nutzer kann sich nicht mehr einloggen.
+              {t("detail.deleteDescription", { name: user.display_name || user.email })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setConfirmAction(null)}>
-              Abbrechen
+              {tc("cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => setDeleteStep2(true)}
             >
-              Weiter
+              {t("detail.continue")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Delete: step 2 — final confirmation */}
+      {/* Delete: step 2 -- final confirmation */}
       <AlertDialog
         open={confirmAction?.type === "delete" && deleteStep2}
         onOpenChange={(open) => {
@@ -458,11 +457,9 @@ export function UserDetailSheet({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Wirklich endgueltig loeschen?</AlertDialogTitle>
+            <AlertDialogTitle>{t("detail.deleteFinalConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Diese Aktion kann nicht rueckgaengig gemacht werden.{" "}
-              <strong>{user.display_name || user.email}</strong> wird permanent
-              gesperrt.
+              {t("detail.deleteFinalDescription", { name: user.display_name || user.email })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -473,7 +470,7 @@ export function UserDetailSheet({
                 setConfirmAction(null);
               }}
             >
-              Abbrechen
+              {tc("cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               disabled={submitting}
@@ -484,7 +481,7 @@ export function UserDetailSheet({
               }}
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Endgueltig loeschen
+              {t("detail.deleteFinal")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -39,6 +39,7 @@ import {
 } from "@/components/drawings/NavigationBreadcrumb";
 import { VersionSidePanel } from "@/components/drawings/VersionSidePanel";
 import type { MarkerWithTarget } from "@/lib/types/marker";
+import { useTranslations } from "next-intl";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -53,6 +54,9 @@ export default function DrawingViewerPage({ params }: PageProps) {
   const { id: projectId, drawingId: initialDrawingId } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations("drawings");
+  const tm = useTranslations("markers");
+  const tc = useTranslations("common");
   const initialVersionId = searchParams.get("versionId");
 
   const {
@@ -139,7 +143,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
       setUrlError(
         err instanceof Error
           ? err.message
-          : "PDF-URL konnte nicht geladen werden"
+          : t("toasts.pdfUrlFailed")
       );
     } finally {
       setUrlLoading(false);
@@ -198,15 +202,15 @@ export default function DrawingViewerPage({ params }: PageProps) {
       const result = await uploadVersion(file, onProgress);
       setSelectedVersionId(result.version.id);
       if (result.markerCopyFailed) {
-        toast.warning("Version angelegt, Marker konnten nicht übernommen werden.");
+        toast.warning(t("toasts.versionUploadedMarkersWarning"));
       } else if (result.markersCopied > 0) {
-        toast.success(`Neue Version hochgeladen, ${result.markersCopied} Marker übernommen`);
+        toast.success(t("toasts.versionUploadedWithMarkers", { count: result.markersCopied }));
       } else {
-        toast.success("Neue Version hochgeladen");
+        toast.success(t("toasts.versionUploaded"));
       }
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Upload fehlgeschlagen"
+        err instanceof Error ? err.message : t("toasts.uploadFailed")
       );
       throw err;
     }
@@ -215,10 +219,10 @@ export default function DrawingViewerPage({ params }: PageProps) {
   async function handleRenameVersion(versionId: string, label: string) {
     try {
       await renameVersion(versionId, label);
-      toast.success("Version umbenannt");
+      toast.success(t("toasts.versionRenamed"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Umbenennung fehlgeschlagen"
+        err instanceof Error ? err.message : t("toasts.renameFailed")
       );
       throw err;
     }
@@ -231,10 +235,10 @@ export default function DrawingViewerPage({ params }: PageProps) {
       if (versionId === selectedVersionId) {
         setSelectedVersionId(null);
       }
-      toast.success("Version archiviert");
+      toast.success(t("toasts.versionArchived"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Archivierung fehlgeschlagen"
+        err instanceof Error ? err.message : t("toasts.versionArchiveFailed")
       );
       throw err;
     }
@@ -254,23 +258,21 @@ export default function DrawingViewerPage({ params }: PageProps) {
       x_percent: Math.round(creationPos.x * 100) / 100,
       y_percent: Math.round(creationPos.y * 100) / 100,
     });
-    toast.success("Marker erstellt");
+    toast.success(tm("created"));
   }
 
   function handleMarkerClick(marker: MarkerWithTarget) {
     if (!marker.target_drawing) {
-      toast.error(
-        "Zieldokument wurde geloescht. Bitte Marker neu verknuepfen."
-      );
+      toast.error(tm("targetDeletedNavError"));
       return;
     }
     if (marker.target_drawing.is_archived) {
-      toast.error("Diese Zeichnung ist archiviert.");
+      toast.error(tm("targetArchivedNavError"));
       return;
     }
 
     // Add current drawing to nav history
-    const currentName = drawing?.display_name ?? "Zeichnung";
+    const currentName = drawing?.display_name ?? t("drawing");
     setNavHistory((prev) => [
       ...prev,
       { drawingId: activeDrawingId, drawingName: currentName },
@@ -295,17 +297,17 @@ export default function DrawingViewerPage({ params }: PageProps) {
 
   async function handleMarkerRename(markerId: string, name: string) {
     await updateMarker(markerId, { name });
-    toast.success("Marker umbenannt");
+    toast.success(tm("renamed"));
   }
 
   async function handleMarkerRetarget(markerId: string, targetId: string) {
     await updateMarker(markerId, { target_drawing_id: targetId });
-    toast.success("Ziel geaendert");
+    toast.success(tm("targetChanged"));
   }
 
   async function handleMarkerDelete(markerId: string) {
     await deleteMarker(markerId);
-    toast.success("Marker geloescht");
+    toast.success(tm("deleted"));
   }
 
   async function handleMarkerDrag(
@@ -319,7 +321,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
     });
   }
 
-  const displayName = drawing?.display_name ?? "Zeichnung";
+  const displayName = drawing?.display_name ?? t("drawing");
   const versionLabel = activeVersion
     ? `v${activeVersion.version_number}`
     : null;
@@ -357,7 +359,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
               }
             >
               <ArrowLeft className="mr-1.5 h-4 w-4" />
-              Zurueck
+              {tc("back")}
             </Button>
           </div>
         </header>
@@ -397,7 +399,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
               }
             >
               <ArrowLeft className="mr-1.5 h-4 w-4" />
-              Zurueck
+              {tc("back")}
             </Button>
           </div>
         </header>

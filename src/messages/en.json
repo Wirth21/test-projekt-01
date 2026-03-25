@@ -1,0 +1,325 @@
+{
+  "common": {
+    "appName": "Link2Plan",
+    "tagline": "Manage technical plans",
+    "metaDescription": "Manage and link technical PDF plans",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "close": "Close",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "back": "Back",
+    "search": "Search",
+    "options": "Options",
+    "toStartPage": "Go to homepage"
+  },
+  "auth": {
+    "login": "Log in",
+    "loginLoading": "Logging in...",
+    "register": "Sign up",
+    "registerLoading": "Signing up...",
+    "logout": "Log out",
+    "email": "Email",
+    "emailPlaceholder": "name@example.com",
+    "password": "Password",
+    "passwordPlaceholder": "At least 8 characters",
+    "confirmPassword": "Confirm password",
+    "confirmPasswordPlaceholder": "Repeat password",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "welcomeBack": "Welcome back",
+    "resetPassword": "Reset password",
+    "sendResetLink": "Send reset link",
+    "sendResetLinkLoading": "Sending email...",
+    "backToLogin": "Back to login",
+    "newPassword": "New password",
+    "updatePassword": "Update password",
+    "updatePasswordLoading": "Updating...",
+    "createAccount": "Create account",
+    "createAccountDescription": "Sign up to get access",
+    "loginDescription": "Sign in with your email address",
+    "resetPasswordDescription": "We'll send you a link via email",
+    "setNewPassword": "Set new password",
+    "setNewPasswordDescription": "Enter your new password.",
+    "almostDone": "Almost done!",
+    "confirmEmailSent": "We've sent you a confirmation email. Please click the link in the email to activate your account.",
+    "resetEmailSent": "If an account with this email exists, you'll receive an email with a password reset link shortly.",
+    "errors": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email address",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least 8 characters",
+      "confirmPasswordRequired": "Please confirm your password",
+      "passwordsMismatch": "Passwords do not match",
+      "emailTaken": "This email address is already taken.",
+      "registrationFailed": "Registration failed. Please try again.",
+      "loginFailed": "Email or password is incorrect.",
+      "emailNotConfirmed": "Email not confirmed yet. Please check your inbox and click the confirmation link.",
+      "accountPending": "Your account is waiting for approval by an administrator.",
+      "accountDisabled": "Your account has been disabled. Contact the administrator.",
+      "resetEmailFailed": "Failed to send email. Please try again.",
+      "updatePasswordFailed": "Could not update password. Please try again.",
+      "wrongTenant": "You don't belong to this organization.",
+      "notAuthenticated": "Not authenticated"
+    }
+  },
+  "nav": {
+    "projects": "My Projects",
+    "admin": "Admin",
+    "active": "Active",
+    "archive": "Archive"
+  },
+  "projects": {
+    "title": "My Projects",
+    "subtitle": "Own and shared projects",
+    "newProject": "New Project",
+    "firstProject": "Create first project",
+    "open": "Open",
+    "owner": "Owner",
+    "member": "Member",
+    "noDescription": "No description",
+    "archived": "Archived",
+    "restore": "Restore",
+    "empty": {
+      "title": "No projects yet",
+      "description": "Create your first project to upload PDFs and set markers."
+    },
+    "emptyArchive": {
+      "title": "No archived projects",
+      "description": "Archived projects will appear here."
+    },
+    "create": {
+      "title": "Create new project",
+      "description": "Give your project a name and an optional description.",
+      "namePlaceholder": "e.g. Construction project Main Street",
+      "nameLabel": "Project name *",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Short description of the project (optional)",
+      "submit": "Create project"
+    },
+    "edit": {
+      "title": "Edit project",
+      "description": "Change the name or description of the project."
+    },
+    "invite": {
+      "title": "Invite member",
+      "description": "Invite a user to the project \"{projectName}\".",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "user@company.com",
+      "submit": "Invite"
+    },
+    "archiveConfirm": {
+      "title": "Archive project?",
+      "description": "\"{name}\" will be archived. All PDFs and markers are preserved, but the project will be hidden from the overview.",
+      "submit": "Archive"
+    },
+    "toasts": {
+      "created": "Project created",
+      "createFailed": "Could not create project",
+      "updated": "Project updated",
+      "updateFailed": "Could not update project",
+      "invited": "{email} was invited",
+      "inviteFailed": "Invitation failed",
+      "archived": "\"{name}\" was archived",
+      "archiveFailed": "Archiving failed",
+      "restored": "\"{name}\" was restored",
+      "restoreFailed": "Restore failed"
+    },
+    "validation": {
+      "nameRequired": "Project name must not be empty",
+      "nameMaxLength": "Project name must not exceed 100 characters",
+      "descriptionMaxLength": "Description must not exceed 500 characters",
+      "emailRequired": "Email must not be empty",
+      "emailInvalid": "Please enter a valid email address"
+    }
+  },
+  "drawings": {
+    "upload": "Upload PDF",
+    "uploadDragDrop": "Drag PDF here or click",
+    "uploadMaxSize": "Maximum 50 MB, PDF files only",
+    "uploadInProgress": "Uploading...",
+    "selectFile": "Select file",
+    "rename": {
+      "title": "Rename drawing",
+      "description": "Change the display name of the drawing. The filename in storage remains unchanged.",
+      "label": "Display name",
+      "placeholder": "e.g. Ground floor plan",
+      "submit": "Rename"
+    },
+    "archiveConfirm": {
+      "title": "Archive drawing?",
+      "description": "The drawing \"{name}\" will be archived and no longer visible in the active list. The file is preserved in storage and cannot be deleted."
+    },
+    "groups": {
+      "create": {
+        "title": "Create new group",
+        "description": "Enter a name for the new drawing group.",
+        "label": "Group name",
+        "placeholder": "e.g. Ground floor",
+        "duplicateError": "A group with this name already exists."
+      },
+      "rename": {
+        "title": "Rename group",
+        "description": "Enter a new name for the group."
+      },
+      "archiveConfirm": {
+        "title": "Archive group \"{name}\"?",
+        "descriptionSingular": "1 drawing will be moved to \"Ungrouped\".",
+        "descriptionPlural": "{count} drawings will be moved to \"Ungrouped\".",
+        "descriptionPermanent": "The group cannot be restored later.",
+        "descriptionEmpty": "The empty group will be archived and removed from the overview."
+      }
+    },
+    "versions": {
+      "upload": {
+        "title": "Upload new version",
+        "description": "Upload a new PDF version for \"{name}\". The current version is preserved and markers are automatically carried over."
+      },
+      "rename": {
+        "title": "Rename version v{number}",
+        "description": "Enter a new label for this version.",
+        "label": "Label"
+      }
+    },
+    "toasts": {
+      "uploaded": "Drawing uploaded",
+      "uploadFailed": "Upload failed",
+      "renamed": "Drawing renamed",
+      "renameFailed": "Rename failed",
+      "archived": "Drawing archived",
+      "archiveFailed": "Archiving failed",
+      "restored": "Drawing restored",
+      "restoreFailed": "Restore failed",
+      "groupCreated": "Group created",
+      "groupCreateFailed": "Could not create group",
+      "groupRenamed": "Group renamed",
+      "groupRenameFailed": "Rename failed",
+      "groupArchived": "Group archived",
+      "groupArchiveFailed": "Archiving failed",
+      "groupAssigned": "Group assigned",
+      "groupAssignFailed": "Assignment failed",
+      "versionUploaded": "New version uploaded",
+      "versionUploadedWithMarkers": "New version uploaded, {count} markers carried over",
+      "versionUploadedMarkersWarning": "Version created, markers could not be carried over.",
+      "versionRenamed": "Version renamed",
+      "pdfUrlFailed": "Could not load PDF URL"
+    },
+    "validation": {
+      "pdfOnly": "Only PDF files are allowed",
+      "maxFileSize": "File must not exceed 50 MB",
+      "fileSizeInteger": "File size must be an integer",
+      "fileSizePositive": "File size must be positive",
+      "labelRequired": "Label must not be empty",
+      "labelMaxLength": "Label must not exceed 100 characters",
+      "invalidGroupId": "Invalid group ID"
+    }
+  },
+  "markers": {
+    "create": {
+      "title": "New Marker",
+      "description": "Place a marker that links to another drawing.",
+      "nameLabel": "Name",
+      "namePlaceholder": "e.g. Detail A - Section 1",
+      "charCount": "{count}/50 characters",
+      "targetLabel": "Target drawing",
+      "targetPlaceholder": "Select drawing...",
+      "noTargets": "No other drawings available",
+      "submit": "Create marker"
+    },
+    "context": {
+      "rename": "Rename",
+      "changeTarget": "Change target"
+    },
+    "tooltip": {
+      "targetDeleted": "Target document deleted",
+      "targetArchived": "Drawing archived"
+    },
+    "resetNavigation": "Reset navigation",
+    "toasts": {
+      "loadFailed": "Could not load markers",
+      "createFailed": "Error creating marker",
+      "updateFailed": "Could not update marker",
+      "deleteFailed": "Could not delete marker"
+    },
+    "errors": {
+      "unexpected": "An unexpected error occurred"
+    }
+  },
+  "admin": {
+    "title": "Admin",
+    "users": {
+      "title": "User Management",
+      "subtitle": "Manage all registered users",
+      "addUser": "Add user",
+      "searchPlaceholder": "Search name or email...",
+      "allStatus": "All statuses",
+      "noName": "No name",
+      "badge": "Admin"
+    },
+    "pending": {
+      "title": "Pending Approvals",
+      "subtitle": "New registrations awaiting approval",
+      "empty": "No pending requests",
+      "emptyDescription": "All registrations have been processed.",
+      "requestCount": "{count} request",
+      "requestCountPlural": "{count} requests"
+    },
+    "createUser": {
+      "title": "Add user",
+      "description": "Creates a new user with immediate access (no email confirmation required).",
+      "nameLabel": "Name",
+      "namePlaceholder": "John Doe",
+      "emailLabel": "Email",
+      "emailPlaceholder": "john@company.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "At least 8 characters",
+      "submit": "Create user"
+    },
+    "status": {
+      "active": "Active",
+      "pending": "Pending",
+      "disabled": "Disabled",
+      "deleted": "Deleted"
+    },
+    "detail": {
+      "status": "Status",
+      "registered": "Registered",
+      "projects": "Projects",
+      "actions": "Actions"
+    },
+    "toasts": {
+      "approved": "User approved",
+      "rejected": "Registration rejected",
+      "actionFailed": "Action failed",
+      "activated": "User activated",
+      "deactivated": "User deactivated",
+      "deleted": "User deleted",
+      "addedToProject": "User added to \"{project}\"",
+      "addToProjectFailed": "Failed to add",
+      "removedFromProject": "User removed from \"{project}\"",
+      "removeFromProjectFailed": "Failed to remove",
+      "createFailed": "Error creating user"
+    }
+  },
+  "notFound": {
+    "title": "404",
+    "heading": "Organization not found",
+    "description": "The requested address could not be assigned to any organization. Please check the URL or contact your administrator."
+  },
+  "language": {
+    "de": "Deutsch",
+    "en": "English",
+    "switchLanguage": "Switch language"
+  },
+  "api": {
+    "invalidBody": "Invalid request body",
+    "validationError": "Validation error",
+    "permissionDenied": "Permission denied",
+    "notFound": "Not found",
+    "serverError": "An error occurred"
+  }
+}

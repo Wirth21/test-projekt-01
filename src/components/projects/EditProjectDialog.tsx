@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -35,6 +36,8 @@ interface EditProjectDialogProps {
 
 export function EditProjectDialog({ project, open, onOpenChange, onSubmit }: EditProjectDialogProps) {
   const [submitting, setSubmitting] = useState(false);
+  const tc = useTranslations("common");
+  const tp = useTranslations("projects");
 
   const form = useForm<EditProjectInput>({
     resolver: zodResolver(editProjectSchema),
@@ -65,9 +68,9 @@ export function EditProjectDialog({ project, open, onOpenChange, onSubmit }: Edi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Projekt bearbeiten</DialogTitle>
+          <DialogTitle>{tp("edit.title")}</DialogTitle>
           <DialogDescription>
-            Ändere den Namen oder die Beschreibung des Projekts.
+            {tp("edit.description")}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -77,7 +80,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSubmit }: Edi
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Projektname *</FormLabel>
+                  <FormLabel>{tp("create.nameLabel")}</FormLabel>
                   <FormControl>
                     <Input autoFocus {...field} />
                   </FormControl>
@@ -90,7 +93,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSubmit }: Edi
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Beschreibung</FormLabel>
+                  <FormLabel>{tp("create.descriptionLabel")}</FormLabel>
                   <FormControl>
                     <Textarea rows={3} {...field} />
                   </FormControl>
@@ -100,11 +103,11 @@ export function EditProjectDialog({ project, open, onOpenChange, onSubmit }: Edi
             />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Abbrechen
+                {tc("cancel")}
               </Button>
               <Button type="submit" disabled={submitting}>
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Speichern
+                {tc("save")}
               </Button>
             </DialogFooter>
           </form>

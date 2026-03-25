@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Pencil, Link2, Trash2, Loader2 } from "lucide-react";
 import type { MarkerWithTarget } from "@/lib/types/marker";
 import type { Drawing } from "@/lib/types/drawing";
+import { useTranslations } from "next-intl";
 
 interface MarkerContextMenuProps {
   marker: MarkerWithTarget;
@@ -35,6 +36,8 @@ export function MarkerContextMenu({
   onDelete,
   onClose,
 }: MarkerContextMenuProps) {
+  const t = useTranslations("markers");
+  const tc = useTranslations("common");
   const ref = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<"menu" | "rename" | "retarget">("menu");
   const [renameValue, setRenameValue] = useState(marker.name);
@@ -115,14 +118,14 @@ export function MarkerContextMenu({
             onClick={() => setMode("rename")}
           >
             <Pencil className="h-3.5 w-3.5" />
-            Umbenennen
+            {t("context.rename")}
           </button>
           <button
             className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-accent transition-colors text-left"
             onClick={() => setMode("retarget")}
           >
             <Link2 className="h-3.5 w-3.5" />
-            Ziel ändern
+            {t("context.changeTarget")}
           </button>
           <div className="my-1 border-t" />
           <button
@@ -135,7 +138,7 @@ export function MarkerContextMenu({
             ) : (
               <Trash2 className="h-3.5 w-3.5" />
             )}
-            Löschen
+            {tc("delete")}
           </button>
         </>
       )}
@@ -154,7 +157,7 @@ export function MarkerContextMenu({
           />
           <div className="flex justify-end gap-1">
             <Button size="sm" variant="ghost" onClick={onClose}>
-              Abbrechen
+              {tc("cancel")}
             </Button>
             <Button
               size="sm"
@@ -162,7 +165,7 @@ export function MarkerContextMenu({
               disabled={!renameValue.trim() || loading}
             >
               {loading && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
-              Speichern
+              {tc("save")}
             </Button>
           </div>
         </div>
@@ -184,7 +187,7 @@ export function MarkerContextMenu({
           </Select>
           <div className="flex justify-end gap-1">
             <Button size="sm" variant="ghost" onClick={onClose}>
-              Abbrechen
+              {tc("cancel")}
             </Button>
             <Button
               size="sm"
@@ -192,7 +195,7 @@ export function MarkerContextMenu({
               disabled={newTargetId === marker.target_drawing_id || loading}
             >
               {loading && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
-              Speichern
+              {tc("save")}
             </Button>
           </div>
         </div>

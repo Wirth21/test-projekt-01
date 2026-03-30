@@ -42,13 +42,13 @@ After completing work on any feature, you MUST update tracking files. Follow thi
 4. **If changes are missing**, repeat step 2 — never claim updates were made without verifying
 
 **What to update in the feature spec:**
-- Status field in the header (Planned → In Progress → In Review → Deployed)
+- Status field in the header (Planned → In Progress → In Review → QA Passed → Deployed)
 - Implementation notes: what was built, what changed, any deviations from the original spec
 - Bug fixes or design changes discovered during implementation
 
 **What to update in `features/INDEX.md`:**
 - Feature status column must match the feature spec header
-- Valid statuses: Planned, In Progress, In Review, Deployed
+- Valid statuses: Planned, In Progress, In Review, QA Passed, Deployed
 
 **NEVER do this:**
 - Do NOT say "I've updated the feature spec" without actually calling the Edit tool

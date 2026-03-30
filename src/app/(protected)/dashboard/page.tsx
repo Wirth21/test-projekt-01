@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Plus, LogOut, FolderOpen, Loader2, ShieldAlert, Archive, RotateCcw, EyeOff, Users, LogIn } from "lucide-react";
+import { Plus, LogOut, FolderOpen, Loader2, ShieldAlert, Archive, RotateCcw, EyeOff, Users, LogIn, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -176,6 +177,11 @@ export default function DashboardPage() {
                 <span className="hidden sm:inline">{tn("admin")}</span>
               </Button>
             )}
+            <Button variant="outline" size="sm" asChild className="h-9 w-9 p-0">
+              <Link href="/dashboard/profile" aria-label={tn("profile")}>
+                <User className="h-4 w-4" />
+              </Link>
+            </Button>
             <LanguageSwitcher />
             <Button variant="outline" size="sm" onClick={handleLogout} className="h-9 w-9 p-0 sm:h-auto sm:w-auto sm:px-3 sm:py-1.5">
               <LogOut className="h-4 w-4 sm:mr-2" />

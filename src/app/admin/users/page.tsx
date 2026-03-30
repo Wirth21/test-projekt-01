@@ -24,6 +24,7 @@ import {
 import { useAdminUsers } from "@/hooks/use-admin";
 import { UserDetailSheet } from "@/components/admin/UserDetailSheet";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
+import { TenantDataSection } from "@/components/admin/TenantDataSection";
 import { createClient } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { AdminProfile } from "@/lib/types/admin";
@@ -301,6 +302,9 @@ export default function AdminUsersPage() {
           toast.success(t("users.userCreated", { email }));
         }}
       />
+
+      {/* GDPR / Tenant data section */}
+      <TenantDataSection />
     </div>
   );
 }

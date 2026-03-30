@@ -6,6 +6,7 @@
 - **Planned** - Requirements written, ready for development
 - **In Progress** - Currently being built
 - **In Review** - QA testing in progress
+- **QA Passed** - QA completed successfully, ready for deployment
 - **Deployed** - Live in production
 
 ## Features

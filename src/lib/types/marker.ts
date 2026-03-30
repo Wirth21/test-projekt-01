@@ -1,3 +1,14 @@
+export const MARKER_COLORS = ["blue", "red", "green", "orange", "purple"] as const;
+export type MarkerColor = (typeof MARKER_COLORS)[number];
+
+export const MARKER_COLOR_MAP: Record<MarkerColor, string> = {
+  blue: "#3b82f6",
+  red: "#ef4444",
+  green: "#22c55e",
+  orange: "#f97316",
+  purple: "#a855f7",
+};
+
 export interface Marker {
   id: string;
   drawing_id: string;
@@ -5,6 +16,7 @@ export interface Marker {
   target_drawing_id: string;
   project_id: string;
   name: string;
+  color: MarkerColor;
   page_number: number;
   x_percent: number;
   y_percent: number;

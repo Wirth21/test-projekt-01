@@ -42,7 +42,7 @@ import { VersionSidePanel } from "@/components/drawings/VersionSidePanel";
 import { FloatingToolbar } from "@/components/drawings/FloatingToolbar";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { UploadInfo } from "@/components/drawings/UploadInfo";
-import type { MarkerWithTarget } from "@/lib/types/marker";
+import type { MarkerWithTarget, MarkerColor } from "@/lib/types/marker";
 import { useTranslations } from "next-intl";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -121,6 +121,10 @@ export default function DrawingViewerPage({ params }: PageProps) {
 
   const pageContainerRef = useRef<HTMLDivElement>(null);
   const viewerContainerRef = useRef<HTMLDivElement>(null);
+
+  // Computed PDF width to fit container — stored as ref to avoid re-render loops
+  const [fittedWidth, setFittedWidth] = useState<number | undefined>(undefined);
+
   const { isFullscreen, isSupported: fullscreenSupported, toggleFullscreen, exitFullscreen: exitFs } = useFullscreen(viewerContainerRef);
 
   const drawing = drawings.find((d) => d.id === activeDrawingId);
@@ -161,6 +165,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
       fetchUrl();
       setCurrentPage(1);
       setNumPages(null);
+      setFittedWidth(undefined);
     }
   }, [activeVersion?.id, fetchUrl]);
 
@@ -173,13 +178,27 @@ export default function DrawingViewerPage({ params }: PageProps) {
     }
   }, [activeVersion, initialVersionId]);
 
-  function handleDocumentLoadSuccess({
-    numPages: pages,
-  }: {
+  async function handleDocumentLoadSuccess(pdf: {
     numPages: number;
+    getPage: (n: number) => Promise<{ getViewport: (opts: { scale: number }) => { width: number; height: number } }>;
   }) {
-    setNumPages(pages);
+    setNumPages(pdf.numPages);
     setPdfLoading(false);
+
+    // Calculate fit-to-screen width once
+    const container = viewerContainerRef.current;
+    if (!container) return;
+    try {
+      const page = await pdf.getPage(1);
+      const vp = page.getViewport({ scale: 1 });
+      const pad = 48;
+      const availW = container.clientWidth - pad;
+      const availH = container.clientHeight - pad;
+      const scale = Math.min(availW / vp.width, availH / vp.height);
+      setFittedWidth(Math.floor(vp.width * scale));
+    } catch {
+      // fallback: no fit constraint
+    }
   }
 
   function handleDocumentLoadError() {
@@ -255,10 +274,11 @@ export default function DrawingViewerPage({ params }: PageProps) {
     setCreationPos({ x: xPercent, y: yPercent });
   }
 
-  async function handleCreateMarker(name: string, targetDrawingId: string) {
+  async function handleCreateMarker(name: string, targetDrawingId: string, color: MarkerColor) {
     if (!creationPos) return;
     await createMarker({
       name,
+      color,
       target_drawing_id: targetDrawingId,
       page_number: currentPage,
       x_percent: Math.round(creationPos.x * 100) / 100,
@@ -309,6 +329,10 @@ export default function DrawingViewerPage({ params }: PageProps) {
   async function handleMarkerRetarget(markerId: string, targetId: string) {
     await updateMarker(markerId, { target_drawing_id: targetId });
     toast.success(tm("targetChanged"));
+  }
+
+  async function handleMarkerColorChange(markerId: string, color: string) {
+    await updateMarker(markerId, { color: color as MarkerColor });
   }
 
   async function handleMarkerDelete(markerId: string) {
@@ -675,8 +699,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
             initialScale={1}
             minScale={0.3}
             maxScale={5}
-            centerOnInit
-            centerZoomedOut
+            limitToBounds={false}
             wheel={{ step: 0.1 }}
             panning={{ disabled: editMode }}
           >
@@ -734,9 +757,18 @@ export default function DrawingViewerPage({ params }: PageProps) {
 
                 <TransformComponent
                   wrapperClass="!w-full !h-full"
-                  contentClass="flex items-center justify-center"
                 >
-                  <div ref={pageContainerRef} className="relative inline-block">
+                  <div
+                    ref={pageContainerRef}
+                    className="relative inline-block"
+                    style={{
+                      minWidth: "100%",
+                      minHeight: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
                     <Document
                       file={pdfUrl}
                       onLoadSuccess={handleDocumentLoadSuccess}
@@ -747,7 +779,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
                         </div>
                       }
                     >
-                      {pdfLoading && (
+                      {pdfLoading && !fittedWidth && (
                         <div className="flex items-center justify-center">
                           <Skeleton className="w-[600px] h-[800px]" />
                         </div>
@@ -757,6 +789,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
                         renderTextLayer={false}
                         renderAnnotationLayer={false}
                         className="shadow-lg"
+                        width={fittedWidth}
                       />
                     </Document>
 
@@ -772,6 +805,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
                         onMarkerClick={handleMarkerClick}
                         onMarkerRename={handleMarkerRename}
                         onMarkerRetarget={handleMarkerRetarget}
+                        onMarkerColorChange={handleMarkerColorChange}
                         onMarkerDelete={handleMarkerDelete}
                         onMarkerDrag={handleMarkerDrag}
                         onPageClick={handlePageClick}

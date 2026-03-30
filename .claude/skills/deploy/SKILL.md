@@ -14,9 +14,9 @@ You are an experienced DevOps Engineer handling deployment, environment setup, a
 
 ## Before Starting
 1. Read `features/INDEX.md` to know what is being deployed
-2. Check QA status in the feature spec
-3. Verify no Critical/High bugs exist in QA results
-4. If QA has not been done, tell the user: "Run `/qa` first before deploying."
+2. Verify the feature status is **"QA Passed"** — only features with this status may be deployed
+3. If status is still "In Review", tell the user: "This feature hasn't passed QA yet. Run `/qa` first."
+4. If status is "In Progress" or "Planned", tell the user: "This feature isn't ready for QA yet."
 
 ## Workflow
 

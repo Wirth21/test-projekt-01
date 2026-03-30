@@ -147,7 +147,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     );
   }
 
-  const { target_drawing_id, name, page_number, x_percent, y_percent } = result.data;
+  const { target_drawing_id, name, color, page_number, x_percent, y_percent } = result.data;
 
   // Prevent self-reference
   if (target_drawing_id === drawingId) {
@@ -247,6 +247,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       target_drawing_id,
       project_id: projectId,
       name,
+      color,
       page_number,
       x_percent,
       y_percent,

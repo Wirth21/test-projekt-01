@@ -4,12 +4,23 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { createServiceRoleClient } from "@/lib/superadmin";
 import { getTenantContext } from "@/lib/tenant";
 import { getStripe } from "@/lib/stripe";
+import { rateLimit, getRateLimitKey } from "@/lib/rate-limit";
 
 const checkoutSchema = z.object({
   plan: z.enum(["team", "business"]),
 });
 
 export async function POST(request: Request) {
+  // Rate limit: 5 requests per minute
+  const key = getRateLimitKey(request);
+  const limiter = rateLimit(`billing-checkout:${key}`, 5, 60_000);
+  if (!limiter.success) {
+    return NextResponse.json(
+      { error: "Zu viele Anfragen. Bitte versuche es später erneut." },
+      { status: 429, headers: { "Retry-After": "60" } }
+    );
+  }
+
   try {
     // Authenticate user
     const supabase = await createServerSupabaseClient();

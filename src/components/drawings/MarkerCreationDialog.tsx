@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import type { Drawing } from "@/lib/types/drawing";
+import type { MarkerColor } from "@/lib/types/marker";
+import { MARKER_COLORS, MARKER_COLOR_MAP } from "@/lib/types/marker";
 import { useTranslations } from "next-intl";
 
 interface MarkerCreationDialogProps {
@@ -28,7 +30,7 @@ interface MarkerCreationDialogProps {
   onOpenChange: (open: boolean) => void;
   drawings: Drawing[];
   currentDrawingId: string;
-  onSubmit: (name: string, targetDrawingId: string) => Promise<void>;
+  onSubmit: (name: string, targetDrawingId: string, color: MarkerColor) => Promise<void>;
 }
 
 export function MarkerCreationDialog({
@@ -42,6 +44,7 @@ export function MarkerCreationDialog({
   const tc = useTranslations("common");
   const [name, setName] = useState("");
   const [targetId, setTargetId] = useState("");
+  const [color, setColor] = useState<MarkerColor>("blue");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,9 +60,10 @@ export function MarkerCreationDialog({
     setError(null);
 
     try {
-      await onSubmit(name.trim(), targetId);
+      await onSubmit(name.trim(), targetId, color);
       setName("");
       setTargetId("");
+      setColor("blue");
       onOpenChange(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("toasts.createFailed"));
@@ -72,6 +76,7 @@ export function MarkerCreationDialog({
     if (!open) {
       setName("");
       setTargetId("");
+      setColor("blue");
       setError(null);
     }
     onOpenChange(open);
@@ -124,6 +129,27 @@ export function MarkerCreationDialog({
                   )}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Color picker */}
+            <div className="space-y-2">
+              <Label>{t("create.colorLabel")}</Label>
+              <div className="flex items-center gap-2">
+                {MARKER_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setColor(c)}
+                    className={`w-8 h-8 rounded-full border-2 transition-all ${
+                      color === c
+                        ? "border-foreground scale-110"
+                        : "border-transparent hover:border-muted-foreground/50"
+                    }`}
+                    style={{ backgroundColor: MARKER_COLOR_MAP[c] }}
+                    aria-label={c}
+                  />
+                ))}
+              </div>
             </div>
 
             {error && (

@@ -42,6 +42,7 @@ import {
   Pencil,
   Check,
   X,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useUserProjects, useAdminProjects } from "@/hooks/use-admin";
@@ -80,12 +81,15 @@ export function UserDetailSheet({
   const { projects: allProjects, loading: allProjectsLoading } = useAdminProjects();
 
   const [confirmAction, setConfirmAction] = useState<{
-    type: "disable" | "delete" | "removeProject";
+    type: "disable" | "delete" | "removeProject" | "deleteAccount";
     projectId?: string;
     projectName?: string;
   } | null>(null);
   const [deleteStep2, setDeleteStep2] = useState(false);
+  const [deleteAccountStep2, setDeleteAccountStep2] = useState(false);
+  const [deleteAccountOwnerError, setDeleteAccountOwnerError] = useState<string[] | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [addProjectId, setAddProjectId] = useState<string>("");
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
@@ -184,6 +188,52 @@ export function UserDetailSheet({
       await onProfileUpdate(user.id, changes);
       toast.success(t("toasts.profileUpdated"));
       setEditing(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("toasts.actionFailed"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleExportData() {
+    if (!user) return;
+    setExporting(true);
+    toast.info(t("detail.exportStarted"));
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/export`);
+      if (!res.ok) throw new Error(t("detail.exportFailed"));
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `user-export-${user.id}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("detail.exportFailed"));
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!user) return;
+    setSubmitting(true);
+    setDeleteAccountOwnerError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/delete`, { method: "DELETE" });
+      if (res.status === 409) {
+        const data = await res.json();
+        setDeleteAccountOwnerError(data.projects ?? []);
+        return;
+      }
+      if (!res.ok) throw new Error(t("toasts.actionFailed"));
+      toast.success(t("detail.accountDeleted"));
+      setConfirmAction(null);
+      setDeleteAccountStep2(false);
+      await onStatusChange(user.id, "deleted");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("toasts.actionFailed"));
     } finally {
@@ -440,6 +490,45 @@ export function UserDetailSheet({
                 </div>
               )}
             </div>
+
+            {/* GDPR section */}
+            <Separator />
+            <div>
+              <h4 className="text-sm font-medium mb-3">{t("detail.gdprSection")}</h4>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {t("detail.exportDataDescription")}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportData}
+                    disabled={exporting}
+                  >
+                    {exporting ? (
+                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="mr-1.5 h-4 w-4" />
+                    )}
+                    {t("detail.exportData")}
+                  </Button>
+                </div>
+                {!isSelf && (
+                  <div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setConfirmAction({ type: "deleteAccount" })}
+                      disabled={user.status === "deleted"}
+                    >
+                      <Trash2 className="mr-1.5 h-4 w-4" />
+                      {t("detail.deleteAccountTitle")}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           )}
         </SheetContent>
@@ -447,7 +536,7 @@ export function UserDetailSheet({
 
       {/* Confirmation dialog -- disable / removeProject */}
       <AlertDialog
-        open={confirmAction !== null && confirmAction.type !== "delete"}
+        open={confirmAction !== null && confirmAction.type !== "delete" && confirmAction.type !== "deleteAccount"}
         onOpenChange={(open) => {
           if (!open) setConfirmAction(null);
         }}
@@ -560,6 +649,90 @@ export function UserDetailSheet({
               onClick={() => {
                 setDeleteStep2(false);
                 handleStatusAction("deleted");
+              }}
+            >
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("detail.deleteFinal")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* GDPR Delete Account: step 1 -- initial warning */}
+      <AlertDialog
+        open={confirmAction?.type === "deleteAccount" && !deleteAccountStep2}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmAction(null);
+            setDeleteAccountOwnerError(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("detail.deleteAccountTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("detail.deleteAccountDescription", { name: user.display_name || user.email })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmAction(null)}>
+              {tc("cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => setDeleteAccountStep2(true)}
+            >
+              {t("detail.continue")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* GDPR Delete Account: step 2 -- final confirmation */}
+      <AlertDialog
+        open={confirmAction?.type === "deleteAccount" && deleteAccountStep2}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteAccountStep2(false);
+            setDeleteAccountOwnerError(null);
+            setConfirmAction(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("detail.deleteFinalConfirm")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("detail.deleteFinalDescription", { name: user.display_name || user.email })}
+              {deleteAccountOwnerError && deleteAccountOwnerError.length > 0 && (
+                <span className="block mt-3 text-amber-600 font-medium">
+                  {t("detail.deleteAccountOwnerError")}
+                  <ul className="list-disc list-inside mt-1">
+                    {deleteAccountOwnerError.map((name) => (
+                      <li key={name}>{name}</li>
+                    ))}
+                  </ul>
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={submitting}
+              onClick={() => {
+                setDeleteAccountStep2(false);
+                setDeleteAccountOwnerError(null);
+                setConfirmAction(null);
+              }}
+            >
+              {tc("cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={submitting || (deleteAccountOwnerError !== null && deleteAccountOwnerError.length > 0)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                handleDeleteAccount();
               }}
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

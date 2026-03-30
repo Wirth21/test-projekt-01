@@ -11,6 +11,10 @@ export const createMarkerSchema = z.object({
     .min(1, "Marker-Name darf nicht leer sein")
     .max(50, "Marker-Name darf maximal 50 Zeichen lang sein")
     .trim(),
+  color: z
+    .enum(["blue", "red", "green", "orange", "purple"])
+    .optional()
+    .default("blue"),
   page_number: z
     .number()
     .int("Seitennummer muss eine ganze Zahl sein")
@@ -33,6 +37,9 @@ export const updateMarkerSchema = z.object({
     .min(1, "Marker-Name darf nicht leer sein")
     .max(50, "Marker-Name darf maximal 50 Zeichen lang sein")
     .trim()
+    .optional(),
+  color: z
+    .enum(["blue", "red", "green", "orange", "purple"])
     .optional(),
   target_drawing_id: z
     .string()

@@ -72,7 +72,8 @@
     "admin": "Admin",
     "active": "Aktiv",
     "inactive": "Inaktiv",
-    "archive": "Archiv"
+    "archive": "Archiv",
+    "profile": "Mein Profil"
   },
   "projects": {
     "title": "Meine Projekte",
@@ -309,11 +310,13 @@
       "targetLabel": "Ziel-Zeichnung",
       "targetPlaceholder": "Zeichnung auswählen...",
       "noTargets": "Keine anderen Zeichnungen vorhanden",
-      "submit": "Marker erstellen"
+      "submit": "Marker erstellen",
+      "colorLabel": "Farbe"
     },
     "context": {
       "rename": "Umbenennen",
-      "changeTarget": "Ziel ändern"
+      "changeTarget": "Ziel ändern",
+      "changeColor": "Farbe ändern"
     },
     "tooltip": {
       "targetDeleted": "Zieldokument gelöscht",
@@ -413,7 +416,16 @@
       "continue": "Weiter",
       "deleteFinalConfirm": "Wirklich endgültig löschen?",
       "deleteFinalDescription": "Diese Aktion kann nicht rückgängig gemacht werden. {name} wird permanent gesperrt.",
-      "deleteFinal": "Endgültig löschen"
+      "deleteFinal": "Endgültig löschen",
+      "exportData": "Daten exportieren",
+      "exportDataDescription": "Alle personenbezogenen Daten dieses Nutzers als JSON herunterladen (DSGVO Art. 20).",
+      "exportStarted": "Download wird vorbereitet...",
+      "exportFailed": "Datenexport fehlgeschlagen",
+      "gdprSection": "Datenschutz (DSGVO)",
+      "deleteAccountTitle": "Konto löschen (DSGVO Art. 17)",
+      "deleteAccountDescription": "{name} wird dauerhaft deaktiviert. Projektmitgliedschaften werden entfernt.",
+      "deleteAccountOwnerError": "Nutzer muss zuerst die Eigentümerschaft folgender Projekte übertragen:",
+      "accountDeleted": "Konto wurde gelöscht"
     },
     "toasts": {
       "approved": "Nutzer wurde freigegeben",
@@ -428,6 +440,21 @@
       "removeFromProjectFailed": "Entfernen fehlgeschlagen",
       "createFailed": "Fehler beim Erstellen",
       "profileUpdated": "Profil wurde aktualisiert"
+    },
+    "tenant": {
+      "gdprSection": "Datenschutz & Tenant-Verwaltung (DSGVO)",
+      "gdprDescription": "Tenant-weiter Datenexport und L\u00F6schung gem\u00E4\u00DF DSGVO",
+      "exportAll": "Alle Tenant-Daten exportieren",
+      "exportAllDescription": "Exportiert alle Daten aller Nutzer, Projekte und Zeichnungen dieses Tenants als JSON (Art. 20 DSGVO).",
+      "exportStarted": "Export wird vorbereitet...",
+      "exportFailed": "Export fehlgeschlagen",
+      "deleteTenant": "Tenant l\u00F6schen",
+      "deleteTenantDescription": "Deaktiviert den gesamten Tenant. Alle Nutzer verlieren den Zugang. Daten bleiben archiviert.",
+      "deleteConfirmTitle": "Tenant wirklich l\u00F6schen?",
+      "deleteConfirmDescription": "Alle Nutzer werden deaktiviert und der Tenant wird gesperrt. Diese Aktion kann nur vom Plattform-Administrator r\u00FCckg\u00E4ngig gemacht werden.",
+      "deleteConfirmFinal": "Endg\u00FCltig deaktivieren",
+      "deleteSuccess": "Tenant wurde deaktiviert",
+      "deleteFailed": "Tenant-L\u00F6schung fehlgeschlagen"
     }
   },
   "limits": {
@@ -633,6 +660,11 @@
       "notFound": "Tenant nicht gefunden"
     }
   },
+  "cookie": {
+    "message": "Diese Website verwendet ausschließlich technisch notwendige Cookies für Authentifizierung und Spracheinstellungen.",
+    "learnMore": "Mehr erfahren",
+    "accept": "Verstanden"
+  },
   "activity": {
     "title": "Aenderungsprotokoll",
     "filter": "Filter",
@@ -667,5 +699,21 @@
       "markerCreated": "{name} hat Marker \u201E{marker}\u201C auf \u201E{drawing}\u201C erstellt",
       "markerDeleted": "{name} hat Marker \u201E{marker}\u201C von \u201E{drawing}\u201C geloescht"
     }
+  },
+  "profile": {
+    "title": "Mein Profil",
+    "subtitle": "Kontoeinstellungen",
+    "displayName": "Anzeigename",
+    "displayNamePlaceholder": "Dein Name",
+    "email": "E-Mail-Adresse",
+    "emailReadonly": "Kann nur vom Administrator ge\u00e4ndert werden",
+    "save": "Speichern",
+    "saved": "Profil gespeichert",
+    "saveFailed": "Speichern fehlgeschlagen",
+    "dataSection": "Datenschutz (DSGVO)",
+    "dataSectionDescription": "Informationen zu deinen Rechten gem\u00e4\u00df DSGVO",
+    "dataAdminHint": "F\u00fcr Datenexport (Art. 20 DSGVO), Kontol\u00f6schung (Art. 17 DSGVO) oder Auskunft (Art. 15 DSGVO) wende dich bitte an deinen Administrator.",
+    "dataPrivacyLink": "Weitere Informationen findest du in unserer",
+    "dataPrivacyLinkText": "Datenschutzerkl\u00e4rung"
   }
 }

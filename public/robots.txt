@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /superadmin/
+Disallow: /login
+Disallow: /register
+Disallow: /auth/
+
+Sitemap: https://link2plan.app/sitemap.xml

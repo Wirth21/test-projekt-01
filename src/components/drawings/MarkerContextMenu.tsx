@@ -10,8 +10,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Pencil, Link2, Trash2, Loader2 } from "lucide-react";
+import { Pencil, Link2, Trash2, Loader2, Palette } from "lucide-react";
 import type { MarkerWithTarget } from "@/lib/types/marker";
+import { MARKER_COLORS, MARKER_COLOR_MAP, type MarkerColor } from "@/lib/types/marker";
 import type { Drawing } from "@/lib/types/drawing";
 import { useTranslations } from "next-intl";
 
@@ -22,6 +23,7 @@ interface MarkerContextMenuProps {
   currentDrawingId: string;
   onRename: (markerId: string, name: string) => Promise<void>;
   onChangeTarget: (markerId: string, targetId: string) => Promise<void>;
+  onChangeColor: (markerId: string, color: string) => Promise<void>;
   onDelete: (markerId: string) => Promise<void>;
   onClose: () => void;
 }
@@ -33,13 +35,14 @@ export function MarkerContextMenu({
   currentDrawingId,
   onRename,
   onChangeTarget,
+  onChangeColor,
   onDelete,
   onClose,
 }: MarkerContextMenuProps) {
   const t = useTranslations("markers");
   const tc = useTranslations("common");
   const ref = useRef<HTMLDivElement>(null);
-  const [mode, setMode] = useState<"menu" | "rename" | "retarget">("menu");
+  const [mode, setMode] = useState<"menu" | "rename" | "retarget" | "color">("menu");
   const [renameValue, setRenameValue] = useState(marker.name);
   const [newTargetId, setNewTargetId] = useState(
     marker.target_drawing_id
@@ -127,6 +130,13 @@ export function MarkerContextMenu({
             <Link2 className="h-3.5 w-3.5" />
             {t("context.changeTarget")}
           </button>
+          <button
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-accent transition-colors text-left"
+            onClick={() => setMode("color")}
+          >
+            <Palette className="h-3.5 w-3.5" />
+            {t("context.changeColor")}
+          </button>
           <div className="my-1 border-t" />
           <button
             className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-destructive/10 text-destructive transition-colors text-left"
@@ -197,6 +207,40 @@ export function MarkerContextMenu({
               {loading && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
               {tc("save")}
             </Button>
+          </div>
+        </div>
+      )}
+
+      {mode === "color" && (
+        <div className="p-2 space-y-2">
+          <div className="flex items-center gap-2 justify-center">
+            {MARKER_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                disabled={loading}
+                onClick={async () => {
+                  if (c === (marker.color ?? "blue")) {
+                    onClose();
+                    return;
+                  }
+                  setLoading(true);
+                  try {
+                    await onChangeColor(marker.id, c);
+                    onClose();
+                  } catch {
+                    setLoading(false);
+                  }
+                }}
+                className={`w-8 h-8 rounded-full border-2 transition-all ${
+                  (marker.color ?? "blue") === c
+                    ? "border-foreground scale-110"
+                    : "border-transparent hover:border-muted-foreground/50"
+                }`}
+                style={{ backgroundColor: MARKER_COLOR_MAP[c] }}
+                aria-label={c}
+              />
+            ))}
           </div>
         </div>
       )}

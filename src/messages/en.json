@@ -72,7 +72,8 @@
     "admin": "Admin",
     "active": "Active",
     "inactive": "Inactive",
-    "archive": "Archive"
+    "archive": "Archive",
+    "profile": "My Profile"
   },
   "projects": {
     "title": "My Projects",
@@ -309,11 +310,13 @@
       "targetLabel": "Target drawing",
       "targetPlaceholder": "Select drawing...",
       "noTargets": "No other drawings available",
-      "submit": "Create marker"
+      "submit": "Create marker",
+      "colorLabel": "Color"
     },
     "context": {
       "rename": "Rename",
-      "changeTarget": "Change target"
+      "changeTarget": "Change target",
+      "changeColor": "Change color"
     },
     "tooltip": {
       "targetDeleted": "Target document deleted",
@@ -413,7 +416,16 @@
       "continue": "Continue",
       "deleteFinalConfirm": "Really delete permanently?",
       "deleteFinalDescription": "This action cannot be undone. {name} will be permanently blocked.",
-      "deleteFinal": "Delete permanently"
+      "deleteFinal": "Delete permanently",
+      "exportData": "Export data",
+      "exportDataDescription": "Download all personal data of this user as JSON (GDPR Art. 20).",
+      "exportStarted": "Preparing download...",
+      "exportFailed": "Data export failed",
+      "gdprSection": "Privacy (GDPR)",
+      "deleteAccountTitle": "Delete account (GDPR Art. 17)",
+      "deleteAccountDescription": "{name} will be permanently deactivated. Project memberships will be removed.",
+      "deleteAccountOwnerError": "User must first transfer ownership of these projects:",
+      "accountDeleted": "Account deleted"
     },
     "toasts": {
       "approved": "User approved",
@@ -428,6 +440,21 @@
       "removeFromProjectFailed": "Failed to remove",
       "createFailed": "Error creating user",
       "profileUpdated": "Profile updated"
+    },
+    "tenant": {
+      "gdprSection": "Privacy & Tenant Management (GDPR)",
+      "gdprDescription": "Tenant-wide data export and deletion per GDPR",
+      "exportAll": "Export all tenant data",
+      "exportAllDescription": "Exports all data of all users, projects, and drawings of this tenant as JSON (Art. 20 GDPR).",
+      "exportStarted": "Preparing export...",
+      "exportFailed": "Export failed",
+      "deleteTenant": "Delete tenant",
+      "deleteTenantDescription": "Deactivates the entire tenant. All users will lose access. Data remains archived.",
+      "deleteConfirmTitle": "Really delete tenant?",
+      "deleteConfirmDescription": "All users will be deactivated and the tenant will be locked. This can only be reversed by a platform administrator.",
+      "deleteConfirmFinal": "Deactivate permanently",
+      "deleteSuccess": "Tenant deactivated",
+      "deleteFailed": "Tenant deletion failed"
     }
   },
   "limits": {
@@ -633,6 +660,11 @@
       "notFound": "Tenant not found"
     }
   },
+  "cookie": {
+    "message": "This website only uses technically necessary cookies for authentication and language settings.",
+    "learnMore": "Learn more",
+    "accept": "Got it"
+  },
   "activity": {
     "title": "Activity Log",
     "filter": "Filter",
@@ -667,5 +699,21 @@
       "markerCreated": "{name} created marker \"{marker}\" on \"{drawing}\"",
       "markerDeleted": "{name} deleted marker \"{marker}\" from \"{drawing}\""
     }
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Account settings",
+    "displayName": "Display name",
+    "displayNamePlaceholder": "Your name",
+    "email": "Email address",
+    "emailReadonly": "Can only be changed by an administrator",
+    "save": "Save",
+    "saved": "Profile saved",
+    "saveFailed": "Save failed",
+    "dataSection": "Privacy (GDPR)",
+    "dataSectionDescription": "Information about your rights under GDPR",
+    "dataAdminHint": "For data export (Art. 20 GDPR), account deletion (Art. 17 GDPR), or access requests (Art. 15 GDPR), please contact your administrator.",
+    "dataPrivacyLink": "For more information, see our",
+    "dataPrivacyLinkText": "Privacy Policy"
   }
 }

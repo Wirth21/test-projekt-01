@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { parsePagination, paginationMeta } from "@/lib/pagination";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -46,20 +47,17 @@ export async function GET(request: Request, { params }: RouteParams) {
 
   // Parse query parameters
   const { searchParams } = new URL(request.url);
-  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
-  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50", 10)));
+  const { page, limit, from, to } = parsePagination(searchParams);
   const actionType = searchParams.get("action_type");
   const userId = searchParams.get("user_id");
-
-  const offset = (page - 1) * limit;
 
   // Build query
   let query = supabase
     .from("activity_log")
-    .select("*", { count: "exact" })
+    .select("*", { count: "exact", head: false })
     .eq("project_id", projectId)
     .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
+    .range(from, to);
 
   if (actionType) {
     query = query.eq("action_type", actionType);
@@ -75,13 +73,10 @@ export async function GET(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Änderungsprotokoll konnte nicht geladen werden" }, { status: 500 });
   }
 
+  const total = count ?? 0;
+
   return NextResponse.json({
     entries: entries ?? [],
-    pagination: {
-      page,
-      limit,
-      total: count ?? 0,
-      totalPages: Math.ceil((count ?? 0) / limit),
-    },
+    pagination: paginationMeta(page, limit, total),
   });
 }

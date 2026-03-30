@@ -3,12 +3,11 @@
 import { MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MarkerWithTarget } from "@/lib/types/marker";
+import { MARKER_COLOR_MAP } from "@/lib/types/marker";
 
 interface MarkerPinProps {
   marker: MarkerWithTarget;
   editMode: boolean;
-  onMouseEnter?: (e: React.MouseEvent) => void;
-  onMouseLeave?: () => void;
   onClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
   onDragStart?: (e: React.MouseEvent) => void;
@@ -20,8 +19,6 @@ interface MarkerPinProps {
 export function MarkerPin({
   marker,
   editMode,
-  onMouseEnter,
-  onMouseLeave,
   onClick,
   onContextMenu,
   onDragStart,
@@ -35,6 +32,12 @@ export function MarkerPin({
   const truncatedName =
     marker.name.length > 30 ? marker.name.slice(0, 30) + "\u2026" : marker.name;
 
+  const pinColor = isDeleted
+    ? undefined
+    : isArchived
+      ? undefined
+      : MARKER_COLOR_MAP[marker.color ?? "blue"];
+
   return (
     <div
       className={cn(
@@ -46,8 +49,6 @@ export function MarkerPin({
         left: `${marker.x_percent}%`,
         top: `${marker.y_percent}%`,
       }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
       onClick={onClick}
       onContextMenu={onContextMenu}
       onMouseDown={editMode ? onDragStart : undefined}
@@ -61,7 +62,6 @@ export function MarkerPin({
             "px-1.5 py-0.5 rounded text-[10px] font-medium leading-tight whitespace-nowrap mb-0.5",
             "bg-background/90 border shadow-sm backdrop-blur-sm",
             "opacity-0 group-hover/pin:opacity-100 transition-opacity",
-            // Always show name on touch devices (no hover available)
             "sm:opacity-0 sm:group-hover/pin:opacity-100",
             isDeleted && "text-destructive",
             isArchived && "text-muted-foreground",
@@ -72,15 +72,12 @@ export function MarkerPin({
         <MapPin
           className={cn(
             "h-6 w-6 drop-shadow-md sm:h-6 sm:w-6",
-            // Larger tap target on touch devices
             "h-7 w-7",
-            isDeleted
-              ? "text-destructive"
-              : isArchived
-                ? "text-muted-foreground"
-                : "text-primary",
+            isDeleted && "text-destructive",
+            isArchived && "text-muted-foreground",
             !editMode && "hover:scale-110 transition-transform",
           )}
+          style={pinColor ? { color: pinColor } : undefined}
           fill="currentColor"
           strokeWidth={1.5}
           stroke="white"

@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { KeepScale } from "react-zoom-pan-pinch";
 import { MarkerPin } from "./MarkerPin";
 import { MarkerTooltip } from "./MarkerTooltip";
 import { MarkerContextMenu } from "./MarkerContextMenu";
@@ -17,6 +19,7 @@ interface MarkerOverlayProps {
   onMarkerClick: (marker: MarkerWithTarget) => void;
   onMarkerRename: (markerId: string, name: string) => Promise<void>;
   onMarkerRetarget: (markerId: string, targetId: string) => Promise<void>;
+  onMarkerColorChange: (markerId: string, color: string) => Promise<void>;
   onMarkerDelete: (markerId: string) => Promise<void>;
   onMarkerDrag: (
     markerId: string,
@@ -44,13 +47,14 @@ export function MarkerOverlay({
   onMarkerClick,
   onMarkerRename,
   onMarkerRetarget,
+  onMarkerColorChange,
   onMarkerDelete,
   onMarkerDrag,
   onPageClick,
 }: MarkerOverlayProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  const [hoveredMarker, setHoveredMarker] = useState<MarkerWithTarget | null>(null);
-  const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
+  const [selectedMarker, setSelectedMarker] = useState<MarkerWithTarget | null>(null);
+  const [selectedAnchorEl, setSelectedAnchorEl] = useState<HTMLElement | null>(null);
   const [contextMenu, setContextMenu] = useState<{
     marker: MarkerWithTarget;
     position: { x: number; y: number };
@@ -80,7 +84,7 @@ export function MarkerOverlay({
       startEvent.stopPropagation();
 
       setDragging(marker.id);
-      setHoveredMarker(null);
+      setSelectedMarker(null);
 
       const overlay = overlayRef.current;
       if (!overlay) return;
@@ -133,7 +137,6 @@ export function MarkerOverlay({
     [editMode, onMarkerDrag]
   );
 
-  // Long-press for context menu on touch devices
   const handleTouchStart = useCallback(
     (marker: MarkerWithTarget, e: React.TouchEvent) => {
       if (!editMode) return;
@@ -142,7 +145,6 @@ export function MarkerOverlay({
       const pos = { x: touch.clientX, y: touch.clientY };
 
       longPressTimer.current = setTimeout(() => {
-        // Long press triggers context menu
         setContextMenu({ marker, position: pos });
         longPressTimer.current = null;
       }, 500);
@@ -159,7 +161,6 @@ export function MarkerOverlay({
 
   const handleTouchMove = useCallback(
     (marker: MarkerWithTarget, e: React.TouchEvent) => {
-      // If we moved enough, cancel long-press and start drag instead
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
@@ -181,75 +182,80 @@ export function MarkerOverlay({
           <div
             key={marker.id}
             data-marker-id={marker.id}
-            className="absolute -translate-x-1/2 -translate-y-full"
+            className="absolute"
             style={{
               left: `${marker.x_percent}%`,
               top: `${marker.y_percent}%`,
               pointerEvents: "auto",
             }}
           >
-            <MarkerPin
-              marker={marker}
-              editMode={editMode}
-              onMouseEnter={(e) => {
-                if (!editMode && !dragging) {
-                  setHoveredMarker(marker);
-                  setHoverRect(
-                    (e.currentTarget as HTMLElement).getBoundingClientRect()
-                  );
-                }
-              }}
-              onMouseLeave={() => {
-                setHoveredMarker(null);
-                setHoverRect(null);
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!editMode) {
-                  onMarkerClick(marker);
-                }
-              }}
-              onContextMenu={(e) => {
-                if (editMode) {
-                  e.preventDefault();
+            <KeepScale>
+              <MarkerPin
+                marker={marker}
+                editMode={editMode}
+                onClick={(e) => {
                   e.stopPropagation();
-                  setContextMenu({
-                    marker,
-                    position: { x: e.clientX, y: e.clientY },
-                  });
-                }
-              }}
-              onDragStart={(e) => startDrag(marker, e)}
-              onTouchStart={(e) => handleTouchStart(marker, e)}
-              onTouchEnd={handleTouchEnd}
-              onTouchMove={(e) => handleTouchMove(marker, e)}
-            />
+                  if (!editMode) {
+                    if (selectedMarker?.id === marker.id) {
+                      setSelectedMarker(null);
+                      setSelectedAnchorEl(null);
+                    } else {
+                      setSelectedMarker(marker);
+                      setSelectedAnchorEl(e.currentTarget as HTMLElement);
+                    }
+                  }
+                }}
+                onContextMenu={(e) => {
+                  if (editMode) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setContextMenu({
+                      marker,
+                      position: { x: e.clientX, y: e.clientY },
+                    });
+                  }
+                }}
+                onDragStart={(e) => startDrag(marker, e)}
+                onTouchStart={(e) => handleTouchStart(marker, e)}
+                onTouchEnd={handleTouchEnd}
+                onTouchMove={(e) => handleTouchMove(marker, e)}
+              />
+            </KeepScale>
           </div>
         ))}
       </div>
 
-      {/* Hover tooltip */}
-      {hoveredMarker && !contextMenu && (
+      {/* Preview tooltip — MarkerTooltip uses Portal internally */}
+      {selectedMarker && !contextMenu && (
         <MarkerTooltip
-          marker={hoveredMarker}
-          anchorRect={hoverRect}
+          marker={selectedMarker}
+          anchorEl={selectedAnchorEl}
           getSignedUrl={getSignedUrl}
+          onNavigate={onMarkerClick}
+          onClose={() => {
+            setSelectedMarker(null);
+            setSelectedAnchorEl(null);
+          }}
         />
       )}
 
-      {/* Context menu */}
-      {contextMenu && (
-        <MarkerContextMenu
-          marker={contextMenu.marker}
-          position={contextMenu.position}
-          drawings={drawings}
-          currentDrawingId={currentDrawingId}
-          onRename={onMarkerRename}
-          onChangeTarget={onMarkerRetarget}
-          onDelete={onMarkerDelete}
-          onClose={() => setContextMenu(null)}
-        />
-      )}
+      {/* Context menu — also via Portal */}
+      {contextMenu && typeof document !== "undefined" &&
+        createPortal(
+          <MarkerContextMenu
+            marker={contextMenu.marker}
+            position={contextMenu.position}
+            drawings={drawings}
+            currentDrawingId={currentDrawingId}
+            onRename={onMarkerRename}
+            onChangeTarget={onMarkerRetarget}
+            onChangeColor={onMarkerColorChange}
+            onDelete={onMarkerDelete}
+            onClose={() => setContextMenu(null)}
+          />,
+          document.body
+        )
+      }
     </>
   );
 }

@@ -4,6 +4,8 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { getAuthenticatedAdmin } from "@/lib/admin";
 import { createUserSchema } from "@/lib/validations/admin";
 import { getTenantContext } from "@/lib/tenant";
+import { rateLimit, getRateLimitKey } from "@/lib/rate-limit";
+import { parsePagination, paginationMeta } from "@/lib/pagination";
 
 // GET /api/admin/users — list all users (admin only)
 // Query params: ?search=term&status=active
@@ -21,14 +23,15 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search")?.trim() ?? "";
   const statusFilter = searchParams.get("status") ?? "";
+  const { page, limit, from, to } = parsePagination(searchParams);
 
   // Build the query — admins can see all profiles via RLS
   let query = supabase
     .from("profiles")
-    .select("id, display_name, email, status, is_admin, created_at, updated_at")
+    .select("id, display_name, email, status, is_admin, created_at, updated_at", { count: "exact", head: false })
     .neq("status", "deleted")
     .order("created_at", { ascending: false })
-    .limit(200);
+    .range(from, to);
 
   if (statusFilter && ["pending", "active", "disabled"].includes(statusFilter)) {
     query = query.eq("status", statusFilter);
@@ -44,7 +47,7 @@ export async function GET(request: Request) {
     }
   }
 
-  const { data: profiles, error: queryError } = await query;
+  const { data: profiles, error: queryError, count } = await query;
 
   if (queryError) {
     return NextResponse.json(
@@ -80,11 +83,26 @@ export async function GET(request: Request) {
     project_count: projectCounts[p.id] ?? 0,
   }));
 
-  return NextResponse.json({ users });
+  const total = count ?? 0;
+
+  return NextResponse.json({
+    users,
+    pagination: paginationMeta(page, limit, total),
+  });
 }
 
 // POST /api/admin/users — create a new user manually (admin only)
 export async function POST(request: Request) {
+  // Rate limit: 10 requests per minute
+  const key = getRateLimitKey(request);
+  const limiter = rateLimit(`admin-create-user:${key}`, 10, 60_000);
+  if (!limiter.success) {
+    return NextResponse.json(
+      { error: "Zu viele Anfragen. Bitte versuche es später erneut." },
+      { status: 429, headers: { "Retry-After": "60" } }
+    );
+  }
+
   const supabase = await createServerSupabaseClient();
 
   const { isAdmin, error } = await getAuthenticatedAdmin(supabase);

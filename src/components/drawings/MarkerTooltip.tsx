@@ -1,31 +1,57 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
-import { Loader2, FileWarning, Archive } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { Document, Page } from "react-pdf";
+import { Loader2, FileWarning, Archive, ExternalLink } from "lucide-react";
 import type { MarkerWithTarget } from "@/lib/types/marker";
 import { useTranslations } from "next-intl";
 
 interface MarkerTooltipProps {
   marker: MarkerWithTarget;
-  anchorRect: DOMRect | null;
+  anchorEl: HTMLElement | null;
   getSignedUrl: (drawingId: string) => Promise<string>;
+  onNavigate: (marker: MarkerWithTarget) => void;
+  onClose: () => void;
 }
 
 export function MarkerTooltip({
   marker,
-  anchorRect,
+  anchorEl,
   getSignedUrl,
+  onNavigate,
+  onClose,
 }: MarkerTooltipProps) {
   const t = useTranslations("markers");
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const ref = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const rafRef = useRef<number>(0);
 
   const target = marker.target_drawing;
   const isDeleted = !target;
   const isArchived = target?.is_archived;
 
+  // Track anchor element position every frame
+  const updatePosition = useCallback(() => {
+    if (!anchorEl) return;
+    const rect = anchorEl.getBoundingClientRect();
+    setPos({
+      left: rect.left + rect.width / 2,
+      top: rect.top - 8,
+    });
+    rafRef.current = requestAnimationFrame(updatePosition);
+  }, [anchorEl]);
+
+  useEffect(() => {
+    if (anchorEl) {
+      rafRef.current = requestAnimationFrame(updatePosition);
+    }
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [anchorEl, updatePosition]);
+
+  // Load thumbnail
   useEffect(() => {
     if (!target || target.is_archived) {
       setLoading(false);
@@ -39,9 +65,7 @@ export function MarkerTooltip({
       .then((url) => {
         if (!cancelled) setThumbnailUrl(url);
       })
-      .catch(() => {
-        // Failed to load thumbnail — tooltip will show without it
-      })
+      .catch(() => {})
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
@@ -51,20 +75,47 @@ export function MarkerTooltip({
     };
   }, [target, getSignedUrl]);
 
-  if (!anchorRect) return null;
+  // Close when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (tooltipRef.current && !tooltipRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", handleClickOutside);
+    }, 0);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [onClose]);
 
-  // Position tooltip above the marker
-  const style: React.CSSProperties = {
-    position: "fixed",
-    left: anchorRect.left + anchorRect.width / 2,
-    top: anchorRect.top - 8,
-    transform: "translate(-50%, -100%)",
-    zIndex: 50,
-  };
+  if (!pos) return null;
 
-  return (
-    <div ref={ref} style={style} className="pointer-events-none">
-      <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 max-w-[220px]">
+  const canNavigate = target && !target.is_archived;
+
+  const tooltip = (
+    <div
+      ref={tooltipRef}
+      style={{
+        position: "fixed",
+        left: pos.left,
+        top: pos.top,
+        transform: "translate(-50%, -100%)",
+        zIndex: 50,
+      }}
+    >
+      <div
+        className={`bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 max-w-[240px] ${canNavigate ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (canNavigate) {
+            onNavigate(marker);
+            onClose();
+          }
+        }}
+      >
         <p className="text-sm font-medium mb-1 truncate">{marker.name}</p>
 
         {isDeleted ? (
@@ -79,19 +130,20 @@ export function MarkerTooltip({
           </div>
         ) : (
           <>
-            <p className="text-xs text-muted-foreground mb-2 truncate">
-              → {target.display_name}
-            </p>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+              <ExternalLink className="h-3 w-3 shrink-0" />
+              <span className="truncate">{target.display_name}</span>
+            </div>
             {loading ? (
-              <div className="w-full h-24 bg-muted rounded flex items-center justify-center">
+              <div className="w-full h-28 bg-muted rounded flex items-center justify-center">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
             ) : thumbnailUrl ? (
-              <div className="w-full h-24 bg-muted rounded overflow-hidden flex items-center justify-center">
+              <div className="w-full h-28 bg-muted rounded overflow-hidden flex items-center justify-center">
                 <Document file={thumbnailUrl} loading={null} error={null}>
                   <Page
                     pageNumber={1}
-                    width={180}
+                    width={200}
                     renderTextLayer={false}
                     renderAnnotationLayer={false}
                   />
@@ -103,4 +155,7 @@ export function MarkerTooltip({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(tooltip, document.body);
 }

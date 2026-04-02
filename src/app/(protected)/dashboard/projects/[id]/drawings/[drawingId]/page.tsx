@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { useDrawings } from "@/hooks/use-drawings";
 import { useMarkers } from "@/hooks/use-markers";
 import { useVersions } from "@/hooks/use-versions";
+import { useDrawingStatuses } from "@/hooks/use-drawing-statuses";
 import { MarkerOverlay } from "@/components/drawings/MarkerOverlay";
 import { MarkerCreationDialog } from "@/components/drawings/MarkerCreationDialog";
 import {
@@ -39,6 +40,7 @@ import {
   type NavHistoryEntry,
 } from "@/components/drawings/NavigationBreadcrumb";
 import { VersionSidePanel } from "@/components/drawings/VersionSidePanel";
+import { Logo } from "@/components/Logo";
 import { FloatingToolbar } from "@/components/drawings/FloatingToolbar";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { UploadInfo } from "@/components/drawings/UploadInfo";
@@ -67,7 +69,10 @@ export default function DrawingViewerPage({ params }: PageProps) {
     drawings,
     loading: drawingsLoading,
     getSignedUrl,
+    refetch: refetchDrawings,
   } = useDrawings(projectId);
+
+  const { statuses, loading: statusesLoading } = useDrawingStatuses();
 
   // Current drawing can change when navigating via markers
   const [activeDrawingId, setActiveDrawingId] = useState(initialDrawingId);
@@ -80,6 +85,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
     renameVersion,
     archiveVersion,
     getVersionSignedUrl,
+    updateVersionStatus,
     refetch: refetchVersions,
   } = useVersions(projectId, activeDrawingId);
 
@@ -107,6 +113,25 @@ export default function DrawingViewerPage({ params }: PageProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [pdfLoading, setPdfLoading] = useState(true);
   const [pdfError, setPdfError] = useState(false);
+
+  // Read-only check (viewer/guest)
+  const [isReadOnly, setIsReadOnly] = useState(false);
+  useEffect(() => {
+    async function checkRole() {
+      const supabase = (await import("@/lib/supabase")).createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("tenant_role")
+        .eq("id", user.id)
+        .single();
+      if (profile?.tenant_role === "viewer" || profile?.tenant_role === "guest") {
+        setIsReadOnly(true);
+      }
+    }
+    checkRole();
+  }, []);
 
   // Version panel state
   const [versionPanelOpen, setVersionPanelOpen] = useState(false);
@@ -321,6 +346,35 @@ export default function DrawingViewerPage({ params }: PageProps) {
     setNavHistory([]);
   }
 
+  async function handleStatusChange(versionId: string, statusId: string | null) {
+    // Optimistic update
+    updateVersionStatus(versionId, statusId, statuses);
+
+    try {
+      const res = await fetch(
+        `/api/projects/${projectId}/drawings/${activeDrawingId}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status_id: statusId, version_id: versionId }),
+        }
+      );
+
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error ?? t("toasts.renameFailed"));
+      }
+
+      toast.success(t("statusChanged"));
+    } catch (err) {
+      // Revert on error
+      await refetchVersions();
+      toast.error(
+        err instanceof Error ? err.message : t("toasts.renameFailed")
+      );
+    }
+  }
+
   async function handleMarkerRename(markerId: string, name: string) {
     await updateMarker(markerId, { name });
     toast.success(tm("renamed"));
@@ -355,6 +409,18 @@ export default function DrawingViewerPage({ params }: PageProps) {
   const versionLabel = activeVersion
     ? `v${activeVersion.version_number}`
     : null;
+
+  // Previous/next drawing navigation
+  const activeDrawings = drawings.filter((d) => !d.is_archived);
+  const currentIndex = activeDrawings.findIndex((d) => d.id === activeDrawingId);
+  const prevDrawing = currentIndex > 0 ? activeDrawings[currentIndex - 1] : null;
+  const nextDrawing = currentIndex < activeDrawings.length - 1 ? activeDrawings[currentIndex + 1] : null;
+
+  function navigateToDrawing(drawingId: string) {
+    setActiveDrawingId(drawingId);
+    setSelectedVersionId(null);
+    setNavHistory([]);
+  }
 
   // Loading state
   if (drawingsLoading || versionsLoading || (urlLoading && !pdfUrl)) {
@@ -408,7 +474,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
               router.push(`/dashboard/projects/${projectId}`)
             }
           >
-            Zurueck zum Projekt
+            Zurück zum Projekt
           </Button>
         </div>
       </div>
@@ -445,7 +511,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
               router.push(`/dashboard/projects/${projectId}`)
             }
           >
-            Zurueck zum Projekt
+            Zurück zum Projekt
           </Button>
         </div>
       </div>
@@ -470,16 +536,28 @@ export default function DrawingViewerPage({ params }: PageProps) {
             className="shrink-0 h-9 w-9 p-0 sm:h-auto sm:w-auto sm:px-3 sm:py-1.5"
           >
             <ArrowLeft className="h-4 w-4 sm:mr-1.5" />
-            <span className="hidden sm:inline">Zurueck</span>
+            <span className="hidden sm:inline">Zurück</span>
           </Button>
+
+          <Logo size="sm" className="hidden sm:inline-flex" />
 
           <Separator
             orientation="vertical"
             className="h-5 hidden sm:block"
           />
 
-          {/* Drawing name + version indicator + upload info */}
-          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          {/* Drawing navigation + name + version indicator + upload info */}
+          <div className="flex items-center gap-1 min-w-0 flex-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={!prevDrawing}
+              onClick={() => prevDrawing && navigateToDrawing(prevDrawing.id)}
+              className="shrink-0 h-7 w-7 p-0"
+              aria-label="Vorherige Zeichnung"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-sm font-medium truncate">
@@ -493,11 +571,34 @@ export default function DrawingViewerPage({ params }: PageProps) {
                     {versionLabel}
                   </Badge>
                 )}
+                {activeVersion?.status && (
+                  <span
+                    className="inline-flex items-center gap-1 text-[10px] font-medium leading-none rounded-full border px-1.5 py-0.5 shrink-0"
+                    style={{ borderColor: activeVersion.status.color }}
+                  >
+                    <span
+                      className="inline-block h-1.5 w-1.5 rounded-full shrink-0"
+                      style={{ backgroundColor: activeVersion.status.color }}
+                      aria-hidden="true"
+                    />
+                    {activeVersion.status.name}
+                  </span>
+                )}
               </div>
               <div className="hidden sm:block">
                 <UploadInfo projectId={projectId} drawingId={activeDrawingId} />
               </div>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={!nextDrawing}
+              onClick={() => nextDrawing && navigateToDrawing(nextDrawing.id)}
+              className="shrink-0 h-7 w-7 p-0"
+              aria-label="Nächste Zeichnung"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
 
           {/* Desktop-only: controls inline */}
@@ -507,7 +608,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
               size="sm"
               onClick={() => setVersionPanelOpen(true)}
               className="gap-1.5"
-              aria-label="Versionspanel oeffnen"
+              aria-label="Versionspanel öffnen"
             >
               <History className="h-3.5 w-3.5" />
               <span>Versionen</span>
@@ -518,26 +619,30 @@ export default function DrawingViewerPage({ params }: PageProps) {
               )}
             </Button>
 
-            <Separator orientation="vertical" className="h-5" />
+            {!isReadOnly && (
+              <>
+                <Separator orientation="vertical" className="h-5" />
 
-            <Button
-              variant={editMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setEditMode(!editMode)}
-              className="gap-1.5"
-            >
-              {editMode ? (
-                <>
-                  <Pencil className="h-3.5 w-3.5" />
-                  Bearbeiten
-                </>
-              ) : (
-                <>
-                  <Eye className="h-3.5 w-3.5" />
-                  Ansicht
-                </>
-              )}
-            </Button>
+                <Button
+                  variant={editMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setEditMode(!editMode)}
+                  className="gap-1.5"
+                >
+                  {editMode ? (
+                    <>
+                      <Pencil className="h-3.5 w-3.5" />
+                      Bearbeiten
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-3.5 w-3.5" />
+                      Ansicht
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
 
             <Separator orientation="vertical" className="h-5" />
 
@@ -592,7 +697,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
             size="sm"
             onClick={() => setVersionPanelOpen(true)}
             className="gap-1 shrink-0 h-8"
-            aria-label="Versionspanel oeffnen"
+            aria-label="Versionspanel öffnen"
           >
             <History className="h-3.5 w-3.5" />
             {versions.filter((v) => !v.is_archived).length > 1 && (
@@ -602,18 +707,20 @@ export default function DrawingViewerPage({ params }: PageProps) {
             )}
           </Button>
 
-          <Button
-            variant={editMode ? "default" : "outline"}
-            size="sm"
-            onClick={() => setEditMode(!editMode)}
-            className="gap-1 shrink-0 h-8"
-          >
-            {editMode ? (
-              <Pencil className="h-3.5 w-3.5" />
-            ) : (
-              <Eye className="h-3.5 w-3.5" />
-            )}
-          </Button>
+          {!isReadOnly && (
+            <Button
+              variant={editMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setEditMode(!editMode)}
+              className="gap-1 shrink-0 h-8"
+            >
+              {editMode ? (
+                <Pencil className="h-3.5 w-3.5" />
+              ) : (
+                <Eye className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          )}
 
           {fullscreenSupported && (
             <Button
@@ -690,8 +797,8 @@ export default function DrawingViewerPage({ params }: PageProps) {
               PDF kann nicht angezeigt werden
             </h2>
             <p className="text-sm text-muted-foreground">
-              Die Datei ist moeglicherweise beschaedigt oder in einem
-              nicht unterstuetzten Format.
+              Die Datei ist möglicherweise beschädigt oder in einem
+              nicht unterstützten Format.
             </p>
           </div>
         ) : (
@@ -748,7 +855,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => resetTransform()}
-                    aria-label="Zoom zuruecksetzen"
+                    aria-label="Zoom zurücksetzen"
                     className="h-11 w-11 sm:h-8 sm:w-8 p-0"
                   >
                     <RotateCcw className="h-5 w-5 sm:h-4 sm:w-4" />
@@ -790,6 +897,8 @@ export default function DrawingViewerPage({ params }: PageProps) {
                         renderAnnotationLayer={false}
                         className="shadow-lg"
                         width={fittedWidth}
+                        devicePixelRatio={4}
+                        canvasBackground="white"
                       />
                     </Document>
 
@@ -842,6 +951,8 @@ export default function DrawingViewerPage({ params }: PageProps) {
         onUploadVersion={handleUploadVersion}
         onRenameVersion={handleRenameVersion}
         onArchiveVersion={handleArchiveVersion}
+        statuses={statuses}
+        onStatusChange={handleStatusChange}
       />
     </div>
   );

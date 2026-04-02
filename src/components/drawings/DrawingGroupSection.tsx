@@ -18,7 +18,7 @@ import {
 import { DrawingGrid } from "@/components/drawings/DrawingGrid";
 import { RenameGroupDialog } from "@/components/drawings/RenameGroupDialog";
 import { ArchiveGroupDialog } from "@/components/drawings/ArchiveGroupDialog";
-import type { Drawing, DrawingGroup } from "@/lib/types/drawing";
+import type { Drawing, DrawingGroup, DrawingStatus } from "@/lib/types/drawing";
 
 interface DrawingGroupSectionProps {
   group: DrawingGroup | null; // null = "Ohne Gruppe"
@@ -34,6 +34,8 @@ interface DrawingGroupSectionProps {
   existingGroupNames: string[];
   defaultOpen?: boolean;
   versionCounts?: Map<string, number>;
+  statuses?: DrawingStatus[];
+  onStatusChange?: (drawingId: string, versionId: string, statusId: string | null) => Promise<void>;
 }
 
 export function DrawingGroupSection({
@@ -50,6 +52,8 @@ export function DrawingGroupSection({
   existingGroupNames,
   defaultOpen = true,
   versionCounts,
+  statuses,
+  onStatusChange,
 }: DrawingGroupSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [renameOpen, setRenameOpen] = useState(false);
@@ -88,7 +92,7 @@ export function DrawingGroupSection({
                   variant="ghost"
                   size="sm"
                   className="h-8 w-8 p-0 shrink-0"
-                  aria-label={`Aktionen fuer Gruppe ${title}`}
+                  aria-label={`Aktionen für Gruppe ${title}`}
                 >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
@@ -121,6 +125,8 @@ export function DrawingGroupSection({
               groups={allGroups}
               onAssignGroup={onAssignGroup}
               versionCounts={versionCounts}
+              statuses={statuses}
+              onStatusChange={onStatusChange}
             />
           </div>
         </CollapsibleContent>

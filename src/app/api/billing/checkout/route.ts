@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
     const host =
       process.env.NODE_ENV === "production"
-        ? `${tenantSlug}.link2plan.app`
+        ? `${tenantSlug}.link2plan.de`
         : `${tenantSlug}.localhost:3000`;
     const baseUrl = `${protocol}://${host}`;
 

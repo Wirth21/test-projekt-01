@@ -6,6 +6,7 @@ import { checkFileSize, checkStorageLimit } from "@/lib/check-limits";
 import { formatBytes } from "@/lib/plan-limits";
 import type { PlanType } from "@/lib/types/tenant";
 import { logActivity } from "@/lib/activity-log";
+import { isReadOnlyUser } from "@/lib/admin";
 
 interface RouteParams {
   params: Promise<{ id: string; drawingId: string }>;
@@ -60,7 +61,7 @@ export async function GET(request: Request, { params }: RouteParams) {
   // Fetch versions
   let query = supabase
     .from("drawing_versions")
-    .select("*")
+    .select("*, status:drawing_statuses(id, name, color)")
     .eq("drawing_id", drawingId)
     .order("version_number", { ascending: false });
 
@@ -89,6 +90,11 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   if (authError || !user) {
     return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
+  }
+
+  // Check read-only user
+  if (await isReadOnlyUser(supabase)) {
+    return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
   }
 
   // Verify user is a project member
@@ -188,10 +194,10 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   const nextVersionNumber = (latestVersion?.version_number ?? 0) + 1;
 
-  // Find the current active version (latest non-archived) for marker copying
+  // Find the current active version (latest non-archived) for marker copying + status inheritance
   const { data: currentActiveVersion } = await supabase
     .from("drawing_versions")
-    .select("id")
+    .select("id, status_id")
     .eq("drawing_id", drawingId)
     .eq("is_archived", false)
     .order("version_number", { ascending: false })
@@ -214,6 +220,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       page_count: page_count ?? null,
       is_archived: false,
       created_by: user.id,
+      status_id: currentActiveVersion?.status_id ?? null,
     })
     .select()
     .single();

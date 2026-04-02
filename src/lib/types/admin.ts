@@ -1,4 +1,5 @@
 export type UserStatus = "pending" | "active" | "disabled" | "deleted";
+export type TenantRole = "user" | "viewer" | "guest";
 
 export interface AdminProfile {
   id: string;
@@ -6,6 +7,7 @@ export interface AdminProfile {
   email: string;
   status: UserStatus;
   is_admin: boolean;
+  tenant_role: TenantRole;
   tenant_id: string;
   created_at: string;
   updated_at: string;

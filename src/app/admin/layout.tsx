@@ -3,10 +3,12 @@
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/Logo";
 
 const tabs = [
-  { label: "Freigaben", href: "/admin" },
   { label: "Nutzerverwaltung", href: "/admin/users" },
+  { label: "Freigaben", href: "/admin" },
+  { label: "Status", href: "/admin/statuses" },
 ] as const;
 
 export default function AdminLayout({
@@ -26,11 +28,14 @@ export default function AdminLayout({
               variant="ghost"
               size="icon"
               onClick={() => router.push("/dashboard")}
-              aria-label="Zurueck zum Dashboard"
+              aria-label="Zurück zum Dashboard"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-semibold text-primary">Admin-Bereich</h1>
+            <div className="flex items-center gap-2">
+              <Logo size="sm" />
+              <span className="text-sm text-muted-foreground font-normal">Admin</span>
+            </div>
           </div>
         </div>
         <nav className="max-w-6xl mx-auto px-4" aria-label="Admin-Navigation">

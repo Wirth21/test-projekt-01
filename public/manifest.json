@@ -1,22 +1,31 @@
 {
-  "name": "Link2Plan",
-  "short_name": "Link2Plan",
+  "name": "Link2plan",
+  "short_name": "Link2plan",
   "description": "Technische PDF-Pläne verwalten und verknüpfen",
   "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0a0a0a",
+  "theme_color": "#3b82f6",
   "orientation": "any",
   "icons": [
     {
-      "src": "/api/icon/192",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/api/icon/512",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

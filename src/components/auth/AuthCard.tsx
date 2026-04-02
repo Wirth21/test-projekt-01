@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Logo } from "@/components/Logo";
 
 interface AuthCardProps {
   title: string;
@@ -22,7 +23,7 @@ export function AuthCard({ title, description, children }: AuthCardProps) {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-primary">{t("appName")}</h1>
+          <Logo size="lg" className="justify-center" />
           <p className="text-sm text-muted-foreground mt-1">
             {t("tagline")}
           </p>

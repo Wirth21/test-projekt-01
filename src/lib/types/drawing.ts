@@ -25,6 +25,20 @@ export interface DrawingVersion {
   created_by: string;
   created_at: string;
   updated_at: string;
+  status_id: string | null;
+  /** Joined status data (populated by API) */
+  status?: DrawingStatus | null;
+}
+
+export interface DrawingStatus {
+  id: string;
+  tenant_id: string;
+  name: string;
+  color: string;
+  sort_order: number;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DrawingGroup {

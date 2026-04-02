@@ -43,6 +43,7 @@ export function MarkerCreationDialog({
   const t = useTranslations("markers");
   const tc = useTranslations("common");
   const [name, setName] = useState("");
+  const [nameManuallyEdited, setNameManuallyEdited] = useState(false);
   const [targetId, setTargetId] = useState("");
   const [color, setColor] = useState<MarkerColor>("blue");
   const [submitting, setSubmitting] = useState(false);
@@ -51,6 +52,22 @@ export function MarkerCreationDialog({
   const availableDrawings = drawings.filter(
     (d) => d.id !== currentDrawingId && !d.is_archived
   );
+
+  function handleTargetChange(id: string) {
+    setTargetId(id);
+    // Auto-fill name from drawing name if not manually edited
+    if (!nameManuallyEdited) {
+      const drawing = availableDrawings.find((d) => d.id === id);
+      if (drawing) {
+        setName(drawing.display_name.slice(0, 50));
+      }
+    }
+  }
+
+  function handleNameChange(value: string) {
+    setName(value);
+    setNameManuallyEdited(true);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -62,6 +79,7 @@ export function MarkerCreationDialog({
     try {
       await onSubmit(name.trim(), targetId, color);
       setName("");
+      setNameManuallyEdited(false);
       setTargetId("");
       setColor("blue");
       onOpenChange(false);
@@ -75,6 +93,7 @@ export function MarkerCreationDialog({
   function handleOpenChange(open: boolean) {
     if (!open) {
       setName("");
+      setNameManuallyEdited(false);
       setTargetId("");
       setColor("blue");
       setError(null);
@@ -94,24 +113,10 @@ export function MarkerCreationDialog({
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="marker-name">{t("create.nameLabel")}</Label>
-              <Input
-                id="marker-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t("create.namePlaceholder")}
-                maxLength={50}
-                autoFocus
-              />
-              <p className="text-xs text-muted-foreground">
-                {t("create.charCount", { count: name.length })}
-              </p>
-            </div>
-
+            {/* Target drawing — first */}
             <div className="space-y-2">
               <Label>{t("create.targetLabel")}</Label>
-              <Select value={targetId} onValueChange={setTargetId}>
+              <Select value={targetId} onValueChange={handleTargetChange}>
                 <SelectTrigger>
                   <SelectValue placeholder={t("create.targetPlaceholder")} />
                 </SelectTrigger>
@@ -129,6 +134,21 @@ export function MarkerCreationDialog({
                   )}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Marker name — auto-filled from target, editable */}
+            <div className="space-y-2">
+              <Label htmlFor="marker-name">{t("create.nameLabel")}</Label>
+              <Input
+                id="marker-name"
+                value={name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                placeholder={t("create.namePlaceholder")}
+                maxLength={50}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t("create.charCount", { count: name.length })}
+              </p>
             </div>
 
             {/* Color picker */}

@@ -40,3 +40,20 @@ export const createUserSchema = z.object({
   display_name: z.string().min(1, "Name ist erforderlich").max(100).trim(),
 });
 export type CreateUserInput = z.infer<typeof createUserSchema>;
+
+// Schema for creating a drawing status
+export const createDrawingStatusSchema = z.object({
+  name: z.string().min(1, "Name ist erforderlich").max(50, "Name darf maximal 50 Zeichen lang sein").trim(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Ungueltige Farbe (Hex-Format erwartet)"),
+  is_default: z.boolean().optional().default(false),
+});
+export type CreateDrawingStatusInput = z.infer<typeof createDrawingStatusSchema>;
+
+// Schema for updating a drawing status
+export const updateDrawingStatusSchema = z.object({
+  name: z.string().min(1, "Name ist erforderlich").max(50, "Name darf maximal 50 Zeichen lang sein").trim().optional(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Ungueltige Farbe (Hex-Format erwartet)").optional(),
+  sort_order: z.number().int().min(0).optional(),
+  is_default: z.boolean().optional(),
+});
+export type UpdateDrawingStatusInput = z.infer<typeof updateDrawingStatusSchema>;

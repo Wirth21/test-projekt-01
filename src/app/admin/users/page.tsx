@@ -146,6 +146,7 @@ export default function AdminUsersPage() {
                 <TableHead>{t("users.name")}</TableHead>
                 <TableHead className="hidden sm:table-cell">{t("users.email")}</TableHead>
                 <TableHead>{t("users.tableStatus")}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t("users.tableRole")}</TableHead>
                 <TableHead className="hidden md:table-cell">{t("users.tableRegistered")}</TableHead>
                 <TableHead className="hidden md:table-cell text-right">{t("users.tableProjects")}</TableHead>
               </TableRow>
@@ -253,6 +254,9 @@ export default function AdminUsersPage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={info.variant}>{info.label}</Badge>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell text-sm text-muted-foreground capitalize">
+                      {user.tenant_role ?? "user"}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                       {formatDate(user.created_at)}

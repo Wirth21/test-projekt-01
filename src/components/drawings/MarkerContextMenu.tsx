@@ -62,9 +62,13 @@ export function MarkerContextMenu({
     function handleEscape(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
-    document.addEventListener("mousedown", handleClickOutside);
+    // Delay listener registration to avoid the same right-click closing the menu immediately
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", handleClickOutside);
+    }, 0);
     document.addEventListener("keydown", handleEscape);
     return () => {
+      clearTimeout(timer);
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
     };

@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   // Build the query — admins can see all profiles via RLS
   let query = supabase
     .from("profiles")
-    .select("id, display_name, email, status, is_admin, created_at, updated_at", { count: "exact", head: false })
+    .select("id, display_name, email, status, is_admin, tenant_role, created_at, updated_at", { count: "exact", head: false })
     .neq("status", "deleted")
     .order("created_at", { ascending: false })
     .range(from, to);
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 
   if (search) {
     // Sanitize: strip PostgREST filter-syntax special characters before interpolation
-    const sanitizedSearch = search.replace(/[.,()%_]/g, "");
+    const sanitizedSearch = search.replace(/[.,()%_\\*?[\]{}|^$+]/g, "");
     if (sanitizedSearch) {
       query = query.or(
         `display_name.ilike.%${sanitizedSearch}%,email.ilike.%${sanitizedSearch}%`

@@ -151,7 +151,7 @@ export default function CreateTenantPage() {
                   className="font-mono"
                 />
                 <span className="text-sm text-muted-foreground whitespace-nowrap">
-                  .link2plan.app
+                  .link2plan.de
                 </span>
               </div>
             </div>

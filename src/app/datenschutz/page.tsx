@@ -37,14 +37,13 @@ export default function DatenschutzPage() {
               2. Verantwortliche Stelle
             </h2>
             <p>
-              {/* TODO: Echte Firmendaten eintragen */}
-              [Firmenname]
+              Wirth Tec GmbH
               <br />
-              [Straße und Hausnummer]
+              Christian-Wehner-Straße 10
               <br />
-              [PLZ Ort]
+              09113 Chemnitz
               <br />
-              E-Mail: [kontakt@link2plan.app]
+              E-Mail: info@link2plan.de
             </p>
             <p>
               Verantwortliche Stelle ist die natürliche oder juristische Person,
@@ -174,10 +173,10 @@ export default function DatenschutzPage() {
               Admin-Bereich Ihre Daten exportieren oder Ihr Konto löschen.
               Alternativ erreichen Sie uns unter:{" "}
               <a
-                href="mailto:kontakt@link2plan.app"
+                href="mailto:info@link2plan.de"
                 className="text-primary hover:underline"
               >
-                kontakt@link2plan.app
+                info@link2plan.de
               </a>
             </p>
             <p>

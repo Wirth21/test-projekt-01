@@ -23,10 +23,12 @@ import { toast } from "sonner";
 import { useProjects, useProjectMembers } from "@/hooks/use-projects";
 import { useDrawings } from "@/hooks/use-drawings";
 import { useDrawingGroups } from "@/hooks/use-drawing-groups";
+import { useDrawingStatuses } from "@/hooks/use-drawing-statuses";
 import { InviteMemberDialog } from "@/components/projects/InviteMemberDialog";
 import { ActivityLog } from "@/components/projects/ActivityLog";
 import { PdfUploadZone } from "@/components/drawings/PdfUploadZone";
 import { GroupedDrawingList } from "@/components/drawings/GroupedDrawingList";
+import { Logo } from "@/components/Logo";
 import { CreateGroupDialog } from "@/components/drawings/CreateGroupDialog";
 import type { ProjectWithRole } from "@/lib/types/project";
 import { useTranslations } from "next-intl";
@@ -43,7 +45,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
   const tc = useTranslations("common");
   const tn = useTranslations("nav");
   const { projects, loading: projectsLoading, leaveProject } = useProjects();
-  const { members, loading: membersLoading, inviteMember, removeMember } = useProjectMembers(id);
+  const { members, loading: membersLoading, inviteMember, removeMember, changeRole, refetch: refetchMembers } = useProjectMembers(id);
 
   const {
     drawings,
@@ -53,6 +55,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
     archiveDrawing,
     restoreDrawing,
     getSignedUrl,
+    updateDrawingVersionStatus,
     refetch: refetchDrawings,
   } = useDrawings(id);
 
@@ -64,6 +67,8 @@ export default function ProjectDetailPage({ params }: PageProps) {
     archiveGroup,
     assignDrawingToGroup,
   } = useDrawingGroups(id);
+
+  const { statuses, defaultStatus } = useDrawingStatuses();
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
@@ -108,7 +113,9 @@ export default function ProjectDetailPage({ params }: PageProps) {
     setUploading(true);
     setUploadProgress(0);
     try {
-      await uploadDrawing(file, (pct) => setUploadProgress(pct));
+      await uploadDrawing(file, (pct) => setUploadProgress(pct), {
+        status_id: defaultStatus?.id ?? null,
+      });
       toast.success(t("toasts.uploaded"));
     } catch (err) {
       toast.error(
@@ -155,6 +162,33 @@ export default function ProjectDetailPage({ params }: PageProps) {
       );
     } finally {
       setRestoringDrawing(null);
+    }
+  }
+
+  async function handleStatusChange(drawingId: string, versionId: string, statusId: string | null) {
+    // Optimistic update
+    updateDrawingVersionStatus(drawingId, versionId, statusId, statuses);
+
+    try {
+      const res = await fetch(
+        `/api/projects/${id}/drawings/${drawingId}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status_id: statusId, version_id: versionId }),
+        }
+      );
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || "Status konnte nicht geändert werden");
+      }
+      toast.success("Status aktualisiert");
+    } catch (err) {
+      // Revert on error
+      await refetchDrawings();
+      toast.error(
+        err instanceof Error ? err.message : "Status konnte nicht geändert werden"
+      );
     }
   }
 
@@ -221,6 +255,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
 
   const project = projects.find((p) => p.id === id) as ProjectWithRole | undefined;
   const isOwner = project?.role === "owner";
+  const isViewer = project?.role === "viewer";
 
   async function handleInvite(email: string) {
     await inviteMember(email);
@@ -273,11 +308,11 @@ export default function ProjectDetailPage({ params }: PageProps) {
     return (
       <div className="min-h-screen bg-background">
         <header className="border-b sticky top-0 bg-background z-10">
-          <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="px-4 sm:px-6 lg:px-8 py-4">
             <Skeleton className="h-5 w-32" />
           </div>
         </header>
-        <main className="max-w-4xl mx-auto px-4 py-8 space-y-4">
+        <main className="px-4 sm:px-6 lg:px-8 py-8 space-y-4">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-4 w-96" />
           <Skeleton className="h-48 w-full" />
@@ -304,19 +339,20 @@ export default function ProjectDetailPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b sticky top-0 bg-background z-10">
-        <div className="max-w-4xl mx-auto px-4 py-3 sm:py-4 flex items-center gap-2 sm:gap-3">
+        <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center gap-2 sm:gap-3">
           <Link href="/dashboard">
             <Button variant="ghost" size="sm" className="-ml-2 h-9 w-9 p-0 sm:h-auto sm:w-auto sm:px-3 sm:py-1.5">
               <ArrowLeft className="h-4 w-4 sm:mr-1.5" />
               <span className="hidden sm:inline">{t("overview")}</span>
             </Button>
           </Link>
+          <Logo size="sm" className="hidden sm:inline-flex" />
           <Separator orientation="vertical" className="h-5 hidden sm:block" />
           <span className="text-sm font-medium truncate">{project.name}</span>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6 sm:space-y-8">
+      <main className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
         {/* Project info */}
         <section>
           <div className="flex items-start justify-between gap-4">
@@ -327,7 +363,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
               )}
               <div className="flex items-center gap-2 mt-3">
                 <Badge variant="secondary">
-                  {isOwner ? tp("owner") : tp("member")}
+                  {isViewer ? tp("viewer") : isOwner ? tp("owner") : tp("member")}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
                   {t("lastModified")}{" "}
@@ -346,24 +382,26 @@ export default function ProjectDetailPage({ params }: PageProps) {
         <section>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <h3 className="text-base font-semibold">{t("title")}</h3>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCreateGroupOpen(true)}
-                className="shrink-0"
-              >
-                <Plus className="mr-1.5 h-4 w-4" />
-                <span className="hidden min-[480px]:inline">{t("addGroup")}</span>
-                <span className="min-[480px]:hidden">Gruppe</span>
-              </Button>
-              <PdfUploadZone
-                onUpload={handleUpload}
-                uploading={uploading}
-                progress={uploadProgress}
-                compact
-              />
-            </div>
+            {!isViewer && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCreateGroupOpen(true)}
+                  className="shrink-0"
+                >
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  <span className="hidden min-[480px]:inline">{t("addGroup")}</span>
+                  <span className="min-[480px]:hidden">Gruppe</span>
+                </Button>
+                <PdfUploadZone
+                  onUpload={handleUpload}
+                  uploading={uploading}
+                  progress={uploadProgress}
+                  compact
+                />
+              </div>
+            )}
           </div>
           <Tabs value={drawingTab} onValueChange={setDrawingTab}>
             <TabsList className="mb-3">
@@ -408,6 +446,8 @@ export default function ProjectDetailPage({ params }: PageProps) {
                     onArchiveGroup={handleArchiveGroup}
                     onAssignGroup={handleAssignGroup}
                     versionCounts={versionCounts}
+                    statuses={statuses}
+                    onStatusChange={handleStatusChange}
                   />
                 )}
               </div>
@@ -472,91 +512,86 @@ export default function ProjectDetailPage({ params }: PageProps) {
               <Users className="h-4 w-4" />
               {t("members")}
             </h3>
-            <div className="flex items-center gap-2">
-              {isOwner && (
-                <Button size="sm" variant="outline" onClick={() => setInviteOpen(true)}>
-                  <UserPlus className="mr-1.5 h-4 w-4" />
-                  {t("invite")}
-                </Button>
-              )}
-              {!isOwner && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => setLeaveOpen(true)}
-                >
-                  <LogOut className="mr-1.5 h-4 w-4" />
-                  {tp("leave")}
-                </Button>
-              )}
-            </div>
+            {!isViewer && (
+              <div className="flex items-center gap-2">
+                {isOwner && (
+                  <Button size="sm" variant="outline" onClick={() => setInviteOpen(true)}>
+                    <UserPlus className="mr-1.5 h-4 w-4" />
+                    {t("invite")}
+                  </Button>
+                )}
+                {!isOwner && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setLeaveOpen(true)}
+                  >
+                    <LogOut className="mr-1.5 h-4 w-4" />
+                    {tp("leave")}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           {membersLoading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 py-2">
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                  <div className="space-y-1 flex-1">
-                    <Skeleton className="h-4 w-40" />
-                    <Skeleton className="h-3 w-28" />
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-7 w-24 rounded-full" />
+              <Skeleton className="h-7 w-28 rounded-full" />
             </div>
+          ) : members.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Keine Mitglieder</p>
           ) : (
-            <div className="divide-y rounded-lg border">
+            <div className="flex flex-wrap items-center gap-2">
               {members.map((member) => {
                 const displayName = member.profile?.display_name || member.profile?.email || t("unknown");
-                const email = member.profile?.email || "";
                 const isThisOwner = member.role === "owner";
-                const joinedDate = member.joined_at
-                  ? new Date(member.joined_at).toLocaleDateString("de-DE", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })
-                  : null;
 
                 return (
-                  <div key={member.id} className="flex items-center gap-3 px-4 py-3">
-                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                      {isThisOwner
-                        ? <Crown className="h-4 w-4 text-amber-500" />
-                        : <User className="h-4 w-4 text-muted-foreground" />
-                      }
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{displayName}</p>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {email && displayName !== email && (
-                          <p className="text-xs text-muted-foreground truncate">{email}</p>
-                        )}
-                        {joinedDate && (
-                          <p className="text-xs text-muted-foreground">
-                            {tp("joinedAt", { date: joinedDate })}
-                          </p>
-                        )}
+                  <div
+                    key={member.id}
+                    className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 pl-1.5 pr-2.5 py-1 text-xs"
+                  >
+                    {isOwner ? (
+                      <button
+                        className="h-5 w-5 rounded-full bg-background flex items-center justify-center shrink-0 hover:bg-accent transition-colors"
+                        title={isThisOwner ? "Zum Mitglied machen" : "Zum Eigentümer machen"}
+                        onClick={async () => {
+                          const newRole = isThisOwner ? "member" : "owner";
+                          try {
+                            await changeRole(member.id, newRole);
+                          } catch (err) {
+                            toast.error(err instanceof Error ? err.message : "Fehler");
+                          }
+                        }}
+                      >
+                        {isThisOwner
+                          ? <Crown className="h-3 w-3 text-amber-500" />
+                          : <User className="h-3 w-3 text-muted-foreground" />
+                        }
+                      </button>
+                    ) : (
+                      <div className="h-5 w-5 rounded-full bg-background flex items-center justify-center shrink-0">
+                        {isThisOwner
+                          ? <Crown className="h-3 w-3 text-amber-500" />
+                          : <User className="h-3 w-3 text-muted-foreground" />
+                        }
                       </div>
-                    </div>
-                    <Badge variant={isThisOwner ? "default" : "secondary"} className="text-xs shrink-0">
-                      {isThisOwner ? tp("owner") : tp("member")}
-                    </Badge>
+                    )}
+                    <span className="font-medium truncate max-w-[120px]">{displayName}</span>
                     {isOwner && !isThisOwner && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive h-8 w-8 p-0 shrink-0"
+                      <button
+                        className="ml-0.5 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
                         disabled={removingId === member.id}
                         onClick={() => setRemoveMemberTarget({ id: member.id, name: displayName })}
                         aria-label={t("remove")}
                       >
                         {removingId === member.id
-                          ? <Loader2 className="h-4 w-4 animate-spin" />
-                          : <X className="h-4 w-4" />
+                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          : <X className="h-3 w-3" />
                         }
-                      </Button>
+                      </button>
                     )}
                   </div>
                 );

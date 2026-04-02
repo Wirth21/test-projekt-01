@@ -12,18 +12,23 @@ Ein webbasiertes Team-Tool zur Verwaltung technischer PDF-Pläne (z.B. Baupläne
 
 | Priority | Feature | Status |
 |----------|---------|--------|
-| P0 (MVP) | User Authentication & Team-Konten | Planned |
-| P0 (MVP) | Projektverwaltung | Planned |
-| P0 (MVP) | PDF Upload & Viewer | Planned |
-| P0 (MVP) | Marker-System mit Navigation | Planned |
-| P1 | Admin-Bereich (Nutzerfreigaben & Projektzugriffe) | Planned |
-| P1 | Archivierungssystem (Projekte & Zeichnungen, kein Löschen) | Planned |
-| P1 | PDF-Versionierung | In Review |
-| P1 | Zeichnungsgruppen | In Review |
-| P1 | Änderungsprotokoll (Audit Log) | Planned |
-| P1 | PDF Vollbildansicht | Planned |
-| P1 | Projektmitgliedschaft & Selbstverwaltung | Planned |
-| P1 | Mobile Optimierung (Responsive) | Planned |
+| P0 (MVP) | User Authentication & Team-Konten | Done |
+| P0 (MVP) | Projektverwaltung | Done |
+| P0 (MVP) | PDF Upload & Viewer | Done |
+| P0 (MVP) | Marker-System mit Navigation | Done |
+| P1 | Admin-Bereich (Nutzer, Rollen, Status) | Done |
+| P1 | Archivierungssystem (Projekte & Zeichnungen) | Done |
+| P1 | PDF-Versionierung | Done |
+| P1 | Zeichnungsgruppen | Done |
+| P1 | Änderungsprotokoll (Audit Log) | Done |
+| P1 | PDF Vollbildansicht | Done |
+| P1 | Projektmitgliedschaft & Selbstverwaltung | Done |
+| P1 | Mobile Optimierung (Responsive) | Done |
+| P2 | Zeichnungsstatus pro Version | Done |
+| P2 | Rollen: Viewer & Guest | Done |
+| P2 | PWA & Android-Installation | Done |
+| P2 | Sentry Error Tracking | Done |
+| P2 | Branding (Logo, Favicon, Impressum) | Done |
 
 ## Success Metrics
 - Teams können Projekte mit PDFs anlegen und gemeinsam nutzen

@@ -1,18 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { MoreVertical, Pencil, Archive } from "lucide-react";
+import { MoreVertical, Pencil, Archive, CircleDot } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RenameVersionDialog } from "@/components/drawings/RenameVersionDialog";
 import { ArchiveVersionDialog } from "@/components/drawings/ArchiveVersionDialog";
-import type { DrawingVersion } from "@/lib/types/drawing";
+import type { DrawingVersion, DrawingStatus } from "@/lib/types/drawing";
 
 interface VersionItemProps {
   version: DrawingVersion;
@@ -22,6 +26,9 @@ interface VersionItemProps {
   onSelect: (versionId: string) => void;
   onRename: (versionId: string, label: string) => Promise<void>;
   onArchive: (versionId: string) => Promise<void>;
+  statusId?: string | null;
+  statuses?: DrawingStatus[];
+  onStatusChange?: (statusId: string | null) => Promise<void>;
 }
 
 export function VersionItem({
@@ -32,6 +39,9 @@ export function VersionItem({
   onSelect,
   onRename,
   onArchive,
+  statusId,
+  statuses,
+  onStatusChange,
 }: VersionItemProps) {
   const [renameOpen, setRenameOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -47,10 +57,17 @@ export function VersionItem({
 
   return (
     <>
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => onSelect(version.id)}
-        className={`w-full text-left px-3 py-2.5 rounded-md transition-colors ${
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelect(version.id);
+          }
+        }}
+        className={`w-full text-left px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
           version.is_archived
             ? "opacity-50"
             : ""
@@ -64,7 +81,7 @@ export function VersionItem({
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs font-mono text-muted-foreground">
                 v{version.version_number}
               </span>
@@ -80,6 +97,19 @@ export function VersionItem({
               )}
               {isActive && (
                 <div className="h-2 w-2 rounded-full bg-primary shrink-0" aria-label="Aktuell angezeigt" />
+              )}
+              {statusId && statuses && (
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] font-medium leading-none rounded-full border px-1.5 py-0.5"
+                  style={{ borderColor: statuses.find((s) => s.id === statusId)?.color ?? "#888" }}
+                >
+                  <span
+                    className="inline-block h-1.5 w-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: statuses.find((s) => s.id === statusId)?.color ?? "#888" }}
+                    aria-hidden="true"
+                  />
+                  {statuses.find((s) => s.id === statusId)?.name ?? ""}
+                </span>
               )}
             </div>
             <p className="text-sm font-medium truncate mt-0.5">
@@ -112,6 +142,51 @@ export function VersionItem({
                 <Pencil className="mr-2 h-4 w-4" />
                 Label umbenennen
               </DropdownMenuItem>
+              {statuses && statuses.length > 0 && onStatusChange && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger onClick={(e) => e.stopPropagation()}>
+                      <CircleDot className="mr-2 h-4 w-4" />
+                      Status
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onStatusChange(null);
+                        }}
+                      >
+                        <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0 mr-2 border border-muted-foreground/30" />
+                        <span className="text-muted-foreground">Kein Status</span>
+                        {!statusId && (
+                          <span className="ml-auto text-xs text-muted-foreground">✓</span>
+                        )}
+                      </DropdownMenuItem>
+                      {statuses
+                        .sort((a, b) => a.sort_order - b.sort_order)
+                        .map((status) => (
+                          <DropdownMenuItem
+                            key={status.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onStatusChange(status.id);
+                            }}
+                          >
+                            <span
+                              className="inline-block h-2.5 w-2.5 rounded-full shrink-0 mr-2"
+                              style={{ backgroundColor: status.color }}
+                            />
+                            {status.name}
+                            {statusId === status.id && (
+                              <span className="ml-auto text-xs text-muted-foreground">✓</span>
+                            )}
+                          </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                </>
+              )}
               {!version.is_archived && canArchive && (
                 <DropdownMenuItem
                   onClick={(e) => {
@@ -127,7 +202,7 @@ export function VersionItem({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </button>
+      </div>
 
       <RenameVersionDialog
         open={renameOpen}

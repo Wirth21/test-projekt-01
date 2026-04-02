@@ -2,7 +2,7 @@
 
 import { FileText } from "lucide-react";
 import { DrawingCard } from "@/components/drawings/DrawingCard";
-import type { Drawing, DrawingGroup } from "@/lib/types/drawing";
+import type { Drawing, DrawingGroup, DrawingStatus } from "@/lib/types/drawing";
 
 interface DrawingGridProps {
   drawings: Drawing[];
@@ -14,6 +14,8 @@ interface DrawingGridProps {
   onAssignGroup?: (drawingId: string, groupId: string | null) => Promise<void>;
   /** Map of drawingId -> version count (for version badge) */
   versionCounts?: Map<string, number>;
+  statuses?: DrawingStatus[];
+  onStatusChange?: (drawingId: string, versionId: string, statusId: string | null) => Promise<void>;
 }
 
 export function DrawingGrid({
@@ -25,6 +27,8 @@ export function DrawingGrid({
   groups,
   onAssignGroup,
   versionCounts,
+  statuses,
+  onStatusChange,
 }: DrawingGridProps) {
   if (drawings.length === 0) {
     return (
@@ -39,7 +43,7 @@ export function DrawingGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 min-[400px]:grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2.5">
       {drawings.map((drawing) => (
         <DrawingCard
           key={drawing.id}
@@ -51,6 +55,8 @@ export function DrawingGrid({
           groups={groups}
           onAssignGroup={onAssignGroup}
           versionCount={versionCounts?.get(drawing.id)}
+          statuses={statuses}
+          onStatusChange={onStatusChange}
         />
       ))}
     </div>

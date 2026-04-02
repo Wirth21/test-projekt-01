@@ -264,7 +264,7 @@ export function FloatingToolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p>Zoom zuruecksetzen</p>
+            <p>Zoom zurücksetzen</p>
           </TooltipContent>
         </Tooltip>
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { updateMarkerSchema } from "@/lib/validations/marker";
 import { logActivity } from "@/lib/activity-log";
+import { isReadOnlyUser } from "@/lib/admin";
 
 interface RouteParams {
   params: Promise<{ id: string; drawingId: string; markerId: string }>;
@@ -19,6 +20,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   if (authError || !user) {
     return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
+  }
+
+  // Check read-only user
+  if (await isReadOnlyUser(supabase)) {
+    return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
   }
 
   // Verify user is a project member
@@ -85,6 +91,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   // Build update payload (only include provided fields)
   const updatePayload: Record<string, unknown> = {};
   if (updates.name !== undefined) updatePayload.name = updates.name;
+  if (updates.color !== undefined) updatePayload.color = updates.color;
   if (updates.target_drawing_id !== undefined) updatePayload.target_drawing_id = updates.target_drawing_id;
   if (updates.page_number !== undefined) updatePayload.page_number = updates.page_number;
   if (updates.x_percent !== undefined) updatePayload.x_percent = updates.x_percent;
@@ -126,6 +133,11 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
 
   if (authError || !user) {
     return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
+  }
+
+  // Check read-only user
+  if (await isReadOnlyUser(supabase)) {
+    return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
   }
 
   // Verify user is a project member

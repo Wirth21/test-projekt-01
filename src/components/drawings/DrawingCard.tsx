@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MoreVertical, Pencil, Archive, FolderOpen } from "lucide-react";
+import dynamic from "next/dynamic";
+import { MoreVertical, Pencil, Archive, FolderOpen, CircleDot } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,13 +11,20 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PdfThumbnail } from "@/components/drawings/PdfThumbnail";
+
+const PdfThumbnail = dynamic(
+  () => import("@/components/drawings/PdfThumbnail").then((m) => m.PdfThumbnail),
+  { ssr: false }
+);
 import { RenameDrawingDialog } from "@/components/drawings/RenameDrawingDialog";
 import { ArchiveDrawingDialog } from "@/components/drawings/ArchiveDrawingDialog";
 import { AssignGroupSelect } from "@/components/drawings/AssignGroupSelect";
-import type { Drawing, DrawingGroup } from "@/lib/types/drawing";
+import type { Drawing, DrawingGroup, DrawingStatus } from "@/lib/types/drawing";
 
 interface DrawingCardProps {
   drawing: Drawing;
@@ -28,6 +36,8 @@ interface DrawingCardProps {
   onAssignGroup?: (drawingId: string, groupId: string | null) => Promise<void>;
   /** Number of versions for this drawing (shows badge when > 1) */
   versionCount?: number;
+  statuses?: DrawingStatus[];
+  onStatusChange?: (drawingId: string, versionId: string, statusId: string | null) => Promise<void>;
 }
 
 export function DrawingCard({
@@ -39,6 +49,8 @@ export function DrawingCard({
   groups,
   onAssignGroup,
   versionCount,
+  statuses,
+  onStatusChange,
 }: DrawingCardProps) {
   const router = useRouter();
   const [renameOpen, setRenameOpen] = useState(false);
@@ -67,7 +79,7 @@ export function DrawingCard({
         onClick={handleCardClick}
         role="button"
         tabIndex={0}
-        aria-label={`Zeichnung ${drawing.display_name} oeffnen`}
+        aria-label={`Zeichnung ${drawing.display_name} öffnen`}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
@@ -118,6 +130,19 @@ export function DrawingCard({
               <p className="text-xs text-muted-foreground mt-0.5">
                 {formattedDate}
               </p>
+              {drawing.latest_version?.status && (
+                <span
+                  className="inline-flex items-center gap-1 mt-1 text-[10px] font-medium leading-none rounded-full border px-1.5 py-0.5"
+                  style={{ borderColor: drawing.latest_version.status.color }}
+                >
+                  <span
+                    className="inline-block h-1.5 w-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: drawing.latest_version.status.color }}
+                    aria-hidden="true"
+                  />
+                  {drawing.latest_version.status.name}
+                </span>
+              )}
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -141,6 +166,53 @@ export function DrawingCard({
                   <Pencil className="mr-2 h-4 w-4" />
                   Umbenennen
                 </DropdownMenuItem>
+                {statuses && statuses.length > 0 && onStatusChange && drawing.latest_version && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <CircleDot className="mr-2 h-4 w-4" />
+                        Status
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onStatusChange(drawing.id, drawing.latest_version!.id, null);
+                          }}
+                        >
+                          <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0 mr-2 border border-muted-foreground/30" />
+                          <span className="text-muted-foreground">Kein Status</span>
+                          {!drawing.latest_version?.status_id && (
+                            <span className="ml-auto text-xs text-muted-foreground">✓</span>
+                          )}
+                        </DropdownMenuItem>
+                        {statuses
+                          .sort((a, b) => a.sort_order - b.sort_order)
+                          .map((status) => (
+                            <DropdownMenuItem
+                              key={status.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onStatusChange(drawing.id, drawing.latest_version!.id, status.id);
+                              }}
+                            >
+                              <span
+                                className="inline-block h-2.5 w-2.5 rounded-full shrink-0 mr-2"
+                                style={{ backgroundColor: status.color }}
+                              />
+                              {status.name}
+                              {drawing.latest_version?.status_id === status.id && (
+                                <span className="ml-auto text-xs text-muted-foreground">✓</span>
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  </>
+                )}
                 {groups && groups.length > 0 && onAssignGroup && (
                   <>
                     <DropdownMenuSeparator />

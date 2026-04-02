@@ -5,9 +5,77 @@ import { getTenantContext } from "@/lib/tenant";
 import { getTenantUsage, getLimitsForPlan } from "@/lib/check-limits";
 import type { PlanType } from "@/lib/types/tenant";
 import { logActivity } from "@/lib/activity-log";
+import { isReadOnlyUser } from "@/lib/admin";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
+}
+
+// GET /api/projects/[id]/members — list project members
+export async function GET(_request: Request, { params }: RouteParams) {
+  const { id: projectId } = await params;
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
+  }
+
+  // Verify user is a project member
+  const { data: membership } = await supabase
+    .from("project_members")
+    .select("id")
+    .eq("project_id", projectId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!membership) {
+    return NextResponse.json({ error: "Kein Zugriff auf dieses Projekt" }, { status: 403 });
+  }
+
+  // Fetch members
+  const { data: memberRows, error: fetchError } = await supabase
+    .from("project_members")
+    .select("id, project_id, user_id, role, joined_at")
+    .eq("project_id", projectId)
+    .order("joined_at", { ascending: true });
+
+  if (fetchError) {
+    console.error("[members/GET] fetchError:", fetchError.message);
+    return NextResponse.json({ error: "Mitglieder konnten nicht geladen werden" }, { status: 500 });
+  }
+
+  // Fetch profiles separately (avoids RLS join issues)
+  const userIds = (memberRows || []).map((m) => m.user_id);
+  let profileMap: Record<string, { display_name: string | null; email: string }> = {};
+
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, display_name, email")
+      .in("id", userIds);
+
+    if (profiles) {
+      for (const p of profiles) {
+        profileMap[p.id] = { display_name: p.display_name, email: p.email };
+      }
+    }
+  }
+
+  const members = (memberRows || []).map((m) => ({
+    id: m.id,
+    project_id: m.project_id,
+    user_id: m.user_id,
+    role: m.role,
+    joined_at: m.joined_at,
+    profile: profileMap[m.user_id] ?? null,
+  }));
+
+  return NextResponse.json({ members });
 }
 
 // POST /api/projects/[id]/members — invite a member by email (owner only)
@@ -22,6 +90,23 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   if (authError || !user) {
     return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
+  }
+
+  // Check read-only user
+  if (await isReadOnlyUser(supabase)) {
+    return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
+  }
+
+  // Verify caller is project owner
+  const { data: callerMembership } = await supabase
+    .from("project_members")
+    .select("role")
+    .eq("project_id", projectId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!callerMembership || callerMembership.role !== "owner") {
+    return NextResponse.json({ error: "Nur Eigentümer können Mitglieder einladen" }, { status: 403 });
   }
 
   let body: unknown;

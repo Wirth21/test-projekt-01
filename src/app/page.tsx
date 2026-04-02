@@ -10,6 +10,7 @@ import {
   Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/Logo";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -33,8 +34,8 @@ export default async function LandingPage() {
       {/* Navbar */}
       <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="text-xl font-bold tracking-tight">
-            Link2Plan
+          <Link href="/" className="tracking-tight">
+            <Logo size="md" />
           </Link>
 
           <div className="hidden items-center gap-6 sm:flex">
@@ -71,7 +72,7 @@ export default async function LandingPage() {
         </p>
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <Button size="lg" asChild>
-            <Link href="/register">{t("hero.cta")}</Link>
+            <Link href="/login">{t("hero.cta")}</Link>
           </Button>
           <Button variant="ghost" size="lg" asChild>
             <a href="#features">{t("hero.ctaSecondary")}</a>
@@ -177,7 +178,7 @@ export default async function LandingPage() {
                     className="w-full"
                     asChild
                   >
-                    <Link href="/register">
+                    <Link href="/login">
                       {t(`pricing.${plan}.cta`)}
                     </Link>
                   </Button>
@@ -198,7 +199,7 @@ export default async function LandingPage() {
         </p>
         <div className="mt-8">
           <Button size="lg" asChild>
-            <Link href="/register">{t("cta.button")}</Link>
+            <Link href="/login">{t("cta.button")}</Link>
           </Button>
         </div>
       </section>
@@ -208,7 +209,7 @@ export default async function LandingPage() {
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
           <div className="grid gap-8 sm:grid-cols-3">
             <div>
-              <span className="text-lg font-bold">Link2Plan</span>
+              <Logo size="sm" />
             </div>
 
             <div>

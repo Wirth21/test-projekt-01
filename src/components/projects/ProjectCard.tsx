@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { MoreVertical, FileText, Users, Calendar, Archive, Pencil, UserPlus } from "lucide-react";
+import { MoreVertical, FileText, MapPin, Users, Calendar, Archive, Pencil, UserPlus } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ export function ProjectCard({ project, onEdit, onInvite, onArchive }: ProjectCar
   const tc = useTranslations("common");
   const tp = useTranslations("projects");
   const isOwner = project.role === "owner";
+  const isViewer = project.role === "viewer";
 
   const formattedDate = new Date(project.updated_at).toLocaleDateString("de-DE", {
     day: "2-digit",
@@ -86,7 +87,7 @@ export function ProjectCard({ project, onEdit, onInvite, onArchive }: ProjectCar
           </DropdownMenu>
         </div>
         <Badge variant="secondary" className="w-fit text-xs mt-1">
-          {isOwner ? tp("owner") : tp("member")}
+          {isViewer ? tp("viewer") : isOwner ? tp("owner") : tp("member")}
         </Badge>
       </CardHeader>
 
@@ -101,7 +102,15 @@ export function ProjectCard({ project, onEdit, onInvite, onArchive }: ProjectCar
       <CardFooter className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
         <span className="flex items-center gap-1">
           <FileText className="h-3.5 w-3.5" />
-          {project.pdf_count ?? 0} PDF{(project.pdf_count ?? 0) !== 1 ? "s" : ""}
+          {project.pdf_count ?? 0}
+        </span>
+        <span className="flex items-center gap-1">
+          <MapPin className="h-3.5 w-3.5" />
+          {project.marker_count ?? 0}
+        </span>
+        <span className="flex items-center gap-1">
+          <Users className="h-3.5 w-3.5" />
+          {project.member_count ?? 0}
         </span>
         <span className="flex items-center gap-1 ml-auto">
           <Calendar className="h-3.5 w-3.5" />

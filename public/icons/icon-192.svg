@@ -1,4 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="29" fill="#0a0a0a"/>
-  <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="700" font-size="67" fill="#ffffff">PL</text>
+  <path d="M96 20C65.1 20 40 45.1 40 76c0 49 56 96 56 96s56-47 56-96c0-30.9-25.1-56-56-56z" stroke="#3b82f6" stroke-width="10" fill="none" stroke-linejoin="round"/>
+  <circle cx="96" cy="76" r="20" stroke="#3b82f6" stroke-width="10" fill="none"/>
 </svg>

@@ -4,11 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import type { ProjectWithRole, ProjectMember } from "@/lib/types/project";
 import type { CreateProjectInput, EditProjectInput } from "@/lib/validations/project";
+import type { TenantRole } from "@/lib/types/admin";
 
 export function useProjects() {
   const [projects, setProjects] = useState<ProjectWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tenantRole, setTenantRole] = useState<TenantRole>("user");
 
   const supabase = createClient();
 
@@ -27,6 +29,17 @@ export function useProjects() {
         return;
       }
 
+      // Fetch tenant_role from profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("tenant_role")
+        .eq("id", user.id)
+        .single();
+
+      const role = (profile?.tenant_role as TenantRole) ?? "user";
+      setTenantRole(role);
+      const isReadOnly = role === "viewer" || role === "guest";
+
       // Get all project memberships for the current user
       const { data: memberships, error: memberError } = await supabase
         .from("project_members")
@@ -39,26 +52,50 @@ export function useProjects() {
         return;
       }
 
-      if (!memberships || memberships.length === 0) {
-        setProjects([]);
-        setLoading(false);
-        return;
-      }
+      const roleMap = new Map((memberships ?? []).map((m) => [m.project_id, m.role]));
 
-      const projectIds = memberships.map((m) => m.project_id);
+      // Viewers: fetch all tenant projects via RLS (policy allows it)
+      // Guests/Users: fetch only member projects
+      let projectsData;
+      let projectIds: string[];
 
-      // Fetch all projects the user is a member of
-      const { data: projectsData, error: projectsError } = await supabase
-        .from("projects")
-        .select("*")
-        .in("id", projectIds)
-        .eq("is_archived", false)
-        .order("updated_at", { ascending: false });
+      if (role === "viewer") {
+        // RLS allows viewers to see all tenant projects
+        const { data, error: projectsError } = await supabase
+          .from("projects")
+          .select("*")
+          .eq("is_archived", false)
+          .order("updated_at", { ascending: false });
 
-      if (projectsError) {
-        setError("Projekte konnten nicht geladen werden");
-        setLoading(false);
-        return;
+        if (projectsError) {
+          setError("Projekte konnten nicht geladen werden");
+          setLoading(false);
+          return;
+        }
+        projectsData = data;
+        projectIds = (data ?? []).map((p) => p.id);
+      } else {
+        if (!memberships || memberships.length === 0) {
+          setProjects([]);
+          setLoading(false);
+          return;
+        }
+
+        projectIds = memberships.map((m) => m.project_id);
+
+        const { data, error: projectsError } = await supabase
+          .from("projects")
+          .select("*")
+          .in("id", projectIds)
+          .eq("is_archived", false)
+          .order("updated_at", { ascending: false });
+
+        if (projectsError) {
+          setError("Projekte konnten nicht geladen werden");
+          setLoading(false);
+          return;
+        }
+        projectsData = data;
       }
 
       // Count non-archived drawings per project
@@ -75,13 +112,40 @@ export function useProjects() {
         }
       }
 
-      // Merge role info and pdf counts
-      const roleMap = new Map(memberships.map((m) => [m.project_id, m.role]));
+      // Count markers per project
+      const { data: markerRows } = await supabase
+        .from("markers")
+        .select("project_id")
+        .in("project_id", projectIds);
+
+      const markerCounts: Record<string, number> = {};
+      if (markerRows) {
+        for (const row of markerRows) {
+          markerCounts[row.project_id] = (markerCounts[row.project_id] || 0) + 1;
+        }
+      }
+
+      // Count members per project
+      const { data: memberRows } = await supabase
+        .from("project_members")
+        .select("project_id")
+        .in("project_id", projectIds);
+
+      const memberCounts: Record<string, number> = {};
+      if (memberRows) {
+        for (const row of memberRows) {
+          memberCounts[row.project_id] = (memberCounts[row.project_id] || 0) + 1;
+        }
+      }
+
+      // Merge role info, pdf counts, marker counts and member counts
       const projectsWithRole: ProjectWithRole[] = (projectsData || []).map(
         (p) => ({
           ...p,
-          role: (roleMap.get(p.id) as "owner" | "member") || "member",
+          role: isReadOnly ? ("viewer" as const) : ((roleMap.get(p.id) as "owner" | "member") || "member"),
           pdf_count: pdfCounts[p.id] ?? 0,
+          marker_count: markerCounts[p.id] ?? 0,
+          member_count: memberCounts[p.id] ?? 0,
         })
       );
 
@@ -228,10 +292,14 @@ export function useProjects() {
     }
   }, [supabase]);
 
+  const isReadOnly = tenantRole === "viewer" || tenantRole === "guest";
+
   return {
     projects,
     loading,
     error,
+    tenantRole,
+    isReadOnly,
     inactiveProjects,
     inactiveLoading,
     archivedProjects,
@@ -253,54 +321,31 @@ export function useProjectMembers(projectId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
-
   const fetchMembers = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const { data, error: fetchError } = await supabase
-        .from("project_members")
-        .select(`
-          id,
-          project_id,
-          user_id,
-          role,
-          joined_at,
-          profiles:user_id (display_name, email)
-        `)
-        .eq("project_id", projectId)
-        .order("joined_at", { ascending: true });
+      const res = await fetch(`/api/projects/${projectId}/members`);
+      const json = await res.json();
 
-      if (fetchError) {
-        setError("Mitglieder konnten nicht geladen werden");
-        setLoading(false);
+      if (!res.ok) {
+        setError(json.error ?? "Mitglieder konnten nicht geladen werden");
         return;
       }
 
-      // Transform the joined profile data
-      const transformed: ProjectMember[] = (data || []).map((m) => ({
-        id: m.id,
-        project_id: m.project_id,
-        user_id: m.user_id,
-        role: m.role as "owner" | "member",
-        joined_at: m.joined_at,
-        profile: m.profiles
-          ? {
-              display_name: (m.profiles as unknown as Record<string, unknown>).display_name as string | null,
-              email: (m.profiles as unknown as Record<string, unknown>).email as string,
-            }
-          : undefined,
-      }));
-
-      setMembers(transformed);
+      setMembers(
+        (json.members ?? []).map((m: ProjectMember & { profile?: { display_name: string | null; email: string } | null }) => ({
+          ...m,
+          role: m.role as "owner" | "member",
+        }))
+      );
     } catch {
       setError("Ein unerwarteter Fehler ist aufgetreten");
     } finally {
       setLoading(false);
     }
-  }, [supabase, projectId]);
+  }, [projectId]);
 
   useEffect(() => {
     if (projectId) {
@@ -332,12 +377,26 @@ export function useProjectMembers(projectId: string) {
     await fetchMembers();
   };
 
+  const changeRole = async (memberId: string, role: "owner" | "member") => {
+    const res = await fetch(`/api/projects/${projectId}/members/${memberId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    });
+
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? "Rolle konnte nicht geändert werden");
+
+    await fetchMembers();
+  };
+
   return {
     members,
     loading,
     error,
     inviteMember,
     removeMember,
+    changeRole,
     refetch: fetchMembers,
   };
 }

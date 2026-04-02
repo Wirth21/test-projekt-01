@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description:
     "Link2Plan verbindet technische PDF-Pläne mit intelligenten Markern. Teams navigieren per Klick zwischen Grundrissen, Schnitten und Details.",
   manifest: "/manifest.json",
-  metadataBase: new URL("https://link2plan.app"),
+  metadataBase: new URL("https://link2plan.de"),
   openGraph: {
     type: "website",
     locale: "de_DE",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0a",
+  themeColor: "#3b82f6",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

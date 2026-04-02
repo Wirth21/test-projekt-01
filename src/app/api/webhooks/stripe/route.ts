@@ -215,7 +215,7 @@ async function handleSubscriptionDeleted(
       error.message
     );
   } else {
-    console.log(
+    console.info(
       `[stripe/webhook] Tenant ${tenantId} downgraded to free after subscription deletion`
     );
   }
@@ -326,7 +326,7 @@ export async function POST(request: Request) {
   // Idempotency check: skip already-processed events
   cleanupOldEvents();
   if (PROCESSED_EVENTS.has(event.id)) {
-    console.log(
+    console.info(
       `[stripe/webhook] Skipping already-processed event ${event.id} (${event.type})`
     );
     return NextResponse.json({ received: true });

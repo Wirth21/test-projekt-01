@@ -139,12 +139,9 @@ export function LoginForm() {
 
         <p className="text-center text-sm text-muted-foreground">
           {t("noAccount")}{" "}
-          <Link
-            href="/register"
-            className="text-primary hover:underline font-medium"
-          >
+          <span className="text-muted-foreground/50 cursor-not-allowed">
             {t("register")}
-          </Link>
+          </span>
         </p>
       </form>
     </Form>

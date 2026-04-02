@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
-import type { DrawingVersion } from "@/lib/types/drawing";
+import type { DrawingVersion, DrawingStatus } from "@/lib/types/drawing";
 
 export function useVersions(projectId: string, drawingId: string) {
   const [versions, setVersions] = useState<DrawingVersion[]>([]);
@@ -155,6 +155,22 @@ export function useVersions(projectId: string, drawingId: string) {
     [baseUrl]
   );
 
+  const updateVersionStatus = (versionId: string, statusId: string | null, statuses?: DrawingStatus[]) => {
+    setVersions((prev) =>
+      prev.map((v) =>
+        v.id === versionId
+          ? {
+              ...v,
+              status_id: statusId,
+              status: statusId && statuses
+                ? statuses.find((s) => s.id === statusId) ?? null
+                : null,
+            }
+          : v
+      )
+    );
+  };
+
   /** Returns the latest non-archived version, or null if none exist */
   const latestActiveVersion = versions
     .filter((v) => !v.is_archived)
@@ -169,6 +185,7 @@ export function useVersions(projectId: string, drawingId: string) {
     renameVersion,
     archiveVersion,
     getVersionSignedUrl,
+    updateVersionStatus,
     refetch: fetchVersions,
   };
 }

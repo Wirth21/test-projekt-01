@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { logActivity } from "@/lib/activity-log";
+import { isReadOnlyUser } from "@/lib/admin";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -18,6 +19,23 @@ export async function POST(_request: Request, { params }: RouteParams) {
 
   if (authError || !user) {
     return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
+  }
+
+  // Check read-only user
+  if (await isReadOnlyUser(supabase)) {
+    return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
+  }
+
+  // Verify caller is project owner
+  const { data: membership } = await supabase
+    .from("project_members")
+    .select("role")
+    .eq("project_id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!membership || membership.role !== "owner") {
+    return NextResponse.json({ error: "Nur Eigentümer können das Projekt archivieren" }, { status: 403 });
   }
 
   const { data: project, error: archiveError } = await supabase

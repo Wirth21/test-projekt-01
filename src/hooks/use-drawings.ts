@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
-import type { Drawing } from "@/lib/types/drawing";
+import type { Drawing, DrawingStatus } from "@/lib/types/drawing";
 
 export function useDrawings(projectId: string) {
   const [drawings, setDrawings] = useState<Drawing[]>([]);
@@ -40,7 +40,8 @@ export function useDrawings(projectId: string) {
 
   const uploadDrawing = async (
     file: File,
-    onProgress: (pct: number) => void
+    onProgress: (pct: number) => void,
+    options?: { status_id?: string | null },
   ): Promise<Drawing> => {
     // Generate a unique ID for the drawing
     const drawingId = crypto.randomUUID();
@@ -85,14 +86,20 @@ export function useDrawings(projectId: string) {
     });
 
     // Record metadata via API (creates drawing + v1 version)
+    const payload: Record<string, unknown> = {
+      display_name: file.name.replace(/\.pdf$/i, ""),
+      storage_path: storagePath,
+      file_size: file.size,
+    };
+
+    if (options?.status_id) {
+      payload.status_id = options.status_id;
+    }
+
     const res = await fetch(`/api/projects/${projectId}/drawings`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        display_name: file.name.replace(/\.pdf$/i, ""),
-        storage_path: storagePath,
-        file_size: file.size,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const json = await res.json();
@@ -163,6 +170,24 @@ export function useDrawings(projectId: string) {
     return json.url;
   }, [projectId]);
 
+  const updateDrawingVersionStatus = (
+    drawingId: string,
+    versionId: string,
+    statusId: string | null,
+    statuses?: DrawingStatus[]
+  ) => {
+    setDrawings((prev) =>
+      prev.map((d) => {
+        if (d.id !== drawingId || !d.latest_version || d.latest_version.id !== versionId) return d;
+        const status = statusId && statuses ? statuses.find((s) => s.id === statusId) ?? null : null;
+        return {
+          ...d,
+          latest_version: { ...d.latest_version, status_id: statusId, status },
+        };
+      })
+    );
+  };
+
   return {
     drawings,
     loading,
@@ -172,6 +197,7 @@ export function useDrawings(projectId: string) {
     archiveDrawing,
     restoreDrawing,
     getSignedUrl,
+    updateDrawingVersionStatus,
     refetch: fetchDrawings,
   };
 }

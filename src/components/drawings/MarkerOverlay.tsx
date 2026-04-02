@@ -60,6 +60,7 @@ export function MarkerOverlay({
     position: { x: number; y: number };
   } | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
+  const justDraggedRef = useRef(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const pageMarkers = markers.filter((m) => m.page_number === currentPage);
@@ -67,6 +68,10 @@ export function MarkerOverlay({
   const handleOverlayClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (!editMode || dragging) return;
+      if (justDraggedRef.current) {
+        justDraggedRef.current = false;
+        return;
+      }
       if (e.target !== overlayRef.current) return;
 
       const rect = overlayRef.current!.getBoundingClientRect();
@@ -116,6 +121,9 @@ export function MarkerOverlay({
 
         onMarkerDrag(marker.id, xPercent, yPercent);
         setDragging(null);
+        justDraggedRef.current = true;
+        // Reset after the click event has fired
+        setTimeout(() => { justDraggedRef.current = false; }, 0);
 
         if (isTouch) {
           document.removeEventListener("touchmove", handleMove);

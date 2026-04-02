@@ -52,7 +52,7 @@ export function AssignGroupSelect({
         <DialogHeader>
           <DialogTitle>Gruppe zuweisen</DialogTitle>
           <DialogDescription>
-            Waehle eine Gruppe fuer diese Zeichnung.
+            Wähle eine Gruppe für diese Zeichnung.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-1 py-2">

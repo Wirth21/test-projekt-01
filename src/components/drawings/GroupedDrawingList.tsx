@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { FileText } from "lucide-react";
 import { DrawingGroupSection } from "@/components/drawings/DrawingGroupSection";
-import type { Drawing, DrawingGroup } from "@/lib/types/drawing";
+import type { Drawing, DrawingGroup, DrawingStatus } from "@/lib/types/drawing";
 
 interface GroupedDrawingListProps {
   drawings: Drawing[];
@@ -17,6 +17,8 @@ interface GroupedDrawingListProps {
   onAssignGroup: (drawingId: string, groupId: string | null) => Promise<void>;
   /** Map of drawingId -> version count (for version badge on cards) */
   versionCounts?: Map<string, number>;
+  statuses?: DrawingStatus[];
+  onStatusChange?: (drawingId: string, versionId: string, statusId: string | null) => Promise<void>;
 }
 
 export function GroupedDrawingList({
@@ -30,6 +32,8 @@ export function GroupedDrawingList({
   onArchiveGroup,
   onAssignGroup,
   versionCounts,
+  statuses,
+  onStatusChange,
 }: GroupedDrawingListProps) {
   // Active (non-archived) groups sorted by creation date (oldest first)
   const activeGroups = useMemo(
@@ -96,6 +100,8 @@ export function GroupedDrawingList({
         onAssignGroup={onAssignGroup}
         existingGroupNames={existingGroupNames}
         versionCounts={versionCounts}
+        statuses={statuses}
+        onStatusChange={onStatusChange}
       />
     );
   }
@@ -118,6 +124,8 @@ export function GroupedDrawingList({
           onAssignGroup={onAssignGroup}
           existingGroupNames={existingGroupNames}
           versionCounts={versionCounts}
+          statuses={statuses}
+          onStatusChange={onStatusChange}
         />
       ))}
 
@@ -134,6 +142,8 @@ export function GroupedDrawingList({
           onAssignGroup={onAssignGroup}
           existingGroupNames={existingGroupNames}
           versionCounts={versionCounts}
+          statuses={statuses}
+          onStatusChange={onStatusChange}
         />
       )}
     </div>

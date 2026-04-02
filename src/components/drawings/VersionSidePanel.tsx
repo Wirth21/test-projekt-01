@@ -13,9 +13,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+
+
 import { VersionItem } from "@/components/drawings/VersionItem";
 import { VersionUploadDialog } from "@/components/drawings/VersionUploadDialog";
-import type { DrawingVersion } from "@/lib/types/drawing";
+import type { DrawingVersion, DrawingStatus } from "@/lib/types/drawing";
 
 interface VersionSidePanelProps {
   open: boolean;
@@ -28,6 +30,10 @@ interface VersionSidePanelProps {
   onUploadVersion: (file: File, onProgress: (pct: number) => void) => Promise<void>;
   onRenameVersion: (versionId: string, label: string) => Promise<void>;
   onArchiveVersion: (versionId: string) => Promise<void>;
+  /** Available statuses for the tenant */
+  statuses?: DrawingStatus[];
+  /** Called when the user changes a version's status */
+  onStatusChange?: (versionId: string, statusId: string | null) => Promise<void>;
 }
 
 export function VersionSidePanel({
@@ -41,6 +47,8 @@ export function VersionSidePanel({
   onUploadVersion,
   onRenameVersion,
   onArchiveVersion,
+  statuses: availableStatuses,
+  onStatusChange,
 }: VersionSidePanelProps) {
   const [showArchived, setShowArchived] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -113,6 +121,9 @@ export function VersionSidePanel({
                     onSelect={onSelectVersion}
                     onRename={onRenameVersion}
                     onArchive={onArchiveVersion}
+                    statusId={version.status_id}
+                    statuses={availableStatuses}
+                    onStatusChange={onStatusChange ? (statusId) => onStatusChange(version.id, statusId) : undefined}
                   />
                 ))}
               </div>

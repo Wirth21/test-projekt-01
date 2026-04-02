@@ -6,7 +6,7 @@ export interface TenantContext {
   tenantSlug: string;
 }
 
-const ROOT_DOMAINS = ["link2plan.app", "localhost", "localhost:3000"];
+const ROOT_DOMAINS = ["link2plan.de", "localhost", "localhost:3000"];
 
 /**
  * Extracts the subdomain from a hostname.
@@ -22,7 +22,7 @@ export function extractSubdomain(hostname: string): string | null {
     return hostWithoutPort.replace(".localhost", "");
   }
 
-  // Production: subdomain.link2plan.app
+  // Production: subdomain.link2plan.de
   for (const root of ROOT_DOMAINS) {
     const rootWithoutPort = root.split(":")[0];
     if (hostWithoutPort === rootWithoutPort) return null;

@@ -5,6 +5,7 @@ export type ActionType =
   | "drawing.renamed"
   | "drawing.archived"
   | "drawing.restored"
+  | "drawing.status_changed"
   | "version.uploaded"
   | "version.archived"
   | "project.created"

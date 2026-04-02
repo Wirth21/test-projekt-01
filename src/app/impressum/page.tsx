@@ -21,13 +21,12 @@ export default function ImpressumPage() {
             <h2 className="text-xl font-semibold mb-3">
               Angaben gemäß § 5 TMG
             </h2>
-            {/* TODO: Echte Firmendaten eintragen */}
             <p className="text-muted-foreground">
-              [Firmenname]
+              Wirth Tec GmbH
               <br />
-              [Straße und Hausnummer]
+              Christian-Wehner-Straße 10
               <br />
-              [PLZ Ort]
+              09113 Chemnitz
               <br />
               Deutschland
             </p>
@@ -36,16 +35,14 @@ export default function ImpressumPage() {
           <section>
             <h2 className="text-xl font-semibold mb-3">Vertreten durch</h2>
             <p className="text-muted-foreground">
-              [Geschäftsführer / Inhaber]
+              Florian Stöckel
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold mb-3">Kontakt</h2>
             <p className="text-muted-foreground">
-              E-Mail: [kontakt@link2plan.app]
-              <br />
-              Telefon: [+49 XXX XXXXXXX]
+              E-Mail: info@link2plan.de
             </p>
           </section>
 
@@ -56,9 +53,9 @@ export default function ImpressumPage() {
             <p className="text-muted-foreground">
               Eintragung im Handelsregister.
               <br />
-              Registergericht: [Amtsgericht Ort]
+              Registergericht: Amtsgericht Chemnitz
               <br />
-              Registernummer: [HRB XXXXX]
+              Registernummer: HRB 37321
             </p>
           </section>
 
@@ -68,7 +65,7 @@ export default function ImpressumPage() {
               Umsatzsteuer-Identifikationsnummer gemäß § 27a
               Umsatzsteuergesetz:
               <br />
-              [DE XXXXXXXXX]
+              DE454944628
             </p>
           </section>
 
@@ -77,9 +74,9 @@ export default function ImpressumPage() {
               Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV
             </h2>
             <p className="text-muted-foreground">
-              [Name]
+              Florian Stöckel
               <br />
-              [Adresse]
+              Christian-Wehner-Straße 10, 09113 Chemnitz
             </p>
           </section>
 

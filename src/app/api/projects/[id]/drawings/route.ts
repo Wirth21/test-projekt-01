@@ -6,6 +6,7 @@ import { checkFileSize, checkStorageLimit } from "@/lib/check-limits";
 import { formatBytes } from "@/lib/plan-limits";
 import type { PlanType } from "@/lib/types/tenant";
 import { logActivity } from "@/lib/activity-log";
+import { isReadOnlyUser } from "@/lib/admin";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -41,7 +42,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Kein Zugriff auf dieses Projekt" }, { status: 403 });
   }
 
-  // Fetch all drawings with their versions
+  // Fetch all drawings with their versions and status
   const { data: drawings, error: fetchError } = await supabase
     .from("drawings")
     .select(`
@@ -57,7 +58,9 @@ export async function GET(_request: Request, { params }: RouteParams) {
         is_archived,
         created_by,
         created_at,
-        updated_at
+        updated_at,
+        status_id,
+        status:drawing_statuses(id, name, color)
       )
     `)
     .eq("project_id", projectId)
@@ -81,6 +84,8 @@ export async function GET(_request: Request, { params }: RouteParams) {
       created_by: string;
       created_at: string;
       updated_at: string;
+      status_id: string | null;
+      status: { id: string; name: string; color: string } | null;
     }>;
 
     const activeVersions = versions
@@ -116,6 +121,11 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
   }
 
+  // Check read-only user
+  if (await isReadOnlyUser(supabase)) {
+    return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
+  }
+
   // Verify user is a project member
   const { data: membership, error: memberError } = await supabase
     .from("project_members")
@@ -148,7 +158,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     );
   }
 
-  const { display_name, storage_path, file_size, page_count } = result.data;
+  const { display_name, storage_path, file_size, page_count, status_id: initialStatusId } = result.data;
 
   // Check plan limits for file size and storage
   const { tenantId } = await getTenantContext();
@@ -211,6 +221,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       file_size,
       page_count: page_count ?? null,
       created_by: user.id,
+      status_id: initialStatusId ?? null,
     })
     .select()
     .single();

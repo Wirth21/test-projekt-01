@@ -8,6 +8,7 @@ export interface Project {
   updated_at: string;
   is_archived: boolean;
   pdf_count?: number;
+  marker_count?: number;
   member_count?: number;
 }
 
@@ -15,7 +16,7 @@ export interface ProjectMember {
   id: string;
   project_id: string;
   user_id: string;
-  role: "owner" | "member";
+  role: "owner" | "member" | "viewer";
   joined_at: string;
   profile?: {
     display_name: string | null;
@@ -24,5 +25,5 @@ export interface ProjectMember {
 }
 
 export interface ProjectWithRole extends Project {
-  role: "owner" | "member";
+  role: "owner" | "member" | "viewer";
 }

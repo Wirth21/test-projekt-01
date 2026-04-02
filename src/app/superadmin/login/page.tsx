@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Logo } from "@/components/Logo";
 import { Loader2 } from "lucide-react";
 
 export default function SuperadminLoginPage() {
@@ -43,7 +44,7 @@ export default function SuperadminLoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-[400px] shadow-md">
         <CardHeader className="text-center">
-          <CardTitle>Link2Plan — Platform Admin</CardTitle>
+          <CardTitle className="flex items-center justify-center gap-2"><Logo size="md" /><span className="text-sm text-muted-foreground font-normal">Platform Admin</span></CardTitle>
           <CardDescription>Superadmin Login</CardDescription>
         </CardHeader>
         <CardContent>

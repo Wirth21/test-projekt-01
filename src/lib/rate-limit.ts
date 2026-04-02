@@ -1,6 +1,11 @@
 /**
  * Simple in-memory sliding window rate limiter.
- * No external dependencies required.
+ *
+ * NOTE: In serverless environments (Vercel), each function invocation may run
+ * in a different instance, so this limiter is best-effort. For production-grade
+ * rate limiting, consider using Upstash Redis (@upstash/ratelimit).
+ * However, this still provides protection within a single instance and is
+ * effective against rapid bursts from the same caller.
  */
 
 interface RateLimitEntry {
@@ -30,7 +35,7 @@ function cleanup(now: number) {
 /**
  * Check and record a rate-limited request.
  *
- * @param key      Unique identifier (e.g. "checkout:<ip>")
+ * @param key      Unique identifier (e.g. "checkout:<userId>")
  * @param limit    Maximum number of requests allowed in the window
  * @param windowMs Window duration in milliseconds
  * @returns        { success, remaining } — success is false when the limit is exceeded
@@ -65,13 +70,23 @@ export function rateLimit(
 
 /**
  * Extract a rate-limit key from the incoming request.
- * Uses x-forwarded-for (first IP) or falls back to "unknown".
+ * Prefers authenticated user ID, falls back to IP from x-forwarded-for,
+ * then to a hash of relevant request headers for fingerprinting.
  */
-export function getRateLimitKey(request: Request): string {
+export function getRateLimitKey(request: Request, userId?: string): string {
+  // Best: use authenticated user ID
+  if (userId) {
+    return `user:${userId}`;
+  }
+
+  // Fallback: IP from x-forwarded-for
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
-    // x-forwarded-for can be a comma-separated list; take the first (client) IP
-    return forwarded.split(",")[0].trim();
+    return `ip:${forwarded.split(",")[0].trim()}`;
   }
-  return "unknown";
+
+  // Last resort: use a combination of headers as fingerprint
+  const ua = request.headers.get("user-agent") ?? "";
+  const accept = request.headers.get("accept-language") ?? "";
+  return `fp:${ua.slice(0, 50)}:${accept.slice(0, 20)}`;
 }

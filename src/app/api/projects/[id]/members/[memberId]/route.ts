@@ -1,9 +1,100 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { logActivity } from "@/lib/activity-log";
+import { isReadOnlyUser } from "@/lib/admin";
+import { z } from "zod";
+
+const changeRoleSchema = z.object({
+  role: z.enum(["owner", "member"], { message: "Ungültige Rolle" }),
+});
 
 interface RouteParams {
   params: Promise<{ id: string; memberId: string }>;
+}
+
+// PATCH /api/projects/[id]/members/[memberId] — change member role (owner only)
+export async function PATCH(request: Request, { params }: RouteParams) {
+  const { id: projectId, memberId } = await params;
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
+  }
+
+  // Check read-only user
+  if (await isReadOnlyUser(supabase)) {
+    return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
+  }
+
+  // Verify caller is an owner
+  const { data: callerMembership } = await supabase
+    .from("project_members")
+    .select("role")
+    .eq("project_id", projectId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!callerMembership || callerMembership.role !== "owner") {
+    return NextResponse.json({ error: "Nur Eigentümer können Rollen ändern" }, { status: 403 });
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Ungültiger Request-Body" }, { status: 400 });
+  }
+
+  const result = changeRoleSchema.safeParse(body);
+  if (!result.success) {
+    return NextResponse.json(
+      { error: "Validierungsfehler", details: result.error.flatten() },
+      { status: 400 }
+    );
+  }
+  const { role } = result.data;
+
+  // Prevent demoting the last owner
+  if (role === "member") {
+    const { data: targetMember } = await supabase
+      .from("project_members")
+      .select("role")
+      .eq("id", memberId)
+      .eq("project_id", projectId)
+      .single();
+
+    if (targetMember?.role === "owner") {
+      const { count } = await supabase
+        .from("project_members")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", projectId)
+        .eq("role", "owner");
+
+      if ((count ?? 0) <= 1) {
+        return NextResponse.json(
+          { error: "Der letzte Eigentümer kann nicht herabgestuft werden." },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
+  const { error: updateError } = await supabase
+    .from("project_members")
+    .update({ role })
+    .eq("id", memberId)
+    .eq("project_id", projectId);
+
+  if (updateError) {
+    return NextResponse.json({ error: "Rolle konnte nicht geändert werden" }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
 }
 
 // DELETE /api/projects/[id]/members/[memberId] — remove a member (owner) or self-remove
@@ -18,6 +109,11 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
 
   if (authError || !user) {
     return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
+  }
+
+  // Check read-only user
+  if (await isReadOnlyUser(supabase)) {
+    return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
   }
 
   // Fetch the member to check their role

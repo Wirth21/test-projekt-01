@@ -54,7 +54,7 @@ interface UserDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onStatusChange: (userId: string, status: UserStatus) => Promise<unknown>;
-  onProfileUpdate?: (userId: string, data: { display_name?: string; email?: string }) => Promise<unknown>;
+  onProfileUpdate?: (userId: string, data: { display_name?: string; email?: string; tenant_role?: string }) => Promise<unknown>;
   isSelf: boolean;
 }
 
@@ -319,6 +319,37 @@ export function UserDetailSheet({
                 <p className="mt-1 font-medium">{user.project_count ?? 0}</p>
               </div>
             </div>
+
+            {/* Tenant role */}
+            {!isSelf && (
+              <>
+                <Separator />
+                <div>
+                  <h4 className="text-sm font-medium mb-2">{t("detail.tenantRole")}</h4>
+                  <Select
+                    value={user.tenant_role ?? "user"}
+                    onValueChange={async (value) => {
+                      try {
+                        await onProfileUpdate?.(user.id, { tenant_role: value });
+                        toast.success(t("detail.roleUpdated"));
+                      } catch {
+                        toast.error(t("detail.roleUpdateFailed"));
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full sm:w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">{t("detail.roleUser")}</SelectItem>
+                      <SelectItem value="viewer">{t("detail.roleViewer")}</SelectItem>
+                      <SelectItem value="guest">{t("detail.roleGuest")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1.5">{t("detail.roleHint")}</p>
+                </div>
+              </>
+            )}
 
             {/* Status actions */}
             {!isSelf && (

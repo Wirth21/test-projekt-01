@@ -7,6 +7,7 @@ import { PLAN_LIMITS } from "@/lib/plan-limits";
 import type { PlanType } from "@/lib/types/tenant";
 import { logActivity } from "@/lib/activity-log";
 import { parsePagination, paginationMeta } from "@/lib/pagination";
+import { isReadOnlyUser } from "@/lib/admin";
 
 // GET /api/projects — list projects the current user is a member of
 // Query params: ?page=1&limit=50&archived=false
@@ -87,6 +88,11 @@ export async function POST(request: Request) {
 
   if (authError || !user) {
     return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
+  }
+
+  // Check read-only user
+  if (await isReadOnlyUser(supabase)) {
+    return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
   }
 
   let body: unknown;

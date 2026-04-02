@@ -7,4 +7,4 @@ Disallow: /login
 Disallow: /register
 Disallow: /auth/
 
-Sitemap: https://link2plan.app/sitemap.xml
+Sitemap: https://link2plan.de/sitemap.xml

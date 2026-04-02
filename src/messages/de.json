@@ -83,6 +83,7 @@
     "open": "Öffnen",
     "owner": "Eigentümer",
     "member": "Mitglied",
+    "viewer": "Betrachter",
     "noDescription": "Keine Beschreibung",
     "archived": "Archiviert",
     "restore": "Wiederherstellen",
@@ -282,8 +283,13 @@
       "versionRenamed": "Version umbenannt",
       "versionArchived": "Version archiviert",
       "versionArchiveFailed": "Archivierung fehlgeschlagen",
-      "pdfUrlFailed": "PDF-URL konnte nicht geladen werden"
+      "pdfUrlFailed": "PDF-URL konnte nicht geladen werden",
+      "statusChanged": "Status aktualisiert",
+      "statusChangeFailed": "Status konnte nicht geaendert werden"
     },
+    "status": "Status",
+    "noStatus": "Kein Status",
+    "statusChanged": "Status aktualisiert",
     "validation": {
       "pdfOnly": "Nur PDF-Dateien sind erlaubt",
       "maxFileSize": "Die Datei darf maximal 50 MB groß sein",
@@ -349,6 +355,7 @@
       "name": "Name",
       "email": "E-Mail",
       "tableStatus": "Status",
+      "tableRole": "Rolle",
       "tableRegistered": "Registriert",
       "tableProjects": "Projekte",
       "userCreated": "Nutzer {email} wurde erstellt"
@@ -395,6 +402,13 @@
       "deleteUser": "Löschen",
       "editProfile": "Profil bearbeiten",
       "editProfileDescription": "Name und E-Mail-Adresse des Nutzers ändern.",
+      "tenantRole": "Rolle",
+      "roleUser": "Benutzer",
+      "roleViewer": "Betrachter",
+      "roleGuest": "Gast",
+      "roleHint": "Benutzer: Vollzugriff. Betrachter: Nur lesen, sieht alle Projekte. Gast: Nur lesen, sieht nur zugewiesene Projekte.",
+      "roleUpdated": "Rolle aktualisiert",
+      "roleUpdateFailed": "Rolle konnte nicht geaendert werden",
       "selfProtection": "Du kannst deinen eigenen Account nicht deaktivieren oder löschen.",
       "projectAccess": "Projektzugriffe",
       "loadingProjects": "Laden...",
@@ -455,6 +469,27 @@
       "deleteConfirmFinal": "Endg\u00FCltig deaktivieren",
       "deleteSuccess": "Tenant wurde deaktiviert",
       "deleteFailed": "Tenant-L\u00F6schung fehlgeschlagen"
+    },
+    "statuses": {
+      "title": "Zeichnungsstatus",
+      "subtitle": "Status-Optionen f\u00FCr Zeichnungen verwalten",
+      "add": "Status hinzuf\u00FCgen",
+      "name": "Name",
+      "namePlaceholder": "z.B. In Bearbeitung",
+      "color": "Farbe",
+      "default": "Standard",
+      "setDefault": "Als Standard setzen",
+      "empty": "Noch keine Status definiert",
+      "emptyDescription": "Erstelle Status-Optionen, die Zeichnungen zugewiesen werden k\u00F6nnen.",
+      "created": "Status erstellt",
+      "updated": "Status aktualisiert",
+      "deleted": "Status gel\u00F6scht",
+      "createFailed": "Status konnte nicht erstellt werden",
+      "updateFailed": "Aktualisierung fehlgeschlagen",
+      "deleteFailed": "L\u00F6schen fehlgeschlagen",
+      "deleteConfirm": "Status l\u00F6schen?",
+      "deleteDescription": "Zeichnungen mit diesem Status werden auf \"Kein Status\" zur\u00FCckgesetzt.",
+      "hint": "\u00C4nderungen an Name oder Farbe wirken sich r\u00FCckwirkend auf alle bereits vergebenen Status aus."
     }
   },
   "limits": {
@@ -697,8 +732,10 @@
       "memberInvited": "{name} hat {invited} eingeladen",
       "memberRemoved": "{name} hat {removed} entfernt",
       "markerCreated": "{name} hat Marker \u201E{marker}\u201C auf \u201E{drawing}\u201C erstellt",
-      "markerDeleted": "{name} hat Marker \u201E{marker}\u201C von \u201E{drawing}\u201C geloescht"
-    }
+      "markerDeleted": "{name} hat Marker \u201E{marker}\u201C von \u201E{drawing}\u201C geloescht",
+      "statusChanged": "{name} hat den Status von \u201E{oldStatus}\u201C auf \u201E{newStatus}\u201C geaendert"
+    },
+    "noStatus": "Kein Status"
   },
   "profile": {
     "title": "Mein Profil",

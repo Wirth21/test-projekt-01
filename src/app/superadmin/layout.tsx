@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { LogOut, LayoutDashboard, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { Logo } from "@/components/Logo";
 import { createClient } from "@/lib/supabase";
 
 const navItems = [
@@ -38,12 +39,12 @@ export default function SuperadminLayout({
       <header className="border-b sticky top-0 bg-background z-10">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-lg font-semibold text-primary">
-              Link2Plan
-              <span className="text-muted-foreground font-normal ml-2 text-sm">
+            <div className="flex items-center gap-2">
+              <Logo size="sm" />
+              <span className="text-sm text-muted-foreground font-normal">
                 {t("nav.title")}
               </span>
-            </h1>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />

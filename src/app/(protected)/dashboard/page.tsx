@@ -27,6 +27,7 @@ import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { InviteMemberDialog } from "@/components/projects/InviteMemberDialog";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { Logo } from "@/components/Logo";
 import type { ProjectWithRole } from "@/lib/types/project";
 import type { CreateProjectInput, EditProjectInput } from "@/lib/validations/project";
 
@@ -49,6 +50,7 @@ export default function DashboardPage() {
     archiveProject,
     restoreProject,
     joinProject,
+    isReadOnly,
     fetchInactiveProjects,
     fetchArchivedProjects,
   } = useProjects();
@@ -163,8 +165,8 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b sticky top-0 bg-background z-10">
-        <div className="max-w-6xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
-          <h1 className="text-lg sm:text-xl font-semibold text-primary truncate">{tc("appName")}</h1>
+        <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <Logo size="sm" />
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {isAdmin && (
               <Button
@@ -191,16 +193,18 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
+      <main className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold">{tp("title")}</h2>
             <p className="text-sm text-muted-foreground mt-0.5">{tp("subtitle")}</p>
           </div>
-          <Button onClick={() => setCreateOpen(true)} className="w-full sm:w-auto">
-            <Plus className="mr-2 h-4 w-4" />
-            {tp("newProject")}
-          </Button>
+          {!isReadOnly && (
+            <Button onClick={() => setCreateOpen(true)} className="w-full sm:w-auto">
+              <Plus className="mr-2 h-4 w-4" />
+              {tp("newProject")}
+            </Button>
+          )}
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
@@ -221,7 +225,7 @@ export default function DashboardPage() {
 
           <TabsContent value="active">
             {loading && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="rounded-lg border bg-card p-6 space-y-3">
                     <Skeleton className="h-5 w-3/4" />
@@ -249,15 +253,17 @@ export default function DashboardPage() {
                 <p className="text-sm text-muted-foreground mb-6">
                   {tp("empty.description")}
                 </p>
-                <Button onClick={() => setCreateOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  {tp("firstProject")}
-                </Button>
+                {!isReadOnly && (
+                  <Button onClick={() => setCreateOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {tp("firstProject")}
+                  </Button>
+                )}
               </div>
             )}
 
             {!loading && !error && projects.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                 {projects.map((project) => (
                   <ProjectCard
                     key={project.id}
@@ -273,7 +279,7 @@ export default function DashboardPage() {
 
           <TabsContent value="inactive">
             {inactiveLoading && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="rounded-lg border bg-card p-6 space-y-3">
                     <Skeleton className="h-5 w-3/4" />
@@ -296,7 +302,7 @@ export default function DashboardPage() {
             )}
 
             {!inactiveLoading && inactiveProjects.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                 {inactiveProjects.map((project) => (
                   <div key={project.id} className="rounded-lg border bg-card p-6 space-y-3">
                     <div className="min-w-0">
@@ -335,7 +341,7 @@ export default function DashboardPage() {
 
           <TabsContent value="archived">
             {archivedLoading && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                 {Array.from({ length: 2 }).map((_, i) => (
                   <div key={i} className="rounded-lg border bg-card p-6 space-y-3">
                     <Skeleton className="h-5 w-3/4" />
@@ -356,7 +362,7 @@ export default function DashboardPage() {
             )}
 
             {!archivedLoading && archivedProjects.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                 {archivedProjects.map((project) => (
                   <div key={project.id} className="rounded-lg border bg-card p-6 space-y-3">
                     <div className="flex items-start justify-between">

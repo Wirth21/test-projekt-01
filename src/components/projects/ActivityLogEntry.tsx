@@ -12,6 +12,7 @@ import {
   FolderPlus,
   FolderEdit,
   FileUp,
+  CircleDot,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { ActivityLogEntry as ActivityLogEntryType } from "@/lib/types/activity";
@@ -45,6 +46,8 @@ function getActionIcon(actionType: string) {
       return FileUp;
     case "version.archived":
       return Archive;
+    case "drawing.status_changed":
+      return CircleDot;
     case "project.created":
       return FolderPlus;
     case "project.updated":
@@ -75,6 +78,9 @@ function getActionColorClass(actionType: string): string {
   }
   if (actionType.includes("uploaded") || actionType.includes("created") || actionType.includes("invited")) {
     return "text-blue-500 bg-blue-50 dark:bg-blue-950/30";
+  }
+  if (actionType.includes("status_changed")) {
+    return "text-purple-500 bg-purple-50 dark:bg-purple-950/30";
   }
   return "text-muted-foreground bg-muted";
 }
@@ -132,7 +138,7 @@ export function ActivityLogEntryComponent({ entry }: ActivityLogEntryProps) {
 
   // Determine locale from translation context
   // We use a simple approach: check if a known German word exists
-  const locale = t("title") === "Aenderungsprotokoll" ? "de" : "en";
+  const locale = t("title") === "Änderungsprotokoll" ? "de" : "en";
 
   function getDescription(): string {
     switch (entry.action_type) {
@@ -159,6 +165,12 @@ export function ActivityLogEntryComponent({ entry }: ActivityLogEntryProps) {
           name: userName,
           drawing: metadata.drawing_name ?? "",
           version: String(metadata.version_number ?? ""),
+        });
+      case "drawing.status_changed":
+        return t("actions.statusChanged", {
+          name: userName,
+          oldStatus: metadata.old_status ?? t("noStatus"),
+          newStatus: metadata.new_status ?? t("noStatus"),
         });
       case "project.created":
         return t("actions.projectCreated", { name: userName, project: metadata.name ?? "" });

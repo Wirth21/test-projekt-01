@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase";
 import { useProjects, useProjectMembers } from "@/hooks/use-projects";
 import { ProjectCard } from "@/components/projects/ProjectCard";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { InviteMemberDialog } from "@/components/projects/InviteMemberDialog";
@@ -301,15 +302,33 @@ export default function DashboardPage() {
 
                   {!loading && nonMemberProjects.length > 0 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                      {nonMemberProjects.map((project) => (
-                        <ProjectCard
-                          key={project.id}
-                          project={project}
-                          onEdit={(p) => setEditProject(p)}
-                          onInvite={(p) => setInviteProject(p)}
-                          onArchive={(p) => setArchiveTarget(p)}
-                        />
-                      ))}
+                      {nonMemberProjects.map((project) => {
+                        const formattedDate = new Date(project.updated_at).toLocaleDateString("de-DE", {
+                          day: "2-digit", month: "2-digit", year: "numeric",
+                        });
+                        return (
+                          <Card key={project.id} className="flex flex-col">
+                            <CardHeader className="pb-2">
+                              <h3 className="font-semibold text-base leading-tight line-clamp-2">
+                                {project.name}
+                              </h3>
+                              <Badge variant="secondary" className="w-fit text-xs mt-1">
+                                {tp("viewer")}
+                              </Badge>
+                            </CardHeader>
+                            <CardContent className="flex-1 pb-2">
+                              {project.description ? (
+                                <p className="text-sm text-muted-foreground line-clamp-3">{project.description}</p>
+                              ) : (
+                                <p className="text-sm text-muted-foreground italic">{tp("noDescription")}</p>
+                              )}
+                            </CardContent>
+                            <CardFooter className="text-xs text-muted-foreground pt-2 border-t">
+                              <span>{formattedDate}</span>
+                            </CardFooter>
+                          </Card>
+                        );
+                      })}
                     </div>
                   )}
                 </>

@@ -149,9 +149,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(landingUrl);
   }
 
-  // Set tenant context headers for downstream use
-  supabaseResponse.headers.set("x-tenant-id", tenant.id);
-  supabaseResponse.headers.set("x-tenant-slug", tenant.slug);
+  // Set tenant context on the request so route handlers can read it via headers()
+  request.headers.set("x-tenant-id", tenant.id);
+  request.headers.set("x-tenant-slug", tenant.slug);
 
   // ──────────────────────────────────────────────
   // 3. Auth checks (existing logic, now tenant-scoped)

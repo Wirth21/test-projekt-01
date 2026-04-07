@@ -143,14 +143,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Projekt konnte nicht erstellt werden", detail: createError.message }, { status: 500 });
   }
 
-  // Use service role to bypass RLS for the initial owner membership
-  const serviceClient = createServiceRoleClient();
-  const { error: memberError } = await serviceClient
-    .from("project_members")
-    .insert({ project_id: project.id, user_id: user.id, role: "owner" });
+  // Add creator as owner — try service role first (bypasses RLS), fall back to user client
+  let memberError: { message: string } | null = null;
+  try {
+    const serviceClient = createServiceRoleClient();
+    const result = await serviceClient
+      .from("project_members")
+      .insert({ project_id: project.id, user_id: user.id, role: "owner" });
+    memberError = result.error;
+  } catch {
+    // Service role not available — try with user client
+    const result = await supabase
+      .from("project_members")
+      .insert({ project_id: project.id, user_id: user.id, role: "owner" });
+    memberError = result.error;
+  }
 
   if (memberError) {
-    return NextResponse.json({ error: "Mitgliedschaft konnte nicht erstellt werden", detail: memberError.message }, { status: 500 });
+    // Rollback: delete the project if membership creation fails
+    await supabase.from("projects").delete().eq("id", project.id);
+    return NextResponse.json({ error: "Projekt konnte nicht erstellt werden", detail: memberError.message }, { status: 500 });
   }
 
   // Log activity: project created

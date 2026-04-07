@@ -235,30 +235,24 @@ export function useProjects() {
         return;
       }
 
+      // Fetch memberships for role mapping
       const { data: memberships } = await supabase
         .from("project_members")
         .select("project_id, role")
         .eq("user_id", user.id);
 
-      if (!memberships || memberships.length === 0) {
-        setArchivedProjects([]);
-        setArchivedLoading(false);
-        return;
-      }
+      const roleMap = new Map((memberships ?? []).map((m) => [m.project_id, m.role]));
 
-      const projectIds = memberships.map((m) => m.project_id);
-
+      // RLS handles visibility — fetch all archived projects the user can see
       const { data: projectsData } = await supabase
         .from("projects")
         .select("*")
-        .in("id", projectIds)
         .eq("is_archived", true)
         .order("updated_at", { ascending: false });
 
-      const roleMap = new Map(memberships.map((m) => [m.project_id, m.role]));
       const result: ProjectWithRole[] = (projectsData || []).map((p) => ({
         ...p,
-        role: (roleMap.get(p.id) as "owner" | "member") || "member",
+        role: (roleMap.get(p.id) as "owner" | "member" | undefined) ?? "viewer",
       }));
 
       setArchivedProjects(result);

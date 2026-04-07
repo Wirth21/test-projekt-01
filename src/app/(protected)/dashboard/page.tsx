@@ -213,10 +213,6 @@ export default function DashboardPage() {
               <FolderOpen className="h-3.5 w-3.5" />
               {tn("active")}
             </TabsTrigger>
-            <TabsTrigger value="inactive" className="gap-1.5">
-              <EyeOff className="h-3.5 w-3.5" />
-              {tn("inactive")}
-            </TabsTrigger>
             <TabsTrigger value="archived" className="gap-1.5">
               <Archive className="h-3.5 w-3.5" />
               {tn("archive")}
@@ -272,68 +268,6 @@ export default function DashboardPage() {
                     onInvite={(p) => setInviteProject(p)}
                     onArchive={(p) => setArchiveTarget(p)}
                   />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="inactive">
-            {inactiveLoading && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="rounded-lg border bg-card p-6 space-y-3">
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-4 w-1/3" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-9 w-full" />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {!inactiveLoading && inactiveProjects.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <EyeOff className="h-12 w-12 text-muted-foreground/40 mb-4" />
-                <h3 className="text-lg font-medium mb-1">{tp("emptyInactive.title")}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {tp("emptyInactive.description")}
-                </p>
-              </div>
-            )}
-
-            {!inactiveLoading && inactiveProjects.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                {inactiveProjects.map((project) => (
-                  <div key={project.id} className="rounded-lg border bg-card p-6 space-y-3">
-                    <div className="min-w-0">
-                      <h3 className="font-medium truncate">{project.name}</h3>
-                      {project.description && (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                          {project.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Users className="h-3.5 w-3.5" />
-                      <span>
-                        {(project.member_count ?? 0) === 1
-                          ? tp("memberCount", { count: project.member_count ?? 0 })
-                          : tp("memberCountPlural", { count: project.member_count ?? 0 })}
-                      </span>
-                    </div>
-                    <Button
-                      className="w-full"
-                      disabled={joining === project.id}
-                      onClick={() => handleJoin(project)}
-                    >
-                      {joining === project.id ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <LogIn className="mr-2 h-4 w-4" />
-                      )}
-                      {tp("join")}
-                    </Button>
-                  </div>
                 ))}
               </div>
             )}

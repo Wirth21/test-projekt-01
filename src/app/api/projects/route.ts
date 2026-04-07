@@ -113,7 +113,13 @@ export async function POST(request: Request) {
 
   const { name, description } = result.data;
 
-  const { tenantId } = await getTenantContext();
+  let tenantId: string;
+  try {
+    const ctx = await getTenantContext();
+    tenantId = ctx.tenantId;
+  } catch {
+    return NextResponse.json({ error: "Tenant-Kontext nicht verfügbar" }, { status: 400 });
+  }
 
   // Check project count limit
   const { data: tenant } = await supabase

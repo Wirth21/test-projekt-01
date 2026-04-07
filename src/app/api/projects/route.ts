@@ -8,6 +8,7 @@ import type { PlanType } from "@/lib/types/tenant";
 import { logActivity } from "@/lib/activity-log";
 import { parsePagination, paginationMeta } from "@/lib/pagination";
 import { isReadOnlyUser } from "@/lib/admin";
+import { createServiceRoleClient } from "@/lib/superadmin";
 
 // GET /api/projects — list projects the current user is a member of
 // Query params: ?page=1&limit=50&archived=false
@@ -142,7 +143,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Projekt konnte nicht erstellt werden", detail: createError.message }, { status: 500 });
   }
 
-  const { error: memberError } = await supabase
+  // Use service role to bypass RLS for the initial owner membership
+  const serviceClient = createServiceRoleClient();
+  const { error: memberError } = await serviceClient
     .from("project_members")
     .insert({ project_id: project.id, user_id: user.id, role: "owner" });
 

@@ -2,6 +2,18 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { extractSubdomain } from "@/lib/tenant";
 
+function buildUrl(request: NextRequest, pathname: string, searchParams?: Record<string, string>): URL {
+  const host = request.headers.get("host") || "localhost:3000";
+  const protocol = host.includes("localhost") ? "http" : "https";
+  const url = new URL(pathname, `${protocol}://${host}`);
+  if (searchParams) {
+    for (const [key, value] of Object.entries(searchParams)) {
+      url.searchParams.set(key, value);
+    }
+  }
+  return url;
+}
+
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get("host") || "localhost:3000";
   const subdomain = extractSubdomain(hostname);
@@ -46,9 +58,7 @@ export async function middleware(request: NextRequest) {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/superadmin/login";
-        return NextResponse.redirect(url);
+        return NextResponse.redirect(buildUrl(request, "/superadmin/login"));
       }
 
       // Check superadmin status — use service role to bypass RLS
@@ -67,15 +77,10 @@ export async function middleware(request: NextRequest) {
           .single();
 
         if (!profile?.is_superadmin || profile.status !== "active") {
-          const url = request.nextUrl.clone();
-          url.pathname = "/superadmin/login";
-          return NextResponse.redirect(url);
+          return NextResponse.redirect(buildUrl(request, "/superadmin/login"));
         }
       } else {
-        // No service role key configured — deny access
-        const url = request.nextUrl.clone();
-        url.pathname = "/superadmin/login";
-        return NextResponse.redirect(url);
+        return NextResponse.redirect(buildUrl(request, "/superadmin/login"));
       }
 
       return supabaseResponse;
@@ -172,9 +177,7 @@ export async function middleware(request: NextRequest) {
 
   // Unauthenticated user on a protected route → redirect to /login
   if (!user && !isPublicRoute && !isApiRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(buildUrl(request, "/login"));
   }
 
   // Authenticated user: check profile status + tenant membership
@@ -189,44 +192,31 @@ export async function middleware(request: NextRequest) {
       // User belongs to a different tenant → deny access
       if (profile.tenant_id !== tenant.id) {
         await supabase.auth.signOut();
-        const url = request.nextUrl.clone();
-        url.pathname = "/login";
-        url.searchParams.set("error", "wrong_tenant");
-        return NextResponse.redirect(url);
+        return NextResponse.redirect(buildUrl(request, "/login", { error: "wrong_tenant" }));
       }
 
       // Pending users: block access
       if (profile.status === "pending") {
         await supabase.auth.signOut();
-        const url = request.nextUrl.clone();
-        url.pathname = "/login";
-        url.searchParams.set("error", "pending");
-        return NextResponse.redirect(url);
+        return NextResponse.redirect(buildUrl(request, "/login", { error: "pending" }));
       }
 
       // Disabled/deleted users: block access
       if (profile.status === "disabled" || profile.status === "deleted") {
         await supabase.auth.signOut();
-        const url = request.nextUrl.clone();
-        url.pathname = "/login";
-        url.searchParams.set("error", "disabled");
-        return NextResponse.redirect(url);
+        return NextResponse.redirect(buildUrl(request, "/login", { error: "disabled" }));
       }
 
       // Admin route protection: non-admins get redirected to dashboard
       if (pathname.startsWith("/admin") && !profile.is_admin) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/dashboard";
-        return NextResponse.redirect(url);
+        return NextResponse.redirect(buildUrl(request, "/dashboard"));
       }
     }
   }
 
   // Authenticated user on login or register → redirect to /dashboard
   if (user && (pathname === "/login" || pathname === "/register")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(buildUrl(request, "/dashboard"));
   }
 
   return supabaseResponse;

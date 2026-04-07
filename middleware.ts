@@ -107,8 +107,32 @@ export async function middleware(request: NextRequest) {
   }
 
   // ──────────────────────────────────────────────
-  // 2. Subdomain detected → Resolve tenant
+  // 2. Subdomain detected → Resolve tenant (direct REST call to avoid RLS issues)
   // ──────────────────────────────────────────────
+  const tenantRes = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/tenants?slug=eq.${subdomain}&select=id,slug,is_active&limit=1`,
+    {
+      headers: {
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+      },
+    }
+  );
+  const tenants = await tenantRes.json();
+  const tenant = Array.isArray(tenants) ? tenants[0] : null;
+
+  // Unknown or inactive tenant → redirect to landing page
+  if (!tenant || !tenant.is_active) {
+    const landingUrl = new URL("/", request.url);
+    const rootHost = hostname.replace(`${subdomain}.`, "");
+    landingUrl.host = rootHost;
+    return NextResponse.redirect(landingUrl);
+  }
+
+  // Set tenant context on the request BEFORE creating supabase client
+  request.headers.set("x-tenant-id", tenant.id);
+  request.headers.set("x-tenant-slug", tenant.slug);
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -131,27 +155,6 @@ export async function middleware(request: NextRequest) {
       },
     }
   );
-
-  // Lookup tenant by slug (using service role would bypass RLS,
-  // but anon key works here since we just need to check existence)
-  const { data: tenant } = await supabase
-    .from("tenants")
-    .select("id, slug, is_active")
-    .eq("slug", subdomain)
-    .single();
-
-  // Unknown or inactive tenant → redirect to landing page
-  if (!tenant || !tenant.is_active) {
-    const landingUrl = new URL("/", request.url);
-    // Redirect to root domain
-    const rootHost = hostname.replace(`${subdomain}.`, "");
-    landingUrl.host = rootHost;
-    return NextResponse.redirect(landingUrl);
-  }
-
-  // Set tenant context on the request so route handlers can read it via headers()
-  request.headers.set("x-tenant-id", tenant.id);
-  request.headers.set("x-tenant-slug", tenant.slug);
 
   // ──────────────────────────────────────────────
   // 3. Auth checks (existing logic, now tenant-scoped)

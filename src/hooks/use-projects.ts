@@ -54,49 +54,24 @@ export function useProjects() {
 
       const roleMap = new Map((memberships ?? []).map((m) => [m.project_id, m.role]));
 
-      // Viewers: fetch all tenant projects via RLS (policy allows it)
-      // Guests/Users: fetch only member projects
+      // RLS handles visibility: user/viewer see all tenant projects, guest sees only assigned
+      // Just fetch all projects RLS allows
       let projectsData;
       let projectIds: string[];
 
-      if (role === "viewer") {
-        // RLS allows viewers to see all tenant projects
-        const { data, error: projectsError } = await supabase
-          .from("projects")
-          .select("*")
-          .eq("is_archived", false)
-          .order("updated_at", { ascending: false });
+      const { data, error: projectsError } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("is_archived", false)
+        .order("updated_at", { ascending: false });
 
-        if (projectsError) {
-          setError("Projekte konnten nicht geladen werden");
-          setLoading(false);
-          return;
-        }
-        projectsData = data;
-        projectIds = (data ?? []).map((p) => p.id);
-      } else {
-        if (!memberships || memberships.length === 0) {
-          setProjects([]);
-          setLoading(false);
-          return;
-        }
-
-        projectIds = memberships.map((m) => m.project_id);
-
-        const { data, error: projectsError } = await supabase
-          .from("projects")
-          .select("*")
-          .in("id", projectIds)
-          .eq("is_archived", false)
-          .order("updated_at", { ascending: false });
-
-        if (projectsError) {
-          setError("Projekte konnten nicht geladen werden");
-          setLoading(false);
-          return;
-        }
-        projectsData = data;
+      if (projectsError) {
+        setError("Projekte konnten nicht geladen werden");
+        setLoading(false);
+        return;
       }
+      projectsData = data;
+      projectIds = (data ?? []).map((p) => p.id);
 
       // Count non-archived drawings per project
       const { data: drawingRows } = await supabase
@@ -142,7 +117,9 @@ export function useProjects() {
       const projectsWithRole: ProjectWithRole[] = (projectsData || []).map(
         (p) => ({
           ...p,
-          role: isReadOnly ? ("viewer" as const) : ((roleMap.get(p.id) as "owner" | "member") || "member"),
+          role: isReadOnly
+            ? ("viewer" as const)
+            : ((roleMap.get(p.id) as "owner" | "member" | undefined) ?? "viewer"),
           pdf_count: pdfCounts[p.id] ?? 0,
           marker_count: markerCounts[p.id] ?? 0,
           member_count: memberCounts[p.id] ?? 0,

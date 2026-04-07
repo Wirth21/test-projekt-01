@@ -213,6 +213,10 @@ export default function DashboardPage() {
               <FolderOpen className="h-3.5 w-3.5" />
               {tn("active")}
             </TabsTrigger>
+            <TabsTrigger value="inactive" className="gap-1.5">
+              <EyeOff className="h-3.5 w-3.5" />
+              {tn("inactive")}
+            </TabsTrigger>
             <TabsTrigger value="archived" className="gap-1.5">
               <Archive className="h-3.5 w-3.5" />
               {tn("archive")}
@@ -220,57 +224,97 @@ export default function DashboardPage() {
           </TabsList>
 
           <TabsContent value="active">
-            {loading && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="rounded-lg border bg-card p-6 space-y-3">
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-4 w-1/3" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-4 w-1/2" />
-                  </div>
-                ))}
-              </div>
-            )}
+            {(() => {
+              const memberProjects = projects.filter((p) => p.role === "owner" || p.role === "member");
+              return (
+                <>
+                  {loading && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="rounded-lg border bg-card p-6 space-y-3">
+                          <Skeleton className="h-5 w-3/4" />
+                          <Skeleton className="h-4 w-1/3" />
+                          <Skeleton className="h-12 w-full" />
+                          <Skeleton className="h-4 w-1/2" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-            {!loading && error && (
-              <div className="text-center py-16 text-muted-foreground">
-                <p className="text-sm">{error}</p>
-                <Button variant="outline" size="sm" className="mt-4" onClick={() => window.location.reload()}>
-                  {tc("retry")}
-                </Button>
-              </div>
-            )}
+                  {!loading && error && (
+                    <div className="text-center py-16 text-muted-foreground">
+                      <p className="text-sm">{error}</p>
+                      <Button variant="outline" size="sm" className="mt-4" onClick={() => window.location.reload()}>
+                        {tc("retry")}
+                      </Button>
+                    </div>
+                  )}
 
-            {!loading && !error && projects.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <FolderOpen className="h-12 w-12 text-muted-foreground/40 mb-4" />
-                <h3 className="text-lg font-medium mb-1">{tp("empty.title")}</h3>
-                <p className="text-sm text-muted-foreground mb-6">
-                  {tp("empty.description")}
-                </p>
-                {!isReadOnly && (
-                  <Button onClick={() => setCreateOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    {tp("firstProject")}
-                  </Button>
-                )}
-              </div>
-            )}
+                  {!loading && !error && memberProjects.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-24 text-center">
+                      <FolderOpen className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                      <h3 className="text-lg font-medium mb-1">{tp("empty.title")}</h3>
+                      <p className="text-sm text-muted-foreground mb-6">
+                        {tp("empty.description")}
+                      </p>
+                      {!isReadOnly && (
+                        <Button onClick={() => setCreateOpen(true)}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          {tp("firstProject")}
+                        </Button>
+                      )}
+                    </div>
+                  )}
 
-            {!loading && !error && projects.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                {projects.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    onEdit={(p) => setEditProject(p)}
-                    onInvite={(p) => setInviteProject(p)}
-                    onArchive={(p) => setArchiveTarget(p)}
-                  />
-                ))}
-              </div>
-            )}
+                  {!loading && !error && memberProjects.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                      {memberProjects.map((project) => (
+                        <ProjectCard
+                          key={project.id}
+                          project={project}
+                          onEdit={(p) => setEditProject(p)}
+                          onInvite={(p) => setInviteProject(p)}
+                          onArchive={(p) => setArchiveTarget(p)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </TabsContent>
+
+          <TabsContent value="inactive">
+            {(() => {
+              const nonMemberProjects = projects.filter((p) => p.role === "viewer");
+              return (
+                <>
+                  {!loading && nonMemberProjects.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-24 text-center">
+                      <EyeOff className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                      <h3 className="text-lg font-medium mb-1">{tp("emptyInactive.title")}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {tp("emptyInactive.description")}
+                      </p>
+                    </div>
+                  )}
+
+                  {!loading && nonMemberProjects.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                      {nonMemberProjects.map((project) => (
+                        <ProjectCard
+                          key={project.id}
+                          project={project}
+                          onEdit={(p) => setEditProject(p)}
+                          onInvite={(p) => setInviteProject(p)}
+                          onArchive={(p) => setArchiveTarget(p)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </TabsContent>
 
           <TabsContent value="archived">

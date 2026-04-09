@@ -30,7 +30,11 @@ import { PdfUploadZone } from "@/components/drawings/PdfUploadZone";
 import { GroupedDrawingList } from "@/components/drawings/GroupedDrawingList";
 import { Logo } from "@/components/Logo";
 import { CreateGroupDialog } from "@/components/drawings/CreateGroupDialog";
-import { ProjectSyncButton } from "@/components/sync/ProjectSyncButton";
+import dynamic from "next/dynamic";
+const ProjectSyncButton = dynamic(
+  () => import("@/components/sync/ProjectSyncButton").then((m) => m.ProjectSyncButton),
+  { ssr: false }
+);
 import type { ProjectWithRole } from "@/lib/types/project";
 import { useTranslations } from "next-intl";
 

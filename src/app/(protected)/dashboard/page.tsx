@@ -29,7 +29,11 @@ import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { InviteMemberDialog } from "@/components/projects/InviteMemberDialog";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Logo } from "@/components/Logo";
-import { SyncStatusBadge } from "@/components/sync/SyncStatusBadge";
+import dynamic from "next/dynamic";
+const SyncStatusBadge = dynamic(
+  () => import("@/components/sync/SyncStatusBadge").then((m) => m.SyncStatusBadge),
+  { ssr: false }
+);
 import type { ProjectWithRole } from "@/lib/types/project";
 import type { CreateProjectInput, EditProjectInput } from "@/lib/validations/project";
 

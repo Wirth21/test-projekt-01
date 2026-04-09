@@ -50,9 +50,8 @@ export function useSyncContext() {
 const STALE_THRESHOLD = 60_000; // 1 minute
 
 export function SyncProvider({ children }: { children: ReactNode }) {
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator !== "undefined" ? navigator.onLine : true
-  );
+  // Always start with true to match SSR, then sync with actual state in useEffect
+  const [isOnline, setIsOnline] = useState(true);
   const [lastSynced, setLastSynced] = useState<number | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
@@ -80,8 +79,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     detectTenant();
   }, []);
 
-  // Online/offline detection
+  // Online/offline detection — sync with actual browser state after mount
   useEffect(() => {
+    setIsOnline(navigator.onLine);
+
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 

@@ -35,7 +35,13 @@ export async function POST(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
   }
 
-  const { tenantId } = await getTenantContext();
+  let tenantId: string;
+  try {
+    const ctx = await getTenantContext();
+    tenantId = ctx.tenantId;
+  } catch {
+    return NextResponse.json({ error: "Tenant-Kontext nicht verfügbar" }, { status: 400 });
+  }
 
   // Check project exists and belongs to tenant
   const { data: project, error: projectError } = await supabase

@@ -127,7 +127,13 @@ export async function POST(request: Request, { params }: RouteParams) {
   const { email } = result.data;
 
   // Check user limit for this tenant
-  const { tenantId } = await getTenantContext();
+  let tenantId: string;
+  try {
+    const ctx = await getTenantContext();
+    tenantId = ctx.tenantId;
+  } catch {
+    return NextResponse.json({ error: "Tenant-Kontext nicht verfügbar" }, { status: 400 });
+  }
   const { data: tenant } = await supabase
     .from("tenants")
     .select("plan")

@@ -146,7 +146,13 @@ export async function POST(request: Request) {
   );
 
   // Get tenant context for the new user
-  const { tenantId } = await getTenantContext();
+  let tenantId: string;
+  try {
+    const ctx = await getTenantContext();
+    tenantId = ctx.tenantId;
+  } catch {
+    return NextResponse.json({ error: "Tenant-Kontext nicht verfügbar" }, { status: 400 });
+  }
 
   // Create user in Supabase Auth (auto-confirms email)
   const { data: authData, error: authError } = await adminClient.auth.admin.createUser({

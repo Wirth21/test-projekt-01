@@ -21,7 +21,13 @@ export async function GET() {
     );
   }
 
-  const { tenantId } = await getTenantContext();
+  let tenantId: string;
+  try {
+    const ctx = await getTenantContext();
+    tenantId = ctx.tenantId;
+  } catch {
+    return NextResponse.json({ error: "Tenant-Kontext nicht verfügbar" }, { status: 400 });
+  }
 
   // Fetch tenant plan
   const { data: tenant, error: tenantError } = await supabase

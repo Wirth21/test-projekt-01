@@ -34,7 +34,13 @@ export async function GET(request: Request) {
   }
 
   const { projectId } = queryResult.data;
-  const { tenantId } = await getTenantContext();
+  let tenantId: string;
+  try {
+    const ctx = await getTenantContext();
+    tenantId = ctx.tenantId;
+  } catch {
+    return NextResponse.json({ error: "Tenant-Kontext nicht verfügbar" }, { status: 400 });
+  }
 
   // Verify the project exists in this tenant
   const { data: project, error: projectError } = await supabase

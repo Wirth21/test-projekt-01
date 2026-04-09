@@ -148,7 +148,13 @@ export async function POST(request: Request, { params }: RouteParams) {
   const { storage_path, file_size, page_count, label } = result.data;
 
   // Check plan limits for file size and storage
-  const { tenantId } = await getTenantContext();
+  let tenantId: string;
+  try {
+    const ctx = await getTenantContext();
+    tenantId = ctx.tenantId;
+  } catch {
+    return NextResponse.json({ error: "Tenant-Kontext nicht verfügbar" }, { status: 400 });
+  }
   const { data: tenant } = await supabase
     .from("tenants")
     .select("plan")

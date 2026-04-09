@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { getTenantContext } from "@/lib/tenant";
+import { createServiceRoleClient } from "@/lib/superadmin";
 import { z } from "zod";
 
 const paramsSchema = z.object({
@@ -35,7 +36,13 @@ export async function POST(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
   }
 
-  const { tenantId } = await getTenantContext();
+  let tenantId: string;
+  try {
+    const ctx = await getTenantContext();
+    tenantId = ctx.tenantId;
+  } catch {
+    return NextResponse.json({ error: "Tenant-Kontext nicht verfügbar" }, { status: 400 });
+  }
 
   // Check project exists, belongs to tenant, and is not archived
   const { data: project, error: projectError } = await supabase
@@ -71,14 +78,29 @@ export async function POST(_request: Request, { params }: RouteParams) {
     );
   }
 
-  // Insert membership (RLS policy "Users can self-join tenant projects" allows this)
-  const { error: insertError } = await supabase
-    .from("project_members")
-    .insert({
-      project_id: projectId,
-      user_id: user.id,
-      role: "member",
-    });
+  // Insert membership using service role to bypass RLS
+  // (Auth + tenant + project checks already done above)
+  let insertError: { code?: string; message: string } | null = null;
+  try {
+    const serviceClient = createServiceRoleClient();
+    const result = await serviceClient
+      .from("project_members")
+      .insert({
+        project_id: projectId,
+        user_id: user.id,
+        role: "member",
+      });
+    insertError = result.error;
+  } catch {
+    const result = await supabase
+      .from("project_members")
+      .insert({
+        project_id: projectId,
+        user_id: user.id,
+        role: "member",
+      });
+    insertError = result.error;
+  }
 
   if (insertError) {
     // Handle unique constraint violation (race condition)

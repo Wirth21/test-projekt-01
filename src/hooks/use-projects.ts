@@ -73,45 +73,24 @@ export function useProjects() {
       projectsData = data;
       projectIds = (data ?? []).map((p) => p.id);
 
-      // Count non-archived drawings per project
-      const { data: drawingRows } = await supabase
-        .from("drawings")
-        .select("project_id")
-        .in("project_id", projectIds)
-        .eq("is_archived", false);
+      // Count drawings, markers, members per project using SECURITY DEFINER functions
+      const counts = await Promise.all(
+        projectIds.map(async (pid) => {
+          const [drawingRes, markerRes, memberRes] = await Promise.all([
+            supabase.rpc("project_drawing_count", { p_project_id: pid }),
+            supabase.rpc("project_marker_count", { p_project_id: pid }),
+            supabase.rpc("project_member_count", { p_project_id: pid }),
+          ]);
+          return {
+            id: pid,
+            pdf_count: drawingRes.data ?? 0,
+            marker_count: markerRes.data ?? 0,
+            member_count: memberRes.data ?? 0,
+          };
+        })
+      );
 
-      const pdfCounts: Record<string, number> = {};
-      if (drawingRows) {
-        for (const row of drawingRows) {
-          pdfCounts[row.project_id] = (pdfCounts[row.project_id] || 0) + 1;
-        }
-      }
-
-      // Count markers per project
-      const { data: markerRows } = await supabase
-        .from("markers")
-        .select("project_id")
-        .in("project_id", projectIds);
-
-      const markerCounts: Record<string, number> = {};
-      if (markerRows) {
-        for (const row of markerRows) {
-          markerCounts[row.project_id] = (markerCounts[row.project_id] || 0) + 1;
-        }
-      }
-
-      // Count members per project
-      const { data: memberRows } = await supabase
-        .from("project_members")
-        .select("project_id")
-        .in("project_id", projectIds);
-
-      const memberCounts: Record<string, number> = {};
-      if (memberRows) {
-        for (const row of memberRows) {
-          memberCounts[row.project_id] = (memberCounts[row.project_id] || 0) + 1;
-        }
-      }
+      const countMap = new Map(counts.map((c) => [c.id, c]));
 
       // Merge role info, pdf counts, marker counts and member counts
       const projectsWithRole: ProjectWithRole[] = (projectsData || []).map(
@@ -120,9 +99,9 @@ export function useProjects() {
           role: isReadOnly
             ? ("viewer" as const)
             : ((roleMap.get(p.id) as "owner" | "member" | undefined) ?? "viewer"),
-          pdf_count: pdfCounts[p.id] ?? 0,
-          marker_count: markerCounts[p.id] ?? 0,
-          member_count: memberCounts[p.id] ?? 0,
+          pdf_count: countMap.get(p.id)?.pdf_count ?? 0,
+          marker_count: countMap.get(p.id)?.marker_count ?? 0,
+          member_count: countMap.get(p.id)?.member_count ?? 0,
         })
       );
 

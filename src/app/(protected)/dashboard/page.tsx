@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Plus, LogOut, FolderOpen, Loader2, ShieldAlert, Archive, RotateCcw, EyeOff, Users, LogIn, User } from "lucide-react";
+import { Plus, LogOut, FolderOpen, Loader2, ShieldAlert, Archive, RotateCcw, EyeOff, Users, LogIn, User, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -323,8 +323,16 @@ export default function DashboardPage() {
                                 <p className="text-sm text-muted-foreground italic">{tp("noDescription")}</p>
                               )}
                             </CardContent>
-                            <CardFooter className="text-xs text-muted-foreground pt-2 border-t">
-                              <span>{formattedDate}</span>
+                            <CardFooter className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
+                              <span className="flex items-center gap-1">
+                                <FileText className="h-3.5 w-3.5" />
+                                {project.pdf_count ?? 0}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3.5 w-3.5" />
+                                {project.member_count ?? 0}
+                              </span>
+                              <span className="ml-auto">{formattedDate}</span>
                             </CardFooter>
                           </Card>
                         );

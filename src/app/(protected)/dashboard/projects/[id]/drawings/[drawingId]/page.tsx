@@ -100,8 +100,13 @@ export default function DrawingViewerPage({ params }: PageProps) {
   );
 
   // Determine the actual version to display
-  const activeVersion =
-    versions.find((v) => v.id === selectedVersionId) ?? latestActiveVersion;
+  // Guard: only use a version that belongs to the current drawing
+  const activeVersion = (() => {
+    const selected = versions.find((v) => v.id === selectedVersionId);
+    if (selected && selected.drawing_id === activeDrawingId) return selected;
+    if (latestActiveVersion && latestActiveVersion.drawing_id === activeDrawingId) return latestActiveVersion;
+    return undefined;
+  })();
 
   const {
     markers,

@@ -430,7 +430,7 @@ export default function DashboardPage() {
                           {formattedDate}
                         </span>
                       </div>
-                      {isProjectOwner && !isReadOnly && (
+                      {!isReadOnly && (
                         <Button
                           variant="outline"
                           size="sm"

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServiceRoleClient } from "@/lib/superadmin";
 import { logActivity } from "@/lib/activity-log";
 import { isReadOnlyUser } from "@/lib/admin";
 
@@ -26,37 +27,31 @@ export async function POST(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
   }
 
-  // Verify ownership or admin
-  const { data: membership } = await supabase
-    .from("project_members")
-    .select("role")
-    .eq("project_id", id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single();
-
-  const isOwner = membership?.role === "owner";
-  const isAdmin = profile?.is_admin === true;
-
-  if (!isOwner && !isAdmin) {
-    return NextResponse.json(
-      { error: "Nur der Eigentümer oder ein Admin kann Projekte wiederherstellen" },
-      { status: 403 }
-    );
+  // Any non-read-only tenant user can restore — use service role to bypass RLS
+  let project = null;
+  let restoreError = null;
+  try {
+    const serviceClient = createServiceRoleClient();
+    const result = await serviceClient
+      .from("projects")
+      .update({ is_archived: false, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("is_archived", true)
+      .select()
+      .single();
+    project = result.data;
+    restoreError = result.error;
+  } catch {
+    const result = await supabase
+      .from("projects")
+      .update({ is_archived: false, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("is_archived", true)
+      .select()
+      .single();
+    project = result.data;
+    restoreError = result.error;
   }
-
-  const { data: project, error: restoreError } = await supabase
-    .from("projects")
-    .update({ is_archived: false, updated_at: new Date().toISOString() })
-    .eq("id", id)
-    .eq("is_archived", true)
-    .select()
-    .single();
 
   if (restoreError) {
     return NextResponse.json(

@@ -1,20 +1,38 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import type { ProjectWithRole, ProjectMember } from "@/lib/types/project";
 import type { CreateProjectInput, EditProjectInput } from "@/lib/validations/project";
 import type { TenantRole } from "@/lib/types/admin";
+import { cacheRecords, getCachedByTenant, getSyncMeta, setSyncMeta } from "@/lib/offline/db";
 
 export function useProjects() {
   const [projects, setProjects] = useState<ProjectWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tenantRole, setTenantRole] = useState<TenantRole>("user");
+  const tenantIdRef = useRef<string | null>(null);
 
   const supabase = createClient();
 
   const fetchProjects = useCallback(async () => {
+    // Try to load cached projects first for instant display
+    try {
+      if (tenantIdRef.current) {
+        const cached = await getCachedByTenant<ProjectWithRole>("projects", tenantIdRef.current);
+        if (cached.length > 0) {
+          setProjects(cached);
+          setLoading(false);
+          // Check if cache is fresh enough to skip network
+          const meta = await getSyncMeta(`projects:${tenantIdRef.current}`);
+          if (meta && Date.now() - meta.lastSynced < 30_000) return;
+        }
+      }
+    } catch {
+      // IndexedDB not available, continue with network
+    }
+
     setLoading(true);
     setError(null);
 
@@ -29,15 +47,16 @@ export function useProjects() {
         return;
       }
 
-      // Fetch tenant_role from profile
+      // Fetch tenant_role and tenant_id from profile
       const { data: profile } = await supabase
         .from("profiles")
-        .select("tenant_role")
+        .select("tenant_role, tenant_id")
         .eq("id", user.id)
         .single();
 
       const role = (profile?.tenant_role as TenantRole) ?? "user";
       setTenantRole(role);
+      if (profile?.tenant_id) tenantIdRef.current = profile.tenant_id;
       const isReadOnly = role === "viewer" || role === "guest";
 
       // Get all project memberships for the current user
@@ -106,6 +125,18 @@ export function useProjects() {
       );
 
       setProjects(projectsWithRole);
+
+      // Cache the result
+      const tid = projectsWithRole[0]?.tenant_id;
+      if (tid) {
+        tenantIdRef.current = tid;
+        try {
+          await cacheRecords("projects", projectsWithRole as unknown as Record<string, unknown>[], tid);
+          await setSyncMeta({ key: `projects:${tid}`, lastSynced: Date.now(), tenantId: tid });
+        } catch {
+          // Cache write failed silently
+        }
+      }
     } catch {
       setError("Ein unerwarteter Fehler ist aufgetreten");
     } finally {

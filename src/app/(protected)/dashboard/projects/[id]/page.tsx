@@ -30,6 +30,7 @@ import { PdfUploadZone } from "@/components/drawings/PdfUploadZone";
 import { GroupedDrawingList } from "@/components/drawings/GroupedDrawingList";
 import { Logo } from "@/components/Logo";
 import { CreateGroupDialog } from "@/components/drawings/CreateGroupDialog";
+import { ProjectSyncButton } from "@/components/sync/ProjectSyncButton";
 import type { ProjectWithRole } from "@/lib/types/project";
 import { useTranslations } from "next-intl";
 
@@ -362,7 +363,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
               {project.description && (
                 <p className="text-muted-foreground mt-1">{project.description}</p>
               )}
-              <div className="flex items-center gap-2 mt-3">
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
                 <Badge variant="secondary">
                   {isViewer ? tp("viewer") : isOwner ? tp("owner") : tp("member")}
                 </Badge>
@@ -374,6 +375,35 @@ export default function ProjectDetailPage({ params }: PageProps) {
                     year: "numeric",
                   })}
                 </span>
+                <ProjectSyncButton
+                  projectId={id}
+                  fetchDrawings={async () => {
+                    const res = await fetch(`/api/projects/${id}/drawings`);
+                    const json = await res.json();
+                    return json.drawings ?? [];
+                  }}
+                  fetchVersions={async (drawingId: string) => {
+                    const res = await fetch(`/api/projects/${id}/drawings/${drawingId}/versions?includeArchived=true`);
+                    const json = await res.json();
+                    return json.versions ?? [];
+                  }}
+                  fetchMarkers={async (drawingId: string) => {
+                    const res = await fetch(`/api/projects/${id}/drawings/${drawingId}/markers`);
+                    const json = await res.json();
+                    return json.markers ?? [];
+                  }}
+                  fetchGroups={async () => {
+                    const res = await fetch(`/api/projects/${id}/groups`);
+                    const json = await res.json();
+                    return json.groups ?? [];
+                  }}
+                  getVersionSignedUrl={async (versionId: string, drawingId: string) => {
+                    const res = await fetch(`/api/projects/${id}/drawings/${drawingId}/versions/${versionId}/url`);
+                    const json = await res.json();
+                    if (!res.ok) throw new Error(json.error ?? "URL failed");
+                    return json.url;
+                  }}
+                />
               </div>
             </div>
           </div>

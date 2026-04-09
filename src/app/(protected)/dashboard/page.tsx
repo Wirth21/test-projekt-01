@@ -29,6 +29,7 @@ import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { InviteMemberDialog } from "@/components/projects/InviteMemberDialog";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Logo } from "@/components/Logo";
+import { SyncStatusBadge } from "@/components/sync/SyncStatusBadge";
 import type { ProjectWithRole } from "@/lib/types/project";
 import type { CreateProjectInput, EditProjectInput } from "@/lib/validations/project";
 
@@ -185,6 +186,7 @@ export default function DashboardPage() {
                 <User className="h-4 w-4" />
               </Link>
             </Button>
+            <SyncStatusBadge />
             <LanguageSwitcher />
             <Button variant="outline" size="sm" onClick={handleLogout} className="h-9 w-9 p-0 sm:h-auto sm:w-auto sm:px-3 sm:py-1.5">
               <LogOut className="h-4 w-4 sm:mr-2" />

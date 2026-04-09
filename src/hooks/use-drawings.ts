@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import type { Drawing, DrawingStatus } from "@/lib/types/drawing";
+import { cacheRecords, getCachedByIndex, getSyncMeta, setSyncMeta } from "@/lib/offline/db";
 
 export function useDrawings(projectId: string) {
   const [drawings, setDrawings] = useState<Drawing[]>([]);
@@ -12,6 +13,19 @@ export function useDrawings(projectId: string) {
   const supabase = createClient();
 
   const fetchDrawings = useCallback(async () => {
+    // Try cache first
+    try {
+      const cached = await getCachedByIndex<Drawing>("drawings", "by-project", projectId);
+      if (cached.length > 0) {
+        setDrawings(cached);
+        setLoading(false);
+        const meta = await getSyncMeta(`drawings:${projectId}`);
+        if (meta && Date.now() - meta.lastSynced < 30_000) return;
+      }
+    } catch { /* IndexedDB not available */ }
+
+    if (!navigator.onLine) return;
+
     setLoading(true);
     setError(null);
 
@@ -24,7 +38,15 @@ export function useDrawings(projectId: string) {
         return;
       }
 
-      setDrawings(json.drawings ?? []);
+      const freshDrawings = json.drawings ?? [];
+      setDrawings(freshDrawings);
+
+      // Cache result
+      try {
+        const tenantId = freshDrawings[0]?.tenant_id ?? projectId;
+        await cacheRecords("drawings", freshDrawings, tenantId);
+        await setSyncMeta({ key: `drawings:${projectId}`, lastSynced: Date.now(), tenantId });
+      } catch { /* Cache write failed */ }
     } catch {
       setError("Ein unerwarteter Fehler ist aufgetreten");
     } finally {

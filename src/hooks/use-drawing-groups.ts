@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { DrawingGroup } from "@/lib/types/drawing";
+import { cacheRecords, getCachedByIndex, getSyncMeta, setSyncMeta } from "@/lib/offline/db";
 
 export function useDrawingGroups(projectId: string) {
   const [groups, setGroups] = useState<DrawingGroup[]>([]);
@@ -9,6 +10,21 @@ export function useDrawingGroups(projectId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchGroups = useCallback(async () => {
+    const cacheKey = `groups:${projectId}`;
+
+    // Try cache first
+    try {
+      const cached = await getCachedByIndex<DrawingGroup>("drawing_groups", "by-project", projectId);
+      if (cached.length > 0) {
+        setGroups(cached);
+        setLoading(false);
+        const meta = await getSyncMeta(cacheKey);
+        if (meta && Date.now() - meta.lastSynced < 30_000) return;
+      }
+    } catch { /* IndexedDB not available */ }
+
+    if (!navigator.onLine) return;
+
     setLoading(true);
     setError(null);
 
@@ -21,7 +37,14 @@ export function useDrawingGroups(projectId: string) {
         return;
       }
 
-      setGroups(json.groups ?? []);
+      const freshGroups = json.groups ?? [];
+      setGroups(freshGroups);
+
+      // Cache result
+      try {
+        await cacheRecords("drawing_groups", freshGroups, projectId);
+        await setSyncMeta({ key: cacheKey, lastSynced: Date.now(), tenantId: projectId });
+      } catch { /* Cache write failed */ }
     } catch {
       setError("Ein unerwarteter Fehler ist aufgetreten");
     } finally {

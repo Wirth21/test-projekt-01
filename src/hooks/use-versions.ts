@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import type { DrawingVersion, DrawingStatus } from "@/lib/types/drawing";
+import { cacheRecords, getCachedByIndex, getSyncMeta, setSyncMeta } from "@/lib/offline/db";
 
 export function useVersions(projectId: string, drawingId: string) {
   const [versions, setVersions] = useState<DrawingVersion[]>([]);
@@ -14,6 +15,21 @@ export function useVersions(projectId: string, drawingId: string) {
   const baseUrl = `/api/projects/${projectId}/drawings/${drawingId}/versions`;
 
   const fetchVersions = useCallback(async () => {
+    const cacheKey = `versions:${drawingId}`;
+
+    // Try cache first
+    try {
+      const cached = await getCachedByIndex<DrawingVersion>("versions", "by-drawing", drawingId);
+      if (cached.length > 0) {
+        setVersions(cached);
+        setLoading(false);
+        const meta = await getSyncMeta(cacheKey);
+        if (meta && Date.now() - meta.lastSynced < 30_000) return;
+      }
+    } catch { /* IndexedDB not available */ }
+
+    if (!navigator.onLine) return;
+
     setLoading(true);
     setError(null);
 
@@ -26,13 +42,20 @@ export function useVersions(projectId: string, drawingId: string) {
         return;
       }
 
-      setVersions(json.versions ?? []);
+      const freshVersions = json.versions ?? [];
+      setVersions(freshVersions);
+
+      // Cache result
+      try {
+        await cacheRecords("versions", freshVersions, projectId);
+        await setSyncMeta({ key: cacheKey, lastSynced: Date.now(), tenantId: projectId });
+      } catch { /* Cache write failed */ }
     } catch {
       setError("Ein unerwarteter Fehler ist aufgetreten");
     } finally {
       setLoading(false);
     }
-  }, [baseUrl]);
+  }, [baseUrl, drawingId, projectId]);
 
   useEffect(() => {
     if (projectId && drawingId) {

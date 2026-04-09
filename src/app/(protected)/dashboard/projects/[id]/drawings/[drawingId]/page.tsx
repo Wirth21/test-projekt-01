@@ -150,6 +150,24 @@ export default function DrawingViewerPage({ params }: PageProps) {
   // Computed PDF width to fit container — stored as ref to avoid re-render loops
   const [fittedWidth, setFittedWidth] = useState<number | undefined>(undefined);
 
+  // Zoom-aware DPI: re-render PDF at higher resolution when zoomed in
+  const [renderDpr, setRenderDpr] = useState(() =>
+    typeof window !== "undefined" ? Math.ceil(window.devicePixelRatio) : 2
+  );
+  const dprDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleZoomChange = useCallback(
+    (_ref: unknown, state: { scale: number }) => {
+      const baseDpr =
+        typeof window !== "undefined" ? window.devicePixelRatio : 1;
+      const needed = Math.min(Math.ceil(state.scale * baseDpr), 5);
+      if (dprDebounceRef.current) clearTimeout(dprDebounceRef.current);
+      dprDebounceRef.current = setTimeout(() => {
+        setRenderDpr((prev) => (prev !== needed ? needed : prev));
+      }, 300);
+    },
+    []
+  );
+
   const { isFullscreen, isSupported: fullscreenSupported, toggleFullscreen, exitFullscreen: exitFs } = useFullscreen(viewerContainerRef);
 
   const drawing = drawings.find((d) => d.id === activeDrawingId);
@@ -809,6 +827,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
             limitToBounds={false}
             wheel={{ step: 0.1 }}
             panning={{ disabled: editMode }}
+            onTransformed={handleZoomChange}
           >
             {({ zoomIn, zoomOut, resetTransform }) => (
               <>
@@ -897,7 +916,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
                         renderAnnotationLayer={false}
                         className="shadow-lg"
                         width={fittedWidth}
-                        devicePixelRatio={4}
+                        devicePixelRatio={renderDpr}
                         canvasBackground="white"
                       />
                     </Document>

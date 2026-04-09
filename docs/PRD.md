@@ -29,6 +29,7 @@ Ein webbasiertes Team-Tool zur Verwaltung technischer PDF-Pläne (z.B. Baupläne
 | P2 | PWA & Android-Installation | Done |
 | P2 | Sentry Error Tracking | Done |
 | P2 | Branding (Logo, Favicon, Impressum) | Done |
+| P1 | Offline-First Caching & Synchronisation | Planned |
 
 ## Success Metrics
 - Teams können Projekte mit PDFs anlegen und gemeinsam nutzen
@@ -45,7 +46,7 @@ Ein webbasiertes Team-Tool zur Verwaltung technischer PDF-Pläne (z.B. Baupläne
 - Keine Bearbeitung/Annotation von PDF-Inhalten (nur lesend mit Markern)
 - ~~Keine Versionierung von PDFs in V1~~ (jetzt als PROJ-7 implementiert)
 - Keine öffentlichen/externen Freigabe-Links in V1
-- Kein Offline-Modus
+- ~~Kein Offline-Modus~~ (jetzt als PROJ-24 implementiert — Phase 1: Offline-Lesen)
 
 ---
 

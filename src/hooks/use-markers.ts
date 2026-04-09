@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MarkerWithTarget } from "@/lib/types/marker";
 import type { CreateMarkerInput, UpdateMarkerInput } from "@/lib/validations/marker";
+import { cacheRecords, getCachedByIndex, getSyncMeta, setSyncMeta } from "@/lib/offline/db";
 
 export function useMarkers(projectId: string, drawingId: string, versionId?: string) {
   const [markers, setMarkers] = useState<MarkerWithTarget[]>([]);
@@ -13,6 +14,26 @@ export function useMarkers(projectId: string, drawingId: string, versionId?: str
   const baseUrl = `/api/projects/${projectId}/drawings/${drawingId}/markers`;
 
   const fetchMarkers = useCallback(async () => {
+    const cacheKey = `markers:${drawingId}:${versionId ?? "latest"}`;
+
+    // Try cache first
+    if (versionId) {
+      try {
+        const cached = await getCachedByIndex<MarkerWithTarget>("markers", "by-drawing-version", versionId);
+        if (cached.length > 0) {
+          setMarkers(cached);
+          if (!initialLoadDone.current) setLoading(false);
+          const meta = await getSyncMeta(cacheKey);
+          if (meta && Date.now() - meta.lastSynced < 30_000) {
+            initialLoadDone.current = true;
+            return;
+          }
+        }
+      } catch { /* IndexedDB not available */ }
+    }
+
+    if (!navigator.onLine && initialLoadDone.current) return;
+
     // Only show loading spinner on initial load, not on refetch
     if (!initialLoadDone.current) {
       setLoading(true);
@@ -29,14 +50,21 @@ export function useMarkers(projectId: string, drawingId: string, versionId?: str
         return;
       }
 
-      setMarkers(json.markers ?? []);
+      const freshMarkers = json.markers ?? [];
+      setMarkers(freshMarkers);
+
+      // Cache result
+      try {
+        await cacheRecords("markers", freshMarkers, projectId);
+        await setSyncMeta({ key: cacheKey, lastSynced: Date.now(), tenantId: projectId });
+      } catch { /* Cache write failed */ }
     } catch {
       setError("Ein unerwarteter Fehler ist aufgetreten");
     } finally {
       setLoading(false);
       initialLoadDone.current = true;
     }
-  }, [baseUrl, versionId]);
+  }, [baseUrl, versionId, drawingId, projectId]);
 
   useEffect(() => {
     if (projectId && drawingId) {

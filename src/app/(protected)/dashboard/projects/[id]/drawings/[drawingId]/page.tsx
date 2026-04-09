@@ -161,21 +161,25 @@ export default function DrawingViewerPage({ params }: PageProps) {
   const [fittedWidth, setFittedWidth] = useState<number | undefined>(undefined);
 
   // Zoom-aware DPI: re-render PDF at higher resolution when zoomed in
-  const [renderDpr, setRenderDpr] = useState(() =>
-    typeof window !== "undefined" ? Math.ceil(window.devicePixelRatio) : 2
-  );
+  // Uses two-phase approach: pendingDpr is requested, renderDpr is applied after render completes
+  const baseDpr = typeof window !== "undefined" ? window.devicePixelRatio : 1;
+  const [renderDpr, setRenderDpr] = useState(() => Math.ceil(baseDpr));
+  const pendingDprRef = useRef(Math.ceil(baseDpr));
   const dprDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleZoomChange = useCallback(
     (_ref: unknown, state: { scale: number }) => {
-      const baseDpr =
-        typeof window !== "undefined" ? window.devicePixelRatio : 1;
-      const needed = Math.min(Math.ceil(state.scale * baseDpr), 5);
+      const needed = Math.min(Math.ceil(state.scale * baseDpr), 8);
       if (dprDebounceRef.current) clearTimeout(dprDebounceRef.current);
+      // Only re-render if zooming IN (higher DPI needed) — avoid flicker on zoom out
       dprDebounceRef.current = setTimeout(() => {
-        setRenderDpr((prev) => (prev !== needed ? needed : prev));
-      }, 300);
+        if (needed > pendingDprRef.current) {
+          pendingDprRef.current = needed;
+          setRenderDpr(needed);
+        }
+      }, 500);
     },
-    []
+    [baseDpr]
   );
 
   const { isFullscreen, isSupported: fullscreenSupported, toggleFullscreen, exitFullscreen: exitFs } = useFullscreen(viewerContainerRef);
@@ -192,13 +196,20 @@ export default function DrawingViewerPage({ params }: PageProps) {
   }, [versionsLoading, versions, selectedVersionId, latestActiveVersion]);
 
   // Fetch signed URL for the active version
+  const prevVersionRef = useRef<string | null>(null);
   const fetchUrl = useCallback(async () => {
     if (!activeVersion) return;
 
+    // Don't reset PDF display if same version (avoid flicker on background revalidation)
+    const isSameVersion = prevVersionRef.current === activeVersion.id;
+    prevVersionRef.current = activeVersion.id;
+
     setUrlLoading(true);
     setUrlError(null);
-    setPdfLoading(true);
-    setPdfError(false);
+    if (!isSameVersion) {
+      setPdfLoading(true);
+      setPdfError(false);
+    }
     try {
       const url = await getVersionSignedUrl(activeVersion.id);
       setPdfUrl(url);
@@ -834,7 +845,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
           <TransformWrapper
             initialScale={1}
             minScale={0.3}
-            maxScale={5}
+            maxScale={10}
             limitToBounds={false}
             wheel={{ step: 0.1 }}
             panning={{ disabled: editMode }}
@@ -925,7 +936,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
                         pageNumber={currentPage}
                         renderTextLayer={false}
                         renderAnnotationLayer={false}
-                        className="shadow-lg"
+                        className="shadow-lg [&>canvas]:transition-none"
                         width={fittedWidth}
                         devicePixelRatio={renderDpr}
                         canvasBackground="white"

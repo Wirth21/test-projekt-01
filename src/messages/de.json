@@ -778,7 +778,7 @@
     "projectSynced": "Projekt ist jetzt offline verfügbar",
     "syncProgress": "{current}/{total} PDFs heruntergeladen",
     "syncSkipped": "{count} bereits vorhanden",
-    "syncCompleteDetail": "{downloaded} heruntergeladen, {skipped} übersprungen",
+    "syncCompleteDetail": "{downloaded} heruntergeladen, {skipped} bereits vorhanden",
     "cancel": "Abbrechen",
     "close": "Schließen",
     "offlineReady": "Offline verfügbar",

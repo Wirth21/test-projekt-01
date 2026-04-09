@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import type { SyncState } from "./SyncProvider";
 import { clearPdfCache, getPdfCacheStats } from "@/lib/offline/pdf-cache";
+import { clearThumbnails } from "@/lib/offline/thumbnail-cache";
 import { formatLastSynced } from "@/lib/offline/sync-engine";
 
 interface SyncDetailPopoverProps {
@@ -46,6 +47,7 @@ export function SyncDetailPopover({
     setClearing(true);
     try {
       await clearPdfCache();
+      await clearThumbnails();
       setCacheStats({ count: 0, totalSize: 0 });
       toast.success(t("cacheCleared"));
     } catch {

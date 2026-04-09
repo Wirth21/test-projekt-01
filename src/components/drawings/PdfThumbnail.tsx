@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  getCachedThumbnail,
+  cacheThumbnail,
+  canvasToThumbnail,
+} from "@/lib/offline/thumbnail-cache";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -15,11 +20,56 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 interface PdfThumbnailProps {
   url: string;
   width?: number;
+  /** Unique cache key — use drawingId or versionId */
+  cacheKey?: string;
 }
 
-export function PdfThumbnail({ url, width = 200 }: PdfThumbnailProps) {
+export function PdfThumbnail({ url, width = 200, cacheKey }: PdfThumbnailProps) {
   const [loaded, setLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [cachedDataUrl, setCachedDataUrl] = useState<string | null>(null);
+  const [showPdfRenderer, setShowPdfRenderer] = useState(false);
+  const pageRef = useRef<HTMLDivElement>(null);
+
+  // Try to load cached thumbnail first
+  useEffect(() => {
+    if (!cacheKey) {
+      setShowPdfRenderer(true);
+      return;
+    }
+
+    let cancelled = false;
+
+    getCachedThumbnail(cacheKey).then((dataUrl) => {
+      if (cancelled) return;
+      if (dataUrl) {
+        setCachedDataUrl(dataUrl);
+        setLoaded(true);
+      } else {
+        setShowPdfRenderer(true);
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [cacheKey]);
+
+  // After PDF renders, capture thumbnail and cache it
+  function handleRenderSuccess() {
+    setLoaded(true);
+
+    if (!cacheKey || !pageRef.current) return;
+
+    // Find the canvas rendered by react-pdf
+    const canvas = pageRef.current.querySelector("canvas");
+    if (!canvas) return;
+
+    try {
+      const dataUrl = canvasToThumbnail(canvas, width);
+      cacheThumbnail(cacheKey, dataUrl);
+    } catch {
+      // Canvas tainted or other error — ignore
+    }
+  }
 
   if (hasError) {
     return (
@@ -33,8 +83,32 @@ export function PdfThumbnail({ url, width = 200 }: PdfThumbnailProps) {
     );
   }
 
+  // Show cached thumbnail image (fast, works offline)
+  if (cachedDataUrl) {
+    return (
+      <div style={{ width }}>
+        <img
+          src={cachedDataUrl}
+          alt="PDF Vorschau"
+          className="rounded"
+          style={{ width, height: "auto" }}
+        />
+      </div>
+    );
+  }
+
+  // Show PDF renderer (first load, generates thumbnail for caching)
+  if (!showPdfRenderer) {
+    return (
+      <Skeleton
+        className="rounded"
+        style={{ width, height: width * 1.4 }}
+      />
+    );
+  }
+
   return (
-    <div className="relative" style={{ width }}>
+    <div className="relative" style={{ width }} ref={pageRef}>
       {!loaded && (
         <Skeleton
           className="absolute inset-0 rounded"
@@ -43,7 +117,6 @@ export function PdfThumbnail({ url, width = 200 }: PdfThumbnailProps) {
       )}
       <Document
         file={url}
-        onLoadSuccess={() => setLoaded(true)}
         onLoadError={() => setHasError(true)}
         loading={null}
       >
@@ -52,6 +125,7 @@ export function PdfThumbnail({ url, width = 200 }: PdfThumbnailProps) {
           width={width}
           renderTextLayer={false}
           renderAnnotationLayer={false}
+          onRenderSuccess={handleRenderSuccess}
         />
       </Document>
     </div>

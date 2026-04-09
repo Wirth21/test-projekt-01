@@ -98,7 +98,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
   }
 
-  // Verify caller is project owner
+  // Verify caller is project member
   const { data: callerMembership } = await supabase
     .from("project_members")
     .select("role")
@@ -106,8 +106,8 @@ export async function POST(request: Request, { params }: RouteParams) {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (!callerMembership || callerMembership.role !== "owner") {
-    return NextResponse.json({ error: "Nur Eigentümer können Mitglieder einladen" }, { status: 403 });
+  if (!callerMembership) {
+    return NextResponse.json({ error: "Nur Projektmitglieder können Mitglieder einladen" }, { status: 403 });
   }
 
   let body: unknown;

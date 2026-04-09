@@ -71,12 +71,20 @@ export async function POST(_request: Request, { params }: RouteParams) {
     );
   }
 
-  // Owners cannot leave their own project
+  // Last owner cannot leave (prevents orphaned projects)
   if (membership.role === "owner") {
-    return NextResponse.json(
-      { error: "Der Projektersteller kann das Projekt nicht verlassen" },
-      { status: 403 }
-    );
+    const { count } = await supabase
+      .from("project_members")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", projectId)
+      .eq("role", "owner");
+
+    if ((count ?? 0) <= 1) {
+      return NextResponse.json(
+        { error: "Der letzte Eigentümer kann das Projekt nicht verlassen" },
+        { status: 400 }
+      );
+    }
   }
 
   // Delete the membership using service role to bypass RLS

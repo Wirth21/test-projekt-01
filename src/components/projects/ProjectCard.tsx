@@ -27,7 +27,7 @@ export function ProjectCard({ project, onEdit, onInvite, onArchive }: ProjectCar
   const [menuOpen, setMenuOpen] = useState(false);
   const tc = useTranslations("common");
   const tp = useTranslations("projects");
-  const isOwner = project.role === "owner";
+  const isMember = project.role === "owner" || project.role === "member";
   const isViewer = project.role === "viewer";
 
   const formattedDate = new Date(project.updated_at).toLocaleDateString("de-DE", {
@@ -56,7 +56,7 @@ export function ProjectCard({ project, onEdit, onInvite, onArchive }: ProjectCar
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {isOwner && (
+              {isMember && (
                 <>
                   <DropdownMenuItem onClick={() => { setMenuOpen(false); onEdit(project); }}>
                     <Pencil className="mr-2 h-4 w-4" />
@@ -76,7 +76,7 @@ export function ProjectCard({ project, onEdit, onInvite, onArchive }: ProjectCar
                   </DropdownMenuItem>
                 </>
               )}
-              {!isOwner && (
+              {!isMember && (
                 <DropdownMenuItem asChild>
                   <Link href={`/dashboard/projects/${project.id}`}>
                     {tp("open")}
@@ -87,7 +87,7 @@ export function ProjectCard({ project, onEdit, onInvite, onArchive }: ProjectCar
           </DropdownMenu>
         </div>
         <Badge variant="secondary" className="w-fit text-xs mt-1">
-          {isViewer ? tp("viewer") : isOwner ? tp("owner") : tp("member")}
+          {isViewer ? tp("viewer") : project.role === "owner" ? tp("owner") : tp("member")}
         </Badge>
       </CardHeader>
 

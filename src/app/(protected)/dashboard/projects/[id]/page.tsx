@@ -255,6 +255,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
 
   const project = projects.find((p) => p.id === id) as ProjectWithRole | undefined;
   const isOwner = project?.role === "owner";
+  const isMember = project?.role === "owner" || project?.role === "member";
   const isViewer = project?.role === "viewer";
 
   async function handleInvite(email: string) {
@@ -512,25 +513,21 @@ export default function ProjectDetailPage({ params }: PageProps) {
               <Users className="h-4 w-4" />
               {t("members")}
             </h3>
-            {!isViewer && (
+            {isMember && (
               <div className="flex items-center gap-2">
-                {isOwner && (
-                  <Button size="sm" variant="outline" onClick={() => setInviteOpen(true)}>
-                    <UserPlus className="mr-1.5 h-4 w-4" />
-                    {t("invite")}
-                  </Button>
-                )}
-                {!isOwner && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => setLeaveOpen(true)}
-                  >
-                    <LogOut className="mr-1.5 h-4 w-4" />
-                    {tp("leave")}
-                  </Button>
-                )}
+                <Button size="sm" variant="outline" onClick={() => setInviteOpen(true)}>
+                  <UserPlus className="mr-1.5 h-4 w-4" />
+                  {t("invite")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setLeaveOpen(true)}
+                >
+                  <LogOut className="mr-1.5 h-4 w-4" />
+                  {tp("leave")}
+                </Button>
               </div>
             )}
           </div>
@@ -580,7 +577,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                       </div>
                     )}
                     <span className="font-medium truncate max-w-[120px]">{displayName}</span>
-                    {isOwner && !isThisOwner && (
+                    {isMember && !isThisOwner && (
                       <button
                         className="ml-0.5 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
                         disabled={removingId === member.id}

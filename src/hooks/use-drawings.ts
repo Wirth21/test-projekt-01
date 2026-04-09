@@ -4,11 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import type { Drawing, DrawingStatus } from "@/lib/types/drawing";
 import { cacheRecords, getCachedByIndex, getSyncMeta, setSyncMeta } from "@/lib/offline/db";
+import { useSyncContext } from "@/components/sync/SyncProvider";
 
 export function useDrawings(projectId: string) {
   const [drawings, setDrawings] = useState<Drawing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { notifySynced } = useSyncContext();
 
   const supabase = createClient();
 
@@ -50,6 +52,7 @@ export function useDrawings(projectId: string) {
         await cacheRecords("drawings", freshDrawings, tenantId);
         await setSyncMeta({ key: `drawings:${projectId}`, lastSynced: Date.now(), tenantId });
       } catch { /* Cache write failed */ }
+      notifySynced();
     } catch {
       setError("Ein unerwarteter Fehler ist aufgetreten");
     } finally {

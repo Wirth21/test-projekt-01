@@ -9,52 +9,40 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getSyncMeta } from "@/lib/offline/db";
 
 export type SyncState = "synced" | "syncing" | "stale" | "offline";
 
 interface SyncContextValue {
-  /** Current sync state */
   state: SyncState;
-  /** Whether the browser is online */
   isOnline: boolean;
-  /** Timestamp of last successful sync (ms) */
   lastSynced: number | null;
-  /** Current tenant ID */
   tenantId: string | null;
-  /** Set tenant ID (called once on login) */
   setTenantId: (id: string) => void;
-  /** Notify that a sync just completed */
   notifySynced: () => void;
-  /** Notify that a sync is in progress */
   notifySyncing: () => void;
-  /** Force a recalculation of sync state */
-  refreshState: () => void;
 }
 
 const SyncContext = createContext<SyncContextValue>({
-  state: "synced",
+  state: "stale",
   isOnline: true,
   lastSynced: null,
   tenantId: null,
   setTenantId: () => {},
   notifySynced: () => {},
   notifySyncing: () => {},
-  refreshState: () => {},
 });
 
 export function useSyncContext() {
   return useContext(SyncContext);
 }
 
-const STALE_THRESHOLD = 60_000; // 1 minute
+const STALE_THRESHOLD = 60_000;
 
 export function SyncProvider({ children }: { children: ReactNode }) {
-  // Always start with true to match SSR, then sync with actual state in useEffect
   const [isOnline, setIsOnline] = useState(true);
   const [lastSynced, setLastSynced] = useState<number | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [tenantId, setTenantIdState] = useState<string | null>(null);
   const staleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [, forceUpdate] = useState(0);
 
@@ -71,72 +59,65 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           .select("tenant_id")
           .eq("id", user.id)
           .single();
-        if (profile?.tenant_id) setTenantId(profile.tenant_id);
-      } catch {
-        // Ignore — tenant detection is best-effort
-      }
+        if (profile?.tenant_id) {
+          setTenantIdState(profile.tenant_id);
+          try { localStorage.setItem("link2plan_tenant_id", profile.tenant_id); } catch {}
+        }
+      } catch {}
     }
+
+    // Try localStorage first for instant availability
+    try {
+      const stored = localStorage.getItem("link2plan_tenant_id");
+      if (stored) setTenantIdState(stored);
+    } catch {}
+
     detectTenant();
   }, []);
 
-  // Online/offline detection — sync with actual browser state after mount
+  // Online/offline detection
   useEffect(() => {
     setIsOnline(navigator.onLine);
-
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
-
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
-  // Load last sync time from IndexedDB on mount
+  // Restore lastSynced from localStorage
   useEffect(() => {
-    if (!tenantId) return;
+    try {
+      const stored = localStorage.getItem("link2plan_last_synced");
+      if (stored) setLastSynced(Number(stored));
+    } catch {}
+  }, []);
 
-    async function loadLastSynced() {
-      try {
-        const meta = await getSyncMeta(`global:${tenantId}`);
-        if (meta) setLastSynced(meta.lastSynced);
-      } catch {
-        // Ignore
-      }
-    }
-
-    loadLastSynced();
-  }, [tenantId]);
-
-  // Periodically re-evaluate staleness (every 30s)
+  // Re-evaluate staleness periodically
   useEffect(() => {
-    staleTimerRef.current = setInterval(() => {
-      forceUpdate((n) => n + 1);
-    }, 30_000);
-
-    return () => {
-      if (staleTimerRef.current) clearInterval(staleTimerRef.current);
-    };
+    staleTimerRef.current = setInterval(() => forceUpdate((n) => n + 1), 30_000);
+    return () => { if (staleTimerRef.current) clearInterval(staleTimerRef.current); };
   }, []);
 
   const notifySynced = useCallback(() => {
     const now = Date.now();
     setLastSynced(now);
     setIsSyncing(false);
+    try { localStorage.setItem("link2plan_last_synced", String(now)); } catch {}
   }, []);
 
   const notifySyncing = useCallback(() => {
     setIsSyncing(true);
   }, []);
 
-  const refreshState = useCallback(() => {
-    forceUpdate((n) => n + 1);
+  const setTenantId = useCallback((id: string) => {
+    setTenantIdState(id);
+    try { localStorage.setItem("link2plan_tenant_id", id); } catch {}
   }, []);
 
-  // Compute derived state
   let state: SyncState;
   if (!isOnline) {
     state = "offline";
@@ -150,16 +131,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
   return (
     <SyncContext.Provider
-      value={{
-        state,
-        isOnline,
-        lastSynced,
-        tenantId,
-        setTenantId,
-        notifySynced,
-        notifySyncing,
-        refreshState,
-      }}
+      value={{ state, isOnline, lastSynced, tenantId, setTenantId, notifySynced, notifySyncing }}
     >
       {children}
     </SyncContext.Provider>

@@ -6,6 +6,7 @@ import type { ProjectWithRole, ProjectMember } from "@/lib/types/project";
 import type { CreateProjectInput, EditProjectInput } from "@/lib/validations/project";
 import type { TenantRole } from "@/lib/types/admin";
 import { cacheRecords, getCachedByTenant, getSyncMeta, setSyncMeta } from "@/lib/offline/db";
+import { useSyncContext } from "@/components/sync/SyncProvider";
 
 export function useProjects() {
   const [projects, setProjects] = useState<ProjectWithRole[]>([]);
@@ -13,6 +14,7 @@ export function useProjects() {
   const [error, setError] = useState<string | null>(null);
   const [tenantRole, setTenantRole] = useState<TenantRole>("user");
   const tenantIdRef = useRef<string | null>(null);
+  const { notifySynced } = useSyncContext();
 
   const supabase = createClient();
 
@@ -151,10 +153,9 @@ export function useProjects() {
         try {
           await cacheRecords("projects", projectsWithRole as unknown as Record<string, unknown>[], tid);
           await setSyncMeta({ key: `projects:${tid}`, lastSynced: Date.now(), tenantId: tid });
-        } catch {
-          // Cache write failed silently
-        }
+        } catch { /* Cache write failed silently */ }
       }
+      notifySynced();
     } catch {
       setError("Ein unerwarteter Fehler ist aufgetreten");
     } finally {

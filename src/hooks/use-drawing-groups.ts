@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import type { DrawingGroup } from "@/lib/types/drawing";
 import { cacheRecords, getCachedByIndex, getSyncMeta, setSyncMeta } from "@/lib/offline/db";
+import { useSyncContext } from "@/components/sync/SyncProvider";
 
 export function useDrawingGroups(projectId: string) {
   const [groups, setGroups] = useState<DrawingGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { notifySynced } = useSyncContext();
 
   const fetchGroups = useCallback(async () => {
     const cacheKey = `groups:${projectId}`;
@@ -48,6 +50,7 @@ export function useDrawingGroups(projectId: string) {
         await cacheRecords("drawing_groups", freshGroups, projectId);
         await setSyncMeta({ key: cacheKey, lastSynced: Date.now(), tenantId: projectId });
       } catch { /* Cache write failed */ }
+      notifySynced();
     } catch {
       setError("Ein unerwarteter Fehler ist aufgetreten");
     } finally {

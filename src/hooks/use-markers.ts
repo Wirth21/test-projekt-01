@@ -4,12 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { MarkerWithTarget } from "@/lib/types/marker";
 import type { CreateMarkerInput, UpdateMarkerInput } from "@/lib/validations/marker";
 import { cacheRecords, getCachedByIndex, getSyncMeta, setSyncMeta } from "@/lib/offline/db";
+import { useSyncContext } from "@/components/sync/SyncProvider";
 
 export function useMarkers(projectId: string, drawingId: string, versionId?: string) {
   const [markers, setMarkers] = useState<MarkerWithTarget[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const initialLoadDone = useRef(false);
+  const { notifySynced } = useSyncContext();
 
   const baseUrl = `/api/projects/${projectId}/drawings/${drawingId}/markers`;
 
@@ -61,6 +63,7 @@ export function useMarkers(projectId: string, drawingId: string, versionId?: str
         await cacheRecords("markers", freshMarkers, projectId);
         await setSyncMeta({ key: cacheKey, lastSynced: Date.now(), tenantId: projectId });
       } catch { /* Cache write failed */ }
+      notifySynced();
     } catch {
       setError("Ein unerwarteter Fehler ist aufgetreten");
     } finally {

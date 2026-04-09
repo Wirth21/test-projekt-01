@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServiceRoleClient } from "@/lib/superadmin";
 import { getAuthenticatedAdmin } from "@/lib/admin";
 import {
   addUserToProjectSchema,
@@ -145,18 +146,37 @@ export async function POST(
     );
   }
 
-  // Add user as member
-  const { data: membership, error: insertError } = await supabase
-    .from("project_members")
-    .insert({
-      project_id: projectId,
-      user_id: userId,
-      role: "member",
-    })
-    .select("id, project_id, role, joined_at")
-    .single();
+  // Add user as member using service role to bypass RLS
+  let membership: { id: string; project_id: string; role: string; joined_at: string } | null = null;
+  let insertError: { message: string } | null = null;
+  try {
+    const serviceClient = createServiceRoleClient();
+    const result = await serviceClient
+      .from("project_members")
+      .insert({
+        project_id: projectId,
+        user_id: userId,
+        role: "member",
+      })
+      .select("id, project_id, role, joined_at")
+      .single();
+    membership = result.data;
+    insertError = result.error;
+  } catch {
+    const result = await supabase
+      .from("project_members")
+      .insert({
+        project_id: projectId,
+        user_id: userId,
+        role: "member",
+      })
+      .select("id, project_id, role, joined_at")
+      .single();
+    membership = result.data;
+    insertError = result.error;
+  }
 
-  if (insertError) {
+  if (insertError || !membership) {
     return NextResponse.json(
       { error: "Nutzer konnte nicht zum Projekt hinzugefuegt werden" },
       { status: 500 }
@@ -226,11 +246,22 @@ export async function DELETE(
     );
   }
 
-  // Delete the membership
-  const { error: deleteError } = await supabase
-    .from("project_members")
-    .delete()
-    .eq("id", membership.id);
+  // Delete the membership using service role to bypass RLS
+  let deleteError: { message: string } | null = null;
+  try {
+    const serviceClient = createServiceRoleClient();
+    const result = await serviceClient
+      .from("project_members")
+      .delete()
+      .eq("id", membership.id);
+    deleteError = result.error;
+  } catch {
+    const result = await supabase
+      .from("project_members")
+      .delete()
+      .eq("id", membership.id);
+    deleteError = result.error;
+  }
 
   if (deleteError) {
     return NextResponse.json(

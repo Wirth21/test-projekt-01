@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServiceRoleClient } from "@/lib/superadmin";
 import { getTenantContext } from "@/lib/tenant";
 import { z } from "zod";
 
@@ -78,11 +79,22 @@ export async function POST(_request: Request, { params }: RouteParams) {
     );
   }
 
-  // Delete the membership (RLS policy "Members can leave project" allows self-removal)
-  const { error: deleteError } = await supabase
-    .from("project_members")
-    .delete()
-    .eq("id", membership.id);
+  // Delete the membership using service role to bypass RLS
+  let deleteError: { message: string } | null = null;
+  try {
+    const serviceClient = createServiceRoleClient();
+    const result = await serviceClient
+      .from("project_members")
+      .delete()
+      .eq("id", membership.id);
+    deleteError = result.error;
+  } catch {
+    const result = await supabase
+      .from("project_members")
+      .delete()
+      .eq("id", membership.id);
+    deleteError = result.error;
+  }
 
   if (deleteError) {
     return NextResponse.json(

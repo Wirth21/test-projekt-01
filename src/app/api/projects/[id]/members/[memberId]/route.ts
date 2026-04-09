@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServiceRoleClient } from "@/lib/superadmin";
 import { logActivity } from "@/lib/activity-log";
 import { isReadOnlyUser } from "@/lib/admin";
 import { z } from "zod";
@@ -84,11 +85,24 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
   }
 
-  const { error: updateError } = await supabase
-    .from("project_members")
-    .update({ role })
-    .eq("id", memberId)
-    .eq("project_id", projectId);
+  // Update role using service role to bypass RLS
+  let updateError: { message: string } | null = null;
+  try {
+    const serviceClient = createServiceRoleClient();
+    const result = await serviceClient
+      .from("project_members")
+      .update({ role })
+      .eq("id", memberId)
+      .eq("project_id", projectId);
+    updateError = result.error;
+  } catch {
+    const result = await supabase
+      .from("project_members")
+      .update({ role })
+      .eq("id", memberId)
+      .eq("project_id", projectId);
+    updateError = result.error;
+  }
 
   if (updateError) {
     return NextResponse.json({ error: "Rolle konnte nicht geändert werden" }, { status: 500 });
@@ -151,10 +165,22 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     }
   }
 
-  const { error: removeError } = await supabase
-    .from("project_members")
-    .delete()
-    .eq("id", memberId);
+  // Delete membership using service role to bypass RLS
+  let removeError: { message: string } | null = null;
+  try {
+    const serviceClient = createServiceRoleClient();
+    const result = await serviceClient
+      .from("project_members")
+      .delete()
+      .eq("id", memberId);
+    removeError = result.error;
+  } catch {
+    const result = await supabase
+      .from("project_members")
+      .delete()
+      .eq("id", memberId);
+    removeError = result.error;
+  }
 
   if (removeError) {
     return NextResponse.json({ error: "Mitglied konnte nicht entfernt werden" }, { status: 500 });

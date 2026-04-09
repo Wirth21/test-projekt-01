@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServiceRoleClient } from "@/lib/superadmin";
 import { inviteMemberSchema } from "@/lib/validations/project";
 import { getTenantContext } from "@/lib/tenant";
 import { getTenantUsage, getLimitsForPlan } from "@/lib/check-limits";
@@ -181,9 +182,20 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Dieser Nutzer ist bereits Mitglied des Projekts" }, { status: 409 });
   }
 
-  const { error: inviteError } = await supabase
-    .from("project_members")
-    .insert({ project_id: projectId, user_id: targetUser.id, role: "member" });
+  // Insert membership using service role to bypass RLS
+  let inviteError: { message: string } | null = null;
+  try {
+    const serviceClient = createServiceRoleClient();
+    const result = await serviceClient
+      .from("project_members")
+      .insert({ project_id: projectId, user_id: targetUser.id, role: "member" });
+    inviteError = result.error;
+  } catch {
+    const result = await supabase
+      .from("project_members")
+      .insert({ project_id: projectId, user_id: targetUser.id, role: "member" });
+    inviteError = result.error;
+  }
 
   if (inviteError) {
     return NextResponse.json({ error: "Einladung konnte nicht gesendet werden" }, { status: 500 });

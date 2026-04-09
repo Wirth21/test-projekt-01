@@ -229,9 +229,31 @@ export function useProjects() {
         .eq("is_archived", true)
         .order("updated_at", { ascending: false });
 
+      // Fetch counts using SECURITY DEFINER functions
+      const archivedIds = (projectsData || []).map((p) => p.id);
+      const archivedCounts = await Promise.all(
+        archivedIds.map(async (pid) => {
+          const [drawingRes, markerRes, memberRes] = await Promise.all([
+            supabase.rpc("project_drawing_count", { p_project_id: pid }),
+            supabase.rpc("project_marker_count", { p_project_id: pid }),
+            supabase.rpc("project_member_count", { p_project_id: pid }),
+          ]);
+          return {
+            id: pid,
+            pdf_count: drawingRes.data ?? 0,
+            marker_count: markerRes.data ?? 0,
+            member_count: memberRes.data ?? 0,
+          };
+        })
+      );
+      const archivedCountMap = new Map(archivedCounts.map((c) => [c.id, c]));
+
       const result: ProjectWithRole[] = (projectsData || []).map((p) => ({
         ...p,
         role: (roleMap.get(p.id) as "owner" | "member" | undefined) ?? "viewer",
+        pdf_count: archivedCountMap.get(p.id)?.pdf_count ?? 0,
+        marker_count: archivedCountMap.get(p.id)?.marker_count ?? 0,
+        member_count: archivedCountMap.get(p.id)?.member_count ?? 0,
       }));
 
       setArchivedProjects(result);

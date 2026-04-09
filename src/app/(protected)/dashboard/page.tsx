@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Plus, LogOut, FolderOpen, Loader2, ShieldAlert, Archive, RotateCcw, EyeOff, Users, LogIn, User, FileText } from "lucide-react";
+import { Plus, LogOut, FolderOpen, Loader2, ShieldAlert, Archive, RotateCcw, EyeOff, Users, LogIn, User, FileText, MapPin, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -323,16 +323,40 @@ export default function DashboardPage() {
                                 <p className="text-sm text-muted-foreground italic">{tp("noDescription")}</p>
                               )}
                             </CardContent>
-                            <CardFooter className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
-                              <span className="flex items-center gap-1">
-                                <FileText className="h-3.5 w-3.5" />
-                                {project.pdf_count ?? 0}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Users className="h-3.5 w-3.5" />
-                                {project.member_count ?? 0}
-                              </span>
-                              <span className="ml-auto">{formattedDate}</span>
+                            <CardFooter className="flex flex-col gap-2 pt-2 border-t">
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground w-full">
+                                <span className="flex items-center gap-1">
+                                  <FileText className="h-3.5 w-3.5" />
+                                  {project.pdf_count ?? 0}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-3.5 w-3.5" />
+                                  {project.marker_count ?? 0}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-3.5 w-3.5" />
+                                  {project.member_count ?? 0}
+                                </span>
+                                <span className="flex items-center gap-1 ml-auto">
+                                  <Calendar className="h-3.5 w-3.5" />
+                                  {formattedDate}
+                                </span>
+                              </div>
+                              {!isReadOnly && (
+                                <Button
+                                  className="w-full"
+                                  size="sm"
+                                  disabled={joining === project.id}
+                                  onClick={() => handleJoin(project)}
+                                >
+                                  {joining === project.id ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <LogIn className="mr-2 h-4 w-4" />
+                                  )}
+                                  {tp("join")}
+                                </Button>
+                              )}
                             </CardFooter>
                           </Card>
                         );
@@ -368,37 +392,63 @@ export default function DashboardPage() {
 
             {!archivedLoading && archivedProjects.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                {archivedProjects.map((project) => (
-                  <div key={project.id} className="rounded-lg border bg-card p-6 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-medium truncate">{project.name}</h3>
-                        {project.description && (
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                            {project.description}
-                          </p>
-                        )}
+                {archivedProjects.map((project) => {
+                  const formattedDate = new Date(project.updated_at).toLocaleDateString("de-DE", {
+                    day: "2-digit", month: "2-digit", year: "numeric",
+                  });
+                  const isProjectOwner = project.role === "owner";
+                  return (
+                    <div key={project.id} className="rounded-lg border bg-card p-6 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-medium truncate">{project.name}</h3>
+                          {project.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {project.description}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant="secondary" className="ml-2 shrink-0">
+                          {tp("archived")}
+                        </Badge>
                       </div>
-                      <Badge variant="secondary" className="ml-2 shrink-0">
-                        {tp("archived")}
-                      </Badge>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      disabled={restoring === project.id}
-                      onClick={() => handleRestore(project)}
-                    >
-                      {restoring === project.id ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <RotateCcw className="mr-2 h-4 w-4" />
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <FileText className="h-3.5 w-3.5" />
+                          {project.pdf_count ?? 0}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5" />
+                          {project.marker_count ?? 0}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3.5 w-3.5" />
+                          {project.member_count ?? 0}
+                        </span>
+                        <span className="flex items-center gap-1 ml-auto">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {formattedDate}
+                        </span>
+                      </div>
+                      {isProjectOwner && !isReadOnly && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          disabled={restoring === project.id}
+                          onClick={() => handleRestore(project)}
+                        >
+                          {restoring === project.id ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                          )}
+                          {tp("restore")}
+                        </Button>
                       )}
-                      {tp("restore")}
-                    </Button>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </TabsContent>

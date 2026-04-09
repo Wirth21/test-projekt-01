@@ -59,6 +59,27 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const staleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [, forceUpdate] = useState(0);
 
+  // Auto-detect tenant ID from user profile
+  useEffect(() => {
+    async function detectTenant() {
+      try {
+        const { createClient } = await import("@/lib/supabase");
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("tenant_id")
+          .eq("id", user.id)
+          .single();
+        if (profile?.tenant_id) setTenantId(profile.tenant_id);
+      } catch {
+        // Ignore — tenant detection is best-effort
+      }
+    }
+    detectTenant();
+  }, []);
+
   // Online/offline detection
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);

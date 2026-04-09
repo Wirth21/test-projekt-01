@@ -66,7 +66,29 @@ export function ProjectSyncButton({
     useState<AbortController | null>(null);
 
   const startSync = useCallback(async () => {
-    if (!tenantId) return;
+    // If tenantId isn't loaded yet, fetch it directly
+    let tid = tenantId;
+    if (!tid) {
+      try {
+        const { createClient } = await import("@/lib/supabase");
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("tenant_id")
+            .eq("id", user.id)
+            .single();
+          tid = profile?.tenant_id ?? null;
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    if (!tid) {
+      toast.error(t("syncFailed"));
+      return;
+    }
 
     const controller = new AbortController();
     setAbortController(controller);
@@ -83,12 +105,12 @@ export function ProjectSyncButton({
     try {
       // Phase 1: Fetch and cache all metadata
       const drawings = await fetchDrawings();
-      await cacheRecords("drawings", drawings, tenantId);
+      await cacheRecords("drawings", drawings, tid);
 
       if (controller.signal.aborted) return;
 
       const groups = await fetchGroups();
-      await cacheRecords("drawing_groups", groups, tenantId);
+      await cacheRecords("drawing_groups", groups, tid);
 
       if (controller.signal.aborted) return;
 
@@ -100,10 +122,10 @@ export function ProjectSyncButton({
 
         const versions = await fetchVersions(drawingId);
         allVersions.push(...versions);
-        await cacheRecords("versions", versions, tenantId);
+        await cacheRecords("versions", versions, tid);
 
         const markers = await fetchMarkers(drawingId);
-        await cacheRecords("markers", markers, tenantId);
+        await cacheRecords("markers", markers, tid);
       }
 
       if (controller.signal.aborted) return;

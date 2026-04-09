@@ -35,6 +35,10 @@ const ProjectSyncButton = dynamic(
   () => import("@/components/sync/ProjectSyncButton").then((m) => m.ProjectSyncButton),
   { ssr: false }
 );
+const SyncStatusBadge = dynamic(
+  () => import("@/components/sync/SyncStatusBadge").then((m) => m.SyncStatusBadge),
+  { ssr: false }
+);
 import type { ProjectWithRole } from "@/lib/types/project";
 import { useTranslations } from "next-intl";
 
@@ -354,7 +358,8 @@ export default function ProjectDetailPage({ params }: PageProps) {
           </Link>
           <Logo size="sm" className="hidden sm:inline-flex" />
           <Separator orientation="vertical" className="h-5 hidden sm:block" />
-          <span className="text-sm font-medium truncate">{project.name}</span>
+          <span className="text-sm font-medium truncate flex-1">{project.name}</span>
+          <SyncStatusBadge />
         </div>
       </header>
 

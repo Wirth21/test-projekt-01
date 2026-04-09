@@ -46,6 +46,11 @@ import { useFullscreen } from "@/hooks/use-fullscreen";
 import { UploadInfo } from "@/components/drawings/UploadInfo";
 import type { MarkerWithTarget, MarkerColor } from "@/lib/types/marker";
 import { useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
+const SyncStatusBadge = dynamic(
+  () => import("@/components/sync/SyncStatusBadge").then((m) => m.SyncStatusBadge),
+  { ssr: false }
+);
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -705,6 +710,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
                 </Button>
               </>
             )}
+            <SyncStatusBadge />
           </div>
         </div>
 

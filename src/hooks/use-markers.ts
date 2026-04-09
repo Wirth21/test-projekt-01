@@ -72,9 +72,11 @@ export function useMarkers(projectId: string, drawingId: string, versionId?: str
     }
   }, [baseUrl, versionId, drawingId, projectId]);
 
+  // Reset markers when drawingId changes to prevent stale data
   useEffect(() => {
+    setMarkers([]);
+    initialLoadDone.current = false;
     if (projectId && drawingId) {
-      initialLoadDone.current = false;
       fetchMarkers();
     }
   }, [projectId, drawingId, fetchMarkers]);

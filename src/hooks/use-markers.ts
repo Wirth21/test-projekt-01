@@ -32,7 +32,10 @@ export function useMarkers(projectId: string, drawingId: string, versionId?: str
       } catch { /* IndexedDB not available */ }
     }
 
-    if (!navigator.onLine && initialLoadDone.current) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine && initialLoadDone.current) {
+      setLoading(false);
+      return;
+    }
 
     // Only show loading spinner on initial load, not on refetch
     if (!initialLoadDone.current) {

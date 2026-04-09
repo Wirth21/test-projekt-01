@@ -74,8 +74,7 @@ export function PdfThumbnail({ url, width = 200, cacheKey }: PdfThumbnailProps) 
   if (hasError) {
     return (
       <div
-        className="flex items-center justify-center bg-muted rounded"
-        style={{ width, height: width * 1.4 }}
+        className="flex items-center justify-center bg-muted rounded w-full h-full"
         aria-label="PDF-Vorschau nicht verfuegbar"
       >
         <FileText className="h-10 w-10 text-muted-foreground/40" />
@@ -100,20 +99,14 @@ export function PdfThumbnail({ url, width = 200, cacheKey }: PdfThumbnailProps) 
   // Show PDF renderer (first load, generates thumbnail for caching)
   if (!showPdfRenderer) {
     return (
-      <Skeleton
-        className="rounded"
-        style={{ width, height: width * 1.4 }}
-      />
+      <Skeleton className="w-full h-full rounded" />
     );
   }
 
   return (
     <div className="relative" style={{ width }} ref={pageRef}>
       {!loaded && (
-        <Skeleton
-          className="absolute inset-0 rounded"
-          style={{ width, height: width * 1.4 }}
-        />
+        <Skeleton className="absolute inset-0 rounded" />
       )}
       <Document
         file={url}

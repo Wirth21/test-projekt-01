@@ -17,6 +17,13 @@ export function useProjects() {
   const supabase = createClient();
 
   const fetchProjects = useCallback(async () => {
+    // Try to restore tenantId from localStorage if not set
+    if (!tenantIdRef.current) {
+      try {
+        tenantIdRef.current = localStorage.getItem("link2plan_tenant_id");
+      } catch { /* ignore */ }
+    }
+
     // Try to load cached projects first for instant display
     try {
       if (tenantIdRef.current) {
@@ -24,6 +31,8 @@ export function useProjects() {
         if (cached.length > 0) {
           setProjects(cached);
           setLoading(false);
+          // If offline, stop here
+          if (typeof navigator !== "undefined" && !navigator.onLine) return;
           // Check if cache is fresh enough to skip network
           const meta = await getSyncMeta(`projects:${tenantIdRef.current}`);
           if (meta && Date.now() - meta.lastSynced < 30_000) return;
@@ -31,6 +40,12 @@ export function useProjects() {
       }
     } catch {
       // IndexedDB not available, continue with network
+    }
+
+    // If offline and no cache, show error
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setLoading(false);
+      return;
     }
 
     setLoading(true);
@@ -56,7 +71,10 @@ export function useProjects() {
 
       const role = (profile?.tenant_role as TenantRole) ?? "user";
       setTenantRole(role);
-      if (profile?.tenant_id) tenantIdRef.current = profile.tenant_id;
+      if (profile?.tenant_id) {
+        tenantIdRef.current = profile.tenant_id;
+        try { localStorage.setItem("link2plan_tenant_id", profile.tenant_id); } catch { /* ignore */ }
+      }
       const isReadOnly = role === "viewer" || role === "guest";
 
       // Get all project memberships for the current user

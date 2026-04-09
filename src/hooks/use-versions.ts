@@ -28,7 +28,10 @@ export function useVersions(projectId: string, drawingId: string) {
       }
     } catch { /* IndexedDB not available */ }
 
-    if (!navigator.onLine) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     setError(null);

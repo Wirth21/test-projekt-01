@@ -160,44 +160,9 @@ export default function DrawingViewerPage({ params }: PageProps) {
   // Computed PDF width to fit container — stored as ref to avoid re-render loops
   const [fittedWidth, setFittedWidth] = useState<number | undefined>(undefined);
 
-  // Zoom-aware DPI: snapshot old canvas before re-render to prevent white flash
-  const baseDpr = typeof window !== "undefined" ? window.devicePixelRatio : 1;
-  const initialDpr = Math.ceil(baseDpr);
-  const [renderDpr, setRenderDpr] = useState(() => initialDpr);
-  const pendingDprRef = useRef(initialDpr);
-  const dprDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [snapshot, setSnapshot] = useState<string | null>(null);
-  const pageWrapperRef = useRef<HTMLDivElement>(null);
-
-  // Capture current canvas as image before DPR change
-  const captureSnapshot = useCallback(() => {
-    const canvas = pageWrapperRef.current?.querySelector("canvas");
-    if (canvas) {
-      try {
-        setSnapshot(canvas.toDataURL("image/jpeg", 0.7));
-      } catch { /* tainted canvas */ }
-    }
-  }, []);
-
-  const handleZoomChange = useCallback(
-    (_ref: unknown, state: { scale: number }) => {
-      const needed = Math.min(Math.ceil(state.scale * baseDpr), 8);
-      if (dprDebounceRef.current) clearTimeout(dprDebounceRef.current);
-      dprDebounceRef.current = setTimeout(() => {
-        if (needed !== pendingDprRef.current) {
-          pendingDprRef.current = needed;
-          captureSnapshot();
-          setRenderDpr(needed);
-        }
-      }, 500);
-    },
-    [baseDpr, captureSnapshot]
-  );
-
-  // Clear snapshot after new render completes
-  const handlePageRenderSuccess = useCallback(() => {
-    setSnapshot(null);
-  }, []);
+  // Fixed high DPI for sharp rendering — no dynamic changes, no flicker.
+  // The PDF is rendered once at high resolution. TransformWrapper handles zoom via CSS transform.
+  const staticDpr = typeof window !== "undefined" ? Math.ceil(window.devicePixelRatio) * 2 : 2;
 
   const { isFullscreen, isSupported: fullscreenSupported, toggleFullscreen, exitFullscreen: exitFs } = useFullscreen(viewerContainerRef);
 
@@ -247,12 +212,8 @@ export default function DrawingViewerPage({ params }: PageProps) {
       setCurrentPage(1);
       setNumPages(null);
       setFittedWidth(undefined);
-      // Reset DPR to base when switching drawings (no need for high DPR at 1x zoom)
-      setRenderDpr(initialDpr);
-      pendingDprRef.current = initialDpr;
-      setSnapshot(null);
     }
-  }, [activeVersion?.id, fetchUrl, initialDpr]);
+  }, [activeVersion?.id, fetchUrl]);
 
   // Update URL query param when version changes (without full navigation)
   useEffect(() => {
@@ -870,7 +831,6 @@ export default function DrawingViewerPage({ params }: PageProps) {
             limitToBounds={false}
             wheel={{ step: 0.1 }}
             panning={{ disabled: editMode }}
-            onTransformed={handleZoomChange}
           >
             {({ zoomIn, zoomOut, resetTransform }) => (
               <>
@@ -953,27 +913,15 @@ export default function DrawingViewerPage({ params }: PageProps) {
                           <Skeleton className="w-[600px] h-[800px]" />
                         </div>
                       )}
-                      <div ref={pageWrapperRef} className="relative">
-                        {/* Snapshot overlay: shows old canvas image while new DPR renders */}
-                        {snapshot && (
-                          <img
-                            src={snapshot}
-                            alt=""
-                            className="absolute inset-0 z-10 pointer-events-none"
-                            style={{ width: fittedWidth, height: "auto" }}
-                          />
-                        )}
-                        <Page
-                          pageNumber={currentPage}
-                          renderTextLayer={false}
-                          renderAnnotationLayer={false}
-                          className="shadow-lg"
-                          width={fittedWidth}
-                          devicePixelRatio={renderDpr}
-                          canvasBackground="white"
-                          onRenderSuccess={handlePageRenderSuccess}
-                        />
-                      </div>
+                      <Page
+                        pageNumber={currentPage}
+                        renderTextLayer={false}
+                        renderAnnotationLayer={false}
+                        className="shadow-lg"
+                        width={fittedWidth}
+                        devicePixelRatio={staticDpr}
+                        canvasBackground="white"
+                      />
                     </Document>
 
                     {/* Marker overlay -- positioned on top of the PDF page */}

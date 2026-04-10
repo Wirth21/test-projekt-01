@@ -160,9 +160,15 @@ export default function DrawingViewerPage({ params }: PageProps) {
   // Computed PDF width to fit container — stored as ref to avoid re-render loops
   const [fittedWidth, setFittedWidth] = useState<number | undefined>(undefined);
 
-  // Fixed high DPI for sharp rendering — no dynamic changes, no flicker.
-  // The PDF is rendered once at high resolution. TransformWrapper handles zoom via CSS transform.
-  const staticDpr = typeof window !== "undefined" ? Math.ceil(window.devicePixelRatio) * 2 : 2;
+  // Progressive rendering: show fast low-res immediately, upgrade to sharp in background
+  const lowDpr = typeof window !== "undefined" ? Math.ceil(window.devicePixelRatio) : 2;
+  const highDpr = 4;
+  const [hiResReady, setHiResReady] = useState(false);
+
+  // Reset hi-res state when version/page changes
+  useEffect(() => {
+    setHiResReady(false);
+  }, [currentPage, activeDrawingId]);
 
   const { isFullscreen, isSupported: fullscreenSupported, toggleFullscreen, exitFullscreen: exitFs } = useFullscreen(viewerContainerRef);
 
@@ -913,15 +919,33 @@ export default function DrawingViewerPage({ params }: PageProps) {
                           <Skeleton className="w-[600px] h-[800px]" />
                         </div>
                       )}
-                      <Page
-                        pageNumber={currentPage}
-                        renderTextLayer={false}
-                        renderAnnotationLayer={false}
-                        className="shadow-lg"
-                        width={fittedWidth}
-                        devicePixelRatio={staticDpr}
-                        canvasBackground="white"
-                      />
+                      <div className="relative">
+                        {/* Low-res: renders fast, shown immediately */}
+                        {!hiResReady && (
+                          <Page
+                            pageNumber={currentPage}
+                            renderTextLayer={false}
+                            renderAnnotationLayer={false}
+                            className="shadow-lg"
+                            width={fittedWidth}
+                            devicePixelRatio={lowDpr}
+                            canvasBackground="white"
+                          />
+                        )}
+                        {/* Hi-res: renders in background, replaces low-res when done */}
+                        <div className={hiResReady ? "" : "absolute inset-0 opacity-0 pointer-events-none"}>
+                          <Page
+                            pageNumber={currentPage}
+                            renderTextLayer={false}
+                            renderAnnotationLayer={false}
+                            className="shadow-lg"
+                            width={fittedWidth}
+                            devicePixelRatio={highDpr}
+                            canvasBackground="white"
+                            onRenderSuccess={() => setHiResReady(true)}
+                          />
+                        </div>
+                      </div>
                     </Document>
 
                     {/* Marker overlay -- positioned on top of the PDF page */}

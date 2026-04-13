@@ -113,18 +113,28 @@ export async function middleware(request: NextRequest) {
 
   // ──────────────────────────────────────────────
   // 2. Subdomain detected → Resolve tenant (direct REST call to avoid RLS issues)
+  //    Offline-safe: if the fetch fails (e.g. no network), let the request through
+  //    so the Service Worker / cached app can handle it.
   // ──────────────────────────────────────────────
-  const tenantRes = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/tenants?slug=eq.${subdomain}&select=id,slug,is_active&limit=1`,
-    {
-      headers: {
-        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
-      },
-    }
-  );
-  const tenants = await tenantRes.json();
-  const tenant = Array.isArray(tenants) ? tenants[0] : null;
+  let tenant: { id: string; slug: string; is_active: boolean } | null = null;
+
+  try {
+    const tenantRes = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/tenants?slug=eq.${subdomain}&select=id,slug,is_active&limit=1`,
+      {
+        headers: {
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+        },
+      }
+    );
+    const tenants = await tenantRes.json();
+    tenant = Array.isArray(tenants) ? tenants[0] : null;
+  } catch {
+    // Network error (offline) — let the request through so the SW can serve cached content.
+    // The client-side app will use IndexedDB data. Auth is still validated via cookies.
+    return NextResponse.next({ request });
+  }
 
   // Unknown or inactive tenant → redirect to landing page
   if (!tenant || !tenant.is_active) {
@@ -163,10 +173,17 @@ export async function middleware(request: NextRequest) {
 
   // ──────────────────────────────────────────────
   // 3. Auth checks (existing logic, now tenant-scoped)
+  //    Wrapped in try/catch: if Supabase is unreachable, let request through
+  //    so cached content can be served.
   // ──────────────────────────────────────────────
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch {
+    // Auth service unreachable — let through for offline/cached content
+    return supabaseResponse;
+  }
 
   const isPublicRoute =
     pathname.startsWith("/login") ||
@@ -182,11 +199,18 @@ export async function middleware(request: NextRequest) {
 
   // Authenticated user: check profile status + tenant membership
   if (user && !isPublicRoute && !isApiRoute) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("status, is_admin, tenant_id")
-      .eq("id", user.id)
-      .single();
+    let profile: { status: string; is_admin: boolean; tenant_id: string } | null = null;
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("status, is_admin, tenant_id")
+        .eq("id", user.id)
+        .single();
+      profile = data;
+    } catch {
+      // Profile lookup failed (network) — let through
+      return supabaseResponse;
+    }
 
     if (profile) {
       // User belongs to a different tenant → deny access

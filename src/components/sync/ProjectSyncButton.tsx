@@ -181,6 +181,28 @@ export function ProjectSyncButton({
         }));
       }
 
+      // Phase 3: Prefetch navigation pages for offline access
+      if (controller.signal.aborted) return;
+      try {
+        const routesToPrefetch = [
+          "/dashboard",
+          `/dashboard/projects/${projectId}`,
+          ...drawings.map(
+            (d) => `/dashboard/projects/${projectId}/drawings/${d.id as string}`
+          ),
+        ];
+
+        // Ask the Service Worker to prefetch these routes
+        if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({
+            type: "PREFETCH_ROUTES",
+            urls: routesToPrefetch,
+          });
+        }
+      } catch {
+        // Prefetch failure is non-critical
+      }
+
       setProgress((prev) => ({
         ...prev!,
         phase: "done",

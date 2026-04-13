@@ -198,25 +198,30 @@ export function ProjectSyncButton({
         ];
 
         const cache = await caches.open("link2plan-app-v3");
+        const prefetchErrors: string[] = [];
         for (const route of routesToPrefetch) {
           if (controller.signal.aborted) return;
           try {
-            // Fetch the page as a normal navigation request
             const res = await fetch(route, { credentials: "include" });
             if (res.ok) {
               const pathname = new URL(route, window.location.origin).pathname;
-              // Store by pathname (used by SW findCachedPage)
               await cache.put(pathname, res.clone());
-              // Also store by full URL
               const fullUrl = new URL(route, window.location.origin).toString();
               await cache.put(fullUrl, res.clone());
+            } else {
+              prefetchErrors.push(`${route}: ${res.status} ${res.redirected ? "(redirected to " + res.url + ")" : ""}`);
             }
-          } catch {
-            // Individual page prefetch failure is non-critical
+          } catch (e) {
+            prefetchErrors.push(`${route}: ${e instanceof Error ? e.message : "unknown error"}`);
           }
         }
-      } catch {
-        // Prefetch failure is non-critical
+        if (prefetchErrors.length > 0) {
+          console.warn("[PROJ-24 Prefetch] Errors:", prefetchErrors);
+        } else {
+          console.log("[PROJ-24 Prefetch] All pages cached successfully:", routesToPrefetch);
+        }
+      } catch (e) {
+        console.error("[PROJ-24 Prefetch] Fatal error:", e);
       }
 
       setProgress((prev) => ({

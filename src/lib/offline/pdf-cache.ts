@@ -89,6 +89,30 @@ export async function clearPdfCache(): Promise<void> {
   }
 }
 
+/**
+ * Find a cached PDF by storage path (e.g. "{projectId}/{drawingId}/1.pdf").
+ * Searches all cache entries for a URL containing this path.
+ * Used for offline access when we can't get a signed URL.
+ */
+export async function getCachedPdfByStoragePath(storagePath: string): Promise<string | null> {
+  try {
+    const cache = await caches.open(PDF_CACHE_NAME);
+    const keys = await cache.keys();
+    for (const request of keys) {
+      if (request.url.includes(storagePath)) {
+        const response = await cache.match(request);
+        if (response) {
+          const blob = await response.blob();
+          return URL.createObjectURL(blob);
+        }
+      }
+    }
+  } catch {
+    // Cache not available
+  }
+  return null;
+}
+
 /** Count cached PDFs and total size */
 export async function getPdfCacheStats(): Promise<{
   count: number;

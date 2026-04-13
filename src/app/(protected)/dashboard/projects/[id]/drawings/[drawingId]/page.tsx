@@ -46,6 +46,7 @@ import { useFullscreen } from "@/hooks/use-fullscreen";
 import { UploadInfo } from "@/components/drawings/UploadInfo";
 import type { MarkerWithTarget, MarkerColor } from "@/lib/types/marker";
 import { useTranslations } from "next-intl";
+import { getCachedPdfByStoragePath } from "@/lib/offline/pdf-cache";
 import dynamic from "next/dynamic";
 const SyncStatusBadge = dynamic(
   () => import("@/components/sync/SyncStatusBadge").then((m) => m.SyncStatusBadge),
@@ -202,6 +203,15 @@ export default function DrawingViewerPage({ params }: PageProps) {
       const url = await getVersionSignedUrl(activeVersion.id);
       setPdfUrl(url);
     } catch (err) {
+      // Online fetch failed — try offline cache using storage_path
+      if (activeVersion.storage_path) {
+        const cachedBlobUrl = await getCachedPdfByStoragePath(activeVersion.storage_path);
+        if (cachedBlobUrl) {
+          setPdfUrl(cachedBlobUrl);
+          setUrlLoading(false);
+          return;
+        }
+      }
       setUrlError(
         err instanceof Error
           ? err.message

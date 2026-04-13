@@ -73,9 +73,9 @@ export function OfflineDebug() {
       {!show ? (
         <button
           onClick={loadCacheInfo}
-          className="bg-black text-white text-xs px-3 py-1.5 rounded-full opacity-50 hover:opacity-100"
+          className="bg-red-600 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg animate-pulse"
         >
-          Debug
+          OFFLINE DEBUG
         </button>
       ) : (
         <div className="bg-black text-green-400 text-[10px] font-mono p-3 rounded-lg max-w-[400px] max-h-[80vh] overflow-auto shadow-xl">

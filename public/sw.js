@@ -233,7 +233,29 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 7. Everything else: network-first, cache fallback
+  // 7. Non-navigate dashboard page requests (e.g. prefetch from client code)
+  //    Cache these in APP_SHELL_CACHE so they're found by the navigation handler offline
+  if (isDashboardRoute(url) && event.request.headers.get("Accept")?.includes("text/html")) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok && !response.redirected) {
+            const pathname = getPathname(url);
+            const clone1 = response.clone();
+            const clone2 = response.clone();
+            caches.open(APP_SHELL_CACHE).then((c) => {
+              c.put(event.request, clone1);
+              c.put(pathname, clone2);
+            });
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // 8. Everything else: network-first, cache fallback
   event.respondWith(
     fetch(event.request)
       .then((response) => {
@@ -264,7 +286,8 @@ self.addEventListener("message", (event) => {
             if (existing) continue;
 
             const response = await fetch(fullUrl, { credentials: "include" });
-            if (response.ok) {
+            // Only cache actual HTML pages, not redirects or errors
+            if (response.ok && !response.redirected) {
               // Store by both full URL and pathname
               await cache.put(fullUrl, response.clone());
               await cache.put(pathname, response.clone());

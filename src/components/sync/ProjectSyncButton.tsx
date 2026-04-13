@@ -183,6 +183,11 @@ export function ProjectSyncButton({
 
       // Phase 3: Prefetch navigation pages for offline access
       if (controller.signal.aborted) return;
+      setProgress((prev) => ({
+        ...prev!,
+        phase: "pdfs",
+        currentPdf: t("syncingPages"),
+      }));
       try {
         const routesToPrefetch = [
           "/dashboard",
@@ -192,12 +197,25 @@ export function ProjectSyncButton({
           ),
         ];
 
-        // Ask the Service Worker to prefetch these routes
-        if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({
-            type: "PREFETCH_ROUTES",
-            urls: routesToPrefetch,
-          });
+        // Prefetch directly — each fetch goes through the SW which caches the response
+        for (const route of routesToPrefetch) {
+          if (controller.signal.aborted) return;
+          try {
+            const res = await fetch(route, {
+              credentials: "include",
+              headers: { "Accept": "text/html" },
+            });
+            // Just trigger the fetch so the SW caches it — discard the body
+            if (res.body) {
+              const reader = res.body.getReader();
+              while (true) {
+                const { done } = await reader.read();
+                if (done) break;
+              }
+            }
+          } catch {
+            // Individual page prefetch failure is non-critical
+          }
         }
       } catch {
         // Prefetch failure is non-critical

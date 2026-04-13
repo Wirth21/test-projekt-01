@@ -793,6 +793,7 @@
     "syncProject": "Sync project",
     "syncingMetadata": "Loading project data…",
     "syncingPdfs": "Downloading PDFs…",
+    "syncingPages": "Preparing pages for offline access…",
     "syncComplete": "Sync complete",
     "syncFailed": "Sync failed",
     "projectSynced": "Project is now available offline",

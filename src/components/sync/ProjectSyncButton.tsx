@@ -197,21 +197,19 @@ export function ProjectSyncButton({
           ),
         ];
 
-        // Prefetch directly — each fetch goes through the SW which caches the response
+        const cache = await caches.open("link2plan-app-v3");
         for (const route of routesToPrefetch) {
           if (controller.signal.aborted) return;
           try {
-            const res = await fetch(route, {
-              credentials: "include",
-              headers: { "Accept": "text/html" },
-            });
-            // Just trigger the fetch so the SW caches it — discard the body
-            if (res.body) {
-              const reader = res.body.getReader();
-              while (true) {
-                const { done } = await reader.read();
-                if (done) break;
-              }
+            // Fetch the page as a normal navigation request
+            const res = await fetch(route, { credentials: "include" });
+            if (res.ok) {
+              const pathname = new URL(route, window.location.origin).pathname;
+              // Store by pathname (used by SW findCachedPage)
+              await cache.put(pathname, res.clone());
+              // Also store by full URL
+              const fullUrl = new URL(route, window.location.origin).toString();
+              await cache.put(fullUrl, res.clone());
             }
           } catch {
             // Individual page prefetch failure is non-critical

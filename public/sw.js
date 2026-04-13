@@ -1,9 +1,8 @@
 const CACHE_NAME = "link2plan-v4";
 const PDF_CACHE_NAME = "link2plan-pdfs";
-const APP_SHELL_CACHE = "link2plan-app-v2";
+const APP_SHELL_CACHE = "link2plan-app-v3";
 const OFFLINE_URL = "/offline.html";
 
-// Precache critical assets on install
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
@@ -13,15 +12,12 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// Clean old caches on activate (keep PDF cache + current app shell)
 self.addEventListener("activate", (event) => {
   const keepCaches = [CACHE_NAME, PDF_CACHE_NAME, APP_SHELL_CACHE];
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys
-          .filter((key) => !keepCaches.includes(key))
-          .map((key) => caches.delete(key))
+        keys.filter((key) => !keepCaches.includes(key)).map((key) => caches.delete(key))
       )
     )
   );
@@ -29,7 +25,7 @@ self.addEventListener("activate", (event) => {
 });
 
 function isSupabasePdfRequest(url) {
-  return url.includes("/storage/v1/object/") && (url.includes(".pdf") || url.includes("pdf"));
+  return url.includes("/storage/v1/object/") && url.includes("pdf");
 }
 
 function isNextStaticAsset(url) {
@@ -41,12 +37,13 @@ function isApiRequest(url) {
 }
 
 function isDashboardRoute(url) {
-  try {
-    const parsed = new URL(url);
-    return parsed.pathname.startsWith("/dashboard");
-  } catch {
-    return false;
-  }
+  try { return new URL(url).pathname.startsWith("/dashboard"); }
+  catch { return false; }
+}
+
+function getPathname(url) {
+  try { return new URL(url).pathname; }
+  catch { return url; }
 }
 
 function toPdfCacheKey(url) {
@@ -58,6 +55,33 @@ function toPdfCacheKey(url) {
   } catch {
     return url;
   }
+}
+
+/**
+ * Try to find a cached response for a given pathname.
+ * Searches across all entries in the cache for a matching pathname,
+ * regardless of whether it was stored with relative or absolute URL.
+ */
+async function findCachedPage(cache, targetPathname) {
+  // 1. Try direct match with pathname
+  const byPath = await cache.match(targetPathname);
+  if (byPath) return byPath;
+
+  // 2. Try full URL match
+  const fullUrl = new URL(targetPathname, self.location.origin).toString();
+  const byFull = await cache.match(fullUrl);
+  if (byFull) return byFull;
+
+  // 3. Scan all cache keys for pathname match
+  const keys = await cache.keys();
+  for (const request of keys) {
+    const cachedPath = getPathname(typeof request === "string" ? request : request.url);
+    if (cachedPath === targetPathname) {
+      return cache.match(request);
+    }
+  }
+
+  return null;
 }
 
 self.addEventListener("fetch", (event) => {
@@ -84,7 +108,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 2. Next.js static assets: cache-first (immutable, content-hashed)
+  // 2. Next.js static assets: cache-first (immutable)
   if (isNextStaticAsset(url)) {
     event.respondWith(
       caches.open(APP_SHELL_CACHE).then((cache) =>
@@ -123,8 +147,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 4. RSC requests (Next.js client-side navigation): network-first,
-  //    on failure redirect to full page load so the cached HTML is served
+  // 4. RSC requests (Next.js client-side nav): network-first, redirect to full nav on failure
   const isRscRequest = event.request.headers.get("RSC") === "1"
     || event.request.headers.get("Next-Router-State-Tree")
     || url.includes("_rsc=");
@@ -140,15 +163,11 @@ self.addEventListener("fetch", (event) => {
           return response;
         })
         .catch(() =>
-          // RSC fetch failed (offline) — try cached RSC response first
           caches.match(event.request).then((cached) => {
             if (cached) return cached;
-            // No cached RSC payload — redirect to full page navigation
-            // The browser will make a navigate request, hitting our navigation handler
-            // which serves the cached full HTML page
+            // Redirect to full page load — the navigation handler will serve cached HTML
             try {
               const parsed = new URL(url);
-              // Strip RSC params for a clean URL
               parsed.searchParams.delete("_rsc");
               return Response.redirect(parsed.toString(), 302);
             } catch {
@@ -160,33 +179,41 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 5. Dashboard full navigation: network-first, then exact cache, then /dashboard shell
+  // 5. Dashboard navigation: network-first, then smart cache lookup
   if (event.request.mode === "navigate" && isDashboardRoute(url)) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
           if (response.ok) {
-            const clone = response.clone();
-            caches.open(APP_SHELL_CACHE).then((c) => c.put(event.request, clone));
+            // Cache with both the request AND the pathname for reliable offline matching
+            const pathname = getPathname(url);
+            const clone1 = response.clone();
+            const clone2 = response.clone();
+            caches.open(APP_SHELL_CACHE).then((c) => {
+              c.put(event.request, clone1);
+              // Also store by pathname for prefetch compatibility
+              c.put(pathname, clone2);
+            });
           }
           return response;
         })
-        .catch(() =>
-          // 1. Try exact URL match
-          caches.match(event.request).then((exact) => {
-            if (exact) return exact;
-            // 2. Use /dashboard as app shell — React Router handles the rest client-side
-            return caches.match("/dashboard").then((shell) => {
-              if (shell) return shell;
-              return caches.match(OFFLINE_URL);
-            });
-          })
-        )
+        .catch(async () => {
+          const cache = await caches.open(APP_SHELL_CACHE);
+          const pathname = getPathname(url);
+
+          // 1. Smart cache lookup (handles both relative and absolute URLs)
+          const cached = await findCachedPage(cache, pathname);
+          if (cached) return cached;
+
+          // 2. Last resort: offline page
+          const offline = await caches.match(OFFLINE_URL);
+          return offline || new Response("Offline", { status: 503 });
+        })
     );
     return;
   }
 
-  // 6. Other navigation (login, etc.): network-first, cache fallback
+  // 6. Other navigation: network-first, cache fallback
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
@@ -220,21 +247,27 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
-// Listen for messages from the app (e.g., prefetch requests)
+// Prefetch routes for offline access
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "PREFETCH_ROUTES") {
     const urls = event.data.urls || [];
     event.waitUntil(
       caches.open(APP_SHELL_CACHE).then(async (cache) => {
-        for (const url of urls) {
+        for (const rawUrl of urls) {
           try {
-            // Only fetch if not already cached
-            const existing = await cache.match(url);
-            if (!existing) {
-              const response = await fetch(url, { credentials: "include" });
-              if (response.ok) {
-                await cache.put(url, response);
-              }
+            // Resolve to full URL for consistent caching
+            const fullUrl = new URL(rawUrl, self.location.origin).toString();
+            const pathname = new URL(fullUrl).pathname;
+
+            // Skip if already cached (check both formats)
+            const existing = await findCachedPage(cache, pathname);
+            if (existing) continue;
+
+            const response = await fetch(fullUrl, { credentials: "include" });
+            if (response.ok) {
+              // Store by both full URL and pathname
+              await cache.put(fullUrl, response.clone());
+              await cache.put(pathname, response.clone());
             }
           } catch {
             // Skip failed prefetches

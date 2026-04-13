@@ -123,7 +123,44 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 4. Dashboard navigation: network-first, then exact cache, then /dashboard shell
+  // 4. RSC requests (Next.js client-side navigation): network-first,
+  //    on failure redirect to full page load so the cached HTML is served
+  const isRscRequest = event.request.headers.get("RSC") === "1"
+    || event.request.headers.get("Next-Router-State-Tree")
+    || url.includes("_rsc=");
+
+  if (isRscRequest && isDashboardRoute(url)) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(APP_SHELL_CACHE).then((c) => c.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() =>
+          // RSC fetch failed (offline) — try cached RSC response first
+          caches.match(event.request).then((cached) => {
+            if (cached) return cached;
+            // No cached RSC payload — redirect to full page navigation
+            // The browser will make a navigate request, hitting our navigation handler
+            // which serves the cached full HTML page
+            try {
+              const parsed = new URL(url);
+              // Strip RSC params for a clean URL
+              parsed.searchParams.delete("_rsc");
+              return Response.redirect(parsed.toString(), 302);
+            } catch {
+              return Response.redirect(url, 302);
+            }
+          })
+        )
+    );
+    return;
+  }
+
+  // 5. Dashboard full navigation: network-first, then exact cache, then /dashboard shell
   if (event.request.mode === "navigate" && isDashboardRoute(url)) {
     event.respondWith(
       fetch(event.request)
@@ -149,7 +186,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 5. Other navigation (login, etc.): network-first, cache fallback
+  // 6. Other navigation (login, etc.): network-first, cache fallback
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
@@ -169,7 +206,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 6. Everything else: network-first, cache fallback
+  // 7. Everything else: network-first, cache fallback
   event.respondWith(
     fetch(event.request)
       .then((response) => {

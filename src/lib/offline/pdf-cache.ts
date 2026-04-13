@@ -98,12 +98,32 @@ export async function getCachedPdfByStoragePath(storagePath: string): Promise<st
   try {
     const cache = await caches.open(PDF_CACHE_NAME);
     const keys = await cache.keys();
+
+    // Encode the storage path the same way it appears in URLs
+    const encodedPath = encodeURIComponent(storagePath).replace(/%2F/g, "/");
+
     for (const request of keys) {
-      if (request.url.includes(storagePath)) {
+      const url = typeof request === "string" ? request : request.url;
+      if (url.includes(storagePath) || url.includes(encodedPath)) {
         const response = await cache.match(request);
         if (response) {
           const blob = await response.blob();
           return URL.createObjectURL(blob);
+        }
+      }
+    }
+
+    // Fallback: try matching just the filename part (last segment)
+    const filename = storagePath.split("/").pop();
+    if (filename && keys.length > 0) {
+      for (const request of keys) {
+        const url = typeof request === "string" ? request : request.url;
+        if (url.includes(filename)) {
+          const response = await cache.match(request);
+          if (response) {
+            const blob = await response.blob();
+            return URL.createObjectURL(blob);
+          }
         }
       }
     }

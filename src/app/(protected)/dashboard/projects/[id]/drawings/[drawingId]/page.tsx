@@ -101,11 +101,16 @@ export default function DrawingViewerPage({ params }: PageProps) {
   );
 
   // Determine the actual version to display
-  // Guard: only use a version that belongs to the current drawing
+  // Guard: prefer a version that belongs to the current drawing, but fall back gracefully
   const activeVersion = (() => {
+    // First: try selected version if it matches current drawing
     const selected = versions.find((v) => v.id === selectedVersionId);
     if (selected && selected.drawing_id === activeDrawingId) return selected;
+    // Second: latest active version for this drawing
     if (latestActiveVersion && latestActiveVersion.drawing_id === activeDrawingId) return latestActiveVersion;
+    // Third (offline fallback): if versions exist but drawing_id doesn't match yet
+    // (can happen when cache returns data before hooks re-render), use latestActiveVersion anyway
+    if (latestActiveVersion && versions.length > 0 && !selectedVersionId) return latestActiveVersion;
     return undefined;
   })();
 
@@ -199,11 +204,27 @@ export default function DrawingViewerPage({ params }: PageProps) {
       setPdfLoading(true);
       setPdfError(false);
     }
+    // If offline, try to load PDF from cache directly
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      if (activeVersion.storage_path) {
+        const cachedBlobUrl = await getCachedPdfByStoragePath(activeVersion.storage_path);
+        if (cachedBlobUrl) {
+          setPdfUrl(cachedBlobUrl);
+          setPdfLoading(false);
+          setUrlLoading(false);
+          return;
+        }
+      }
+      setUrlError(t("toasts.pdfUrlFailed"));
+      setUrlLoading(false);
+      return;
+    }
+
     try {
       const url = await getVersionSignedUrl(activeVersion.id);
       setPdfUrl(url);
     } catch (err) {
-      // Online fetch failed — try offline cache using storage_path
+      // Network failed — try offline cache as last resort
       if (activeVersion.storage_path) {
         const cachedBlobUrl = await getCachedPdfByStoragePath(activeVersion.storage_path);
         if (cachedBlobUrl) {

@@ -197,19 +197,22 @@ export function ProjectSyncButton({
           ),
         ];
 
+        const origin = window.location.origin; // e.g. https://wirth.link2plan.de
         const cache = await caches.open("link2plan-app-v3");
         const prefetchErrors: string[] = [];
         for (const route of routesToPrefetch) {
           if (controller.signal.aborted) return;
           try {
-            const res = await fetch(route, { credentials: "include" });
+            // Use full URL to ensure correct subdomain
+            const fullUrl = `${origin}${route}`;
+            const res = await fetch(fullUrl, { credentials: "include" });
             if (res.ok) {
-              const pathname = new URL(route, window.location.origin).pathname;
-              await cache.put(pathname, res.clone());
-              const fullUrl = new URL(route, window.location.origin).toString();
+              // Store by pathname for SW findCachedPage lookup
+              await cache.put(route, res.clone());
+              // Also store by full URL
               await cache.put(fullUrl, res.clone());
             } else {
-              prefetchErrors.push(`${route}: ${res.status} ${res.redirected ? "(redirected to " + res.url + ")" : ""}`);
+              prefetchErrors.push(`${fullUrl}: ${res.status} ${res.redirected ? "(redirected to " + res.url + ")" : ""}`);
             }
           } catch (e) {
             prefetchErrors.push(`${route}: ${e instanceof Error ? e.message : "unknown error"}`);

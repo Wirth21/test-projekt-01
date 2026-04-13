@@ -177,7 +177,7 @@ export default function TenantDetailPage({
             {tenant.name}
           </h2>
           <p className="text-muted-foreground font-mono text-sm">
-            {tenant.slug}.link2plan.de
+            {tenant.slug} (Kennung)
           </p>
         </div>
       </div>
@@ -251,7 +251,7 @@ export default function TenantDetailPage({
                 className="font-mono"
               />
               <span className="text-sm text-muted-foreground whitespace-nowrap">
-                .link2plan.de
+                (Kennung)
               </span>
             </div>
           </div>

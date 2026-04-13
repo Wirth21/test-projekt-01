@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { SyncProvider } from "@/components/sync/SyncProvider";
-import { OfflineDebug } from "@/components/sync/OfflineDebug";
 
 export default async function ProtectedLayout({
   children,
@@ -17,10 +16,5 @@ export default async function ProtectedLayout({
     redirect("/login");
   }
 
-  return (
-    <SyncProvider>
-      {children}
-      <OfflineDebug />
-    </SyncProvider>
-  );
+  return <SyncProvider>{children}</SyncProvider>;
 }

@@ -678,7 +678,7 @@
       "title": "Create new tenant",
       "description": "Create a new organization with an initial administrator.",
       "tenantSection": "Organization",
-      "tenantSectionDescription": "Name and subdomain of the organization.",
+      "tenantSectionDescription": "Name and identifier of the organization.",
       "nameLabel": "Name",
       "namePlaceholder": "e.g. Acme Corp",
       "slugLabel": "Web address",
@@ -696,7 +696,7 @@
     },
     "tenantDetail": {
       "editTitle": "Edit tenant",
-      "editDescription": "Change name, subdomain, plan and status.",
+      "editDescription": "Change name, identifier, plan and status.",
       "activeLabel": "Active",
       "deactivate": "Deactivate",
       "deactivateConfirm": "Deactivate tenant?",

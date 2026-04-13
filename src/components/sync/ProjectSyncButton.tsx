@@ -197,34 +197,22 @@ export function ProjectSyncButton({
           ),
         ];
 
-        const origin = window.location.origin; // e.g. https://wirth.link2plan.de
         const cache = await caches.open("link2plan-app-v3");
-        const prefetchErrors: string[] = [];
         for (const route of routesToPrefetch) {
           if (controller.signal.aborted) return;
           try {
-            // Use full URL to ensure correct subdomain
-            const fullUrl = `${origin}${route}`;
+            const fullUrl = new URL(route, window.location.origin).toString();
             const res = await fetch(fullUrl, { credentials: "include" });
             if (res.ok) {
-              // Store by pathname for SW findCachedPage lookup
               await cache.put(route, res.clone());
-              // Also store by full URL
               await cache.put(fullUrl, res.clone());
-            } else {
-              prefetchErrors.push(`${fullUrl}: ${res.status} ${res.redirected ? "(redirected to " + res.url + ")" : ""}`);
             }
-          } catch (e) {
-            prefetchErrors.push(`${route}: ${e instanceof Error ? e.message : "unknown error"}`);
+          } catch {
+            // Individual page prefetch failure is non-critical
           }
         }
-        if (prefetchErrors.length > 0) {
-          console.warn("[PROJ-24 Prefetch] Errors:", prefetchErrors);
-        } else {
-          console.log("[PROJ-24 Prefetch] All pages cached successfully:", routesToPrefetch);
-        }
-      } catch (e) {
-        console.error("[PROJ-24 Prefetch] Fatal error:", e);
+      } catch {
+        // Prefetch failure is non-critical
       }
 
       setProgress((prev) => ({

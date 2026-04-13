@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     const { plan } = parsed.data;
 
     // Get tenant context
-    const { tenantId, tenantSlug } = await getTenantContext();
+    const { tenantId } = await getTenantContext();
 
     // Get price ID for the selected plan
     const priceId =
@@ -95,10 +95,7 @@ export async function POST(request: Request) {
 
     // Build success/cancel URLs
     const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
-    const host =
-      process.env.NODE_ENV === "production"
-        ? `${tenantSlug}.link2plan.de`
-        : `${tenantSlug}.localhost:3000`;
+    const host = process.env.NODE_ENV === "production" ? "link2plan.de" : "localhost:3000";
     const baseUrl = `${protocol}://${host}`;
 
     // Create Checkout session

@@ -18,7 +18,7 @@ export async function POST() {
     }
 
     // Get tenant context
-    const { tenantId, tenantSlug } = await getTenantContext();
+    const { tenantId } = await getTenantContext();
 
     const serviceClient = createServiceRoleClient();
 
@@ -40,10 +40,7 @@ export async function POST() {
 
     // Build return URL
     const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
-    const host =
-      process.env.NODE_ENV === "production"
-        ? `${tenantSlug}.link2plan.de`
-        : `${tenantSlug}.localhost:3000`;
+    const host = process.env.NODE_ENV === "production" ? "link2plan.de" : "localhost:3000";
     const returnUrl = `${protocol}://${host}/dashboard`;
 
     // Create Customer Portal session

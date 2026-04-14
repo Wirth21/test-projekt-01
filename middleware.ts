@@ -167,8 +167,9 @@ export async function middleware(request: NextRequest) {
 
   // ──────────────────────────────────────────────
   // 4. Profile check + tenant context (from user profile, not subdomain)
+  //    Applies to both page and API routes so getTenantContext() works everywhere
   // ──────────────────────────────────────────────
-  if (user && !isApiRoute) {
+  if (user) {
     let profile: { status: string; is_admin: boolean; tenant_id: string } | null = null;
     try {
       const { data } = await supabase
@@ -189,21 +190,24 @@ export async function middleware(request: NextRequest) {
       // Rebuild response with updated headers
       supabaseResponse = NextResponse.next({ request });
 
-      // Pending users: block access
-      if (profile.status === "pending") {
-        await supabase.auth.signOut();
-        return NextResponse.redirect(buildUrl(request, "/login", { error: "pending" }));
-      }
+      // Page-only checks (redirects don't make sense for API routes)
+      if (!isApiRoute) {
+        // Pending users: block access
+        if (profile.status === "pending") {
+          await supabase.auth.signOut();
+          return NextResponse.redirect(buildUrl(request, "/login", { error: "pending" }));
+        }
 
-      // Disabled/deleted users: block access
-      if (profile.status === "disabled" || profile.status === "deleted") {
-        await supabase.auth.signOut();
-        return NextResponse.redirect(buildUrl(request, "/login", { error: "disabled" }));
-      }
+        // Disabled/deleted users: block access
+        if (profile.status === "disabled" || profile.status === "deleted") {
+          await supabase.auth.signOut();
+          return NextResponse.redirect(buildUrl(request, "/login", { error: "disabled" }));
+        }
 
-      // Admin route protection
-      if (pathname.startsWith("/admin") && !profile.is_admin) {
-        return NextResponse.redirect(buildUrl(request, "/dashboard"));
+        // Admin route protection
+        if (pathname.startsWith("/admin") && !profile.is_admin) {
+          return NextResponse.redirect(buildUrl(request, "/dashboard"));
+        }
       }
     }
   }

@@ -184,12 +184,6 @@ export async function middleware(request: NextRequest) {
     }
 
     if (profile) {
-      // Set tenant context headers for API routes to use
-      request.headers.set("x-tenant-id", profile.tenant_id);
-
-      // Rebuild response with updated headers
-      supabaseResponse = NextResponse.next({ request });
-
       // Page-only checks (redirects don't make sense for API routes)
       if (!isApiRoute) {
         // Pending users: block access
@@ -209,6 +203,11 @@ export async function middleware(request: NextRequest) {
           return NextResponse.redirect(buildUrl(request, "/dashboard"));
         }
       }
+
+      // Set tenant context header LAST — after all Supabase calls that might
+      // trigger setAll callback and overwrite supabaseResponse
+      request.headers.set("x-tenant-id", profile.tenant_id);
+      supabaseResponse = NextResponse.next({ request });
     }
   }
 

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { logActivity } from "@/lib/activity-log";
-import { isReadOnlyUser } from "@/lib/admin";
+import { requireProjectAccess } from "@/lib/require-project-access";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -10,33 +9,10 @@ interface RouteParams {
 // POST /api/projects/[id]/archive — archive project (owner only)
 export async function POST(_request: Request, { params }: RouteParams) {
   const { id } = await params;
-  const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
-  }
-
-  // Check read-only user
-  if (await isReadOnlyUser(supabase)) {
-    return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
-  }
-
-  // Verify caller is project owner
-  const { data: membership } = await supabase
-    .from("project_members")
-    .select("role")
-    .eq("project_id", id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!membership || membership.role !== "owner") {
-    return NextResponse.json({ error: "Nur Projektbesitzer können das Projekt archivieren" }, { status: 403 });
-  }
+  const result = await requireProjectAccess(id, { requireRole: "owner", requireWrite: true });
+  if ("error" in result) return result.error;
+  const { supabase, user } = result.data;
 
   const { data: project, error: archiveError } = await supabase
     .from("projects")

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { parsePagination, paginationMeta } from "@/lib/pagination";
+import { requireProjectAccess } from "@/lib/require-project-access";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -9,41 +9,10 @@ interface RouteParams {
 // GET /api/projects/[id]/activity — list activity log entries with pagination and filters
 export async function GET(request: Request, { params }: RouteParams) {
   const { id: projectId } = await params;
-  const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
-  }
-
-  // Verify user is a project member (or admin — RLS handles this)
-  const { data: membership, error: memberError } = await supabase
-    .from("project_members")
-    .select("id")
-    .eq("project_id", projectId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  // Also check admin status for cross-project access
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single();
-
-  const isAdmin = profile?.is_admin === true;
-
-  if (memberError) {
-    return NextResponse.json({ error: "Fehler bei der Berechtigungsprüfung" }, { status: 500 });
-  }
-
-  if (!membership && !isAdmin) {
-    return NextResponse.json({ error: "Kein Zugriff auf dieses Projekt" }, { status: 403 });
-  }
+  const result = await requireProjectAccess(projectId);
+  if ("error" in result) return result.error;
+  const { supabase } = result.data;
 
   // Parse query parameters
   const { searchParams } = new URL(request.url);

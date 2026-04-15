@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { createServiceRoleClient } from "@/lib/superadmin";
 import { inviteMemberSchema } from "@/lib/validations/project";
 import { getTenantContext } from "@/lib/tenant";
 import { getTenantUsage, getLimitsForPlan } from "@/lib/check-limits";
 import type { PlanType } from "@/lib/types/tenant";
 import { logActivity } from "@/lib/activity-log";
-import { isReadOnlyUser } from "@/lib/admin";
+import { requireProjectAccess } from "@/lib/require-project-access";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -15,28 +14,10 @@ interface RouteParams {
 // GET /api/projects/[id]/members — list project members
 export async function GET(_request: Request, { params }: RouteParams) {
   const { id: projectId } = await params;
-  const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
-  }
-
-  // Verify user is a project member
-  const { data: membership } = await supabase
-    .from("project_members")
-    .select("id")
-    .eq("project_id", projectId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!membership) {
-    return NextResponse.json({ error: "Kein Zugriff auf dieses Projekt" }, { status: 403 });
-  }
+  const result = await requireProjectAccess(projectId);
+  if ("error" in result) return result.error;
+  const { supabase } = result.data;
 
   // Fetch members
   const { data: memberRows, error: fetchError } = await supabase
@@ -82,33 +63,10 @@ export async function GET(_request: Request, { params }: RouteParams) {
 // POST /api/projects/[id]/members — invite a member by email (owner only)
 export async function POST(request: Request, { params }: RouteParams) {
   const { id: projectId } = await params;
-  const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
-  }
-
-  // Check read-only user
-  if (await isReadOnlyUser(supabase)) {
-    return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
-  }
-
-  // Verify caller is project member
-  const { data: callerMembership } = await supabase
-    .from("project_members")
-    .select("role")
-    .eq("project_id", projectId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!callerMembership) {
-    return NextResponse.json({ error: "Nur Projektmitglieder können Mitglieder einladen" }, { status: 403 });
-  }
+  const accessResult = await requireProjectAccess(projectId, { requireWrite: true });
+  if ("error" in accessResult) return accessResult.error;
+  const { supabase, user } = accessResult.data;
 
   let body: unknown;
   try {
@@ -117,15 +75,15 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Ungültiger Request-Body" }, { status: 400 });
   }
 
-  const result = inviteMemberSchema.safeParse(body);
-  if (!result.success) {
+  const parsed = inviteMemberSchema.safeParse(body);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "Validierungsfehler", details: result.error.flatten() },
+      { error: "Validierungsfehler", details: parsed.error.flatten() },
       { status: 400 }
     );
   }
 
-  const { email } = result.data;
+  const { email } = parsed.data;
 
   // Check user limit for this tenant
   let tenantId: string;

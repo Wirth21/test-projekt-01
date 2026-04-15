@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { editProjectSchema } from "@/lib/validations/project";
 import { logActivity } from "@/lib/activity-log";
-import { isReadOnlyUser } from "@/lib/admin";
+import { requireProjectAccess } from "@/lib/require-project-access";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -11,33 +10,10 @@ interface RouteParams {
 // PATCH /api/projects/[id] — update project name/description (owner only)
 export async function PATCH(request: Request, { params }: RouteParams) {
   const { id } = await params;
-  const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
-  }
-
-  // Check read-only user
-  if (await isReadOnlyUser(supabase)) {
-    return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
-  }
-
-  // Verify caller is project member
-  const { data: membership } = await supabase
-    .from("project_members")
-    .select("role")
-    .eq("project_id", id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!membership || membership.role !== "owner") {
-    return NextResponse.json({ error: "Nur Projektbesitzer können das Projekt bearbeiten" }, { status: 403 });
-  }
+  const result = await requireProjectAccess(id, { requireRole: "owner", requireWrite: true });
+  if ("error" in result) return result.error;
+  const { supabase, user } = result.data;
 
   let body: unknown;
   try {
@@ -46,15 +22,15 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Ungültiger Request-Body" }, { status: 400 });
   }
 
-  const result = editProjectSchema.safeParse(body);
-  if (!result.success) {
+  const parsed = editProjectSchema.safeParse(body);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "Validierungsfehler", details: result.error.flatten() },
+      { error: "Validierungsfehler", details: parsed.error.flatten() },
       { status: 400 }
     );
   }
 
-  const { name, description } = result.data;
+  const { name, description } = parsed.data;
 
   // Fetch old project name for activity log
   const { data: existingProject } = await supabase

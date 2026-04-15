@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { createMarkerSchema } from "@/lib/validations/marker";
 import { logActivity } from "@/lib/activity-log";
-import { isReadOnlyUser } from "@/lib/admin";
+import { requireProjectAccess } from "@/lib/require-project-access";
 
 interface RouteParams {
   params: Promise<{ id: string; drawingId: string }>;
@@ -14,32 +13,10 @@ const MAX_MARKERS_PER_VERSION = 100;
 // Query param: ?versionId=<uuid> (optional — defaults to latest active version)
 export async function GET(request: Request, { params }: RouteParams) {
   const { id: projectId, drawingId } = await params;
-  const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
-  }
-
-  // Verify user is a project member
-  const { data: membership, error: memberError } = await supabase
-    .from("project_members")
-    .select("id")
-    .eq("project_id", projectId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (memberError) {
-    return NextResponse.json({ error: "Fehler bei der Berechtigungsprüfung" }, { status: 500 });
-  }
-
-  if (!membership) {
-    return NextResponse.json({ error: "Kein Zugriff auf dieses Projekt" }, { status: 403 });
-  }
+  const accessResult = await requireProjectAccess(projectId);
+  if ("error" in accessResult) return accessResult.error;
+  const { supabase } = accessResult.data;
 
   // Determine which version to query markers for
   const { searchParams } = new URL(request.url);
@@ -105,37 +82,10 @@ export async function GET(request: Request, { params }: RouteParams) {
 // Query param: ?versionId=<uuid> (optional — defaults to latest active version)
 export async function POST(request: Request, { params }: RouteParams) {
   const { id: projectId, drawingId } = await params;
-  const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
-  }
-
-  // Check read-only user
-  if (await isReadOnlyUser(supabase)) {
-    return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
-  }
-
-  // Verify user is a project member
-  const { data: membership, error: memberError } = await supabase
-    .from("project_members")
-    .select("id")
-    .eq("project_id", projectId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (memberError) {
-    return NextResponse.json({ error: "Fehler bei der Berechtigungsprüfung" }, { status: 500 });
-  }
-
-  if (!membership) {
-    return NextResponse.json({ error: "Kein Zugriff auf dieses Projekt" }, { status: 403 });
-  }
+  const accessResult = await requireProjectAccess(projectId, { requireWrite: true });
+  if ("error" in accessResult) return accessResult.error;
+  const { supabase, user } = accessResult.data;
 
   // Parse and validate body
   let body: unknown;

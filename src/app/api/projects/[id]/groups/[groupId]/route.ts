@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { renameGroupSchema } from "@/lib/validations/drawing-group";
-import { isReadOnlyUser } from "@/lib/admin";
+import { requireProjectAccess } from "@/lib/require-project-access";
 
 interface RouteParams {
   params: Promise<{ id: string; groupId: string }>;
@@ -10,37 +9,10 @@ interface RouteParams {
 // PATCH /api/projects/[id]/groups/[groupId] — rename a group
 export async function PATCH(request: Request, { params }: RouteParams) {
   const { id: projectId, groupId } = await params;
-  const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
-  }
-
-  // Check read-only user
-  if (await isReadOnlyUser(supabase)) {
-    return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
-  }
-
-  // Verify user is a project member
-  const { data: membership, error: memberError } = await supabase
-    .from("project_members")
-    .select("id")
-    .eq("project_id", projectId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (memberError) {
-    return NextResponse.json({ error: "Fehler bei der Berechtigungsprüfung" }, { status: 500 });
-  }
-
-  if (!membership) {
-    return NextResponse.json({ error: "Kein Zugriff auf dieses Projekt" }, { status: 403 });
-  }
+  const accessResult = await requireProjectAccess(projectId, { requireWrite: true });
+  if ("error" in accessResult) return accessResult.error;
+  const { supabase } = accessResult.data;
 
   // Parse and validate body
   let body: unknown;

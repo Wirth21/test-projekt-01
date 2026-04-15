@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { requireProjectAccess } from "@/lib/require-project-access";
 
 interface RouteParams {
   params: Promise<{ id: string; drawingId: string; versionId: string }>;
@@ -8,32 +8,10 @@ interface RouteParams {
 // GET /api/projects/[id]/drawings/[drawingId]/versions/[versionId]/url — signed URL for a version's PDF
 export async function GET(_request: Request, { params }: RouteParams) {
   const { id: projectId, drawingId, versionId } = await params;
-  const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
-  }
-
-  // Verify user is a project member
-  const { data: membership, error: memberError } = await supabase
-    .from("project_members")
-    .select("id")
-    .eq("project_id", projectId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (memberError) {
-    return NextResponse.json({ error: "Fehler bei der Berechtigungsprüfung" }, { status: 500 });
-  }
-
-  if (!membership) {
-    return NextResponse.json({ error: "Kein Zugriff auf dieses Projekt" }, { status: 403 });
-  }
+  const accessResult = await requireProjectAccess(projectId);
+  if ("error" in accessResult) return accessResult.error;
+  const { supabase } = accessResult.data;
 
   // Fetch the version with its drawing to verify project ownership
   const { data: version, error: versionError } = await supabase

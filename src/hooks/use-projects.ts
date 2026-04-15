@@ -237,9 +237,12 @@ export function useProjects() {
   const joinProject = async (projectId: string) => {
     const res = await fetch(`/api/projects/${projectId}/join`, { method: "POST" });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error ?? "Beitreten fehlgeschlagen");
-    await fetchProjects();
-    await fetchInactiveProjects();
+    if (!res.ok) {
+      // Always refresh both lists (user may already be a member from another session)
+      await Promise.all([fetchProjects(), fetchInactiveProjects()]);
+      throw new Error(json.error ?? "Beitreten fehlgeschlagen");
+    }
+    await Promise.all([fetchProjects(), fetchInactiveProjects()]);
   };
 
   const leaveProject = async (projectId: string) => {

@@ -79,7 +79,7 @@ export async function GET(request: Request) {
     .limit(200);
 
   if (memberUserIds.length > 0) {
-    query = query.not("id", "in", `(${memberUserIds.join(",")})`);
+    query = query.not("id", "in", `(${memberUserIds.map((id) => id.replace(/[^a-f0-9-]/gi, "")).join(",")})`);
   }
 
   const { data: profiles, error: profilesError } = await query;

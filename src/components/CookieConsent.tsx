@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -10,19 +10,14 @@ const STORAGE_KEY = "cookie-consent-accepted";
 
 export function CookieConsent() {
   const t = useTranslations("cookie");
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
+  const [visible, setVisible] = useState(() => {
+    if (typeof window === "undefined") return false;
     try {
-      const accepted = localStorage.getItem(STORAGE_KEY);
-      if (!accepted) {
-        setVisible(true);
-      }
+      return !localStorage.getItem(STORAGE_KEY);
     } catch {
-      // localStorage not available (e.g. SSR, private browsing)
-      setVisible(true);
+      return true;
     }
-  }, []);
+  });
 
   function handleAccept() {
     try {

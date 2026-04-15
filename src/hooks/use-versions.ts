@@ -61,7 +61,7 @@ export function useVersions(projectId: string, drawingId: string) {
     } finally {
       setLoading(false);
     }
-  }, [baseUrl, drawingId, projectId]);
+  }, [baseUrl, drawingId, projectId, notifySynced]);
 
   // Reset versions when drawingId changes to prevent stale data race conditions
   useEffect(() => {

@@ -111,6 +111,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/auth") ||
     pathname.startsWith("/datenschutz") ||
     pathname.startsWith("/impressum") ||
+    pathname.startsWith("/agb") ||
     pathname === "/sitemap.xml" ||
     pathname === "/icon.svg";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Document, Page } from "react-pdf";
 import { Loader2, FileWarning, Archive, ExternalLink } from "lucide-react";
@@ -23,43 +23,38 @@ export function MarkerTooltip({
   onClose,
 }: MarkerTooltipProps) {
   const t = useTranslations("markers");
-  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const tooltipRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
-  const rafRef = useRef<number>(0);
-
   const target = marker.target_drawing;
   const isDeleted = !target;
   const isArchived = target?.is_archived;
 
-  // Track anchor element position every frame
-  const updatePosition = useCallback(() => {
-    if (!anchorEl) return;
-    const rect = anchorEl.getBoundingClientRect();
-    setPos({
-      left: rect.left + rect.width / 2,
-      top: rect.top - 8,
-    });
-    rafRef.current = requestAnimationFrame(updatePosition);
-  }, [anchorEl]);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(!!(target && !target.is_archived));
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const rafRef = useRef<number>(0);
 
+  // Track anchor element position every frame
   useEffect(() => {
-    if (anchorEl) {
-      rafRef.current = requestAnimationFrame(updatePosition);
+    if (!anchorEl) return;
+
+    function tick() {
+      const rect = anchorEl!.getBoundingClientRect();
+      setPos({
+        left: rect.left + rect.width / 2,
+        top: rect.top - 8,
+      });
+      rafRef.current = requestAnimationFrame(tick);
     }
+
+    rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [anchorEl, updatePosition]);
+  }, [anchorEl]);
 
   // Load thumbnail
   useEffect(() => {
-    if (!target || target.is_archived) {
-      setLoading(false);
-      return;
-    }
+    if (!target || target.is_archived) return;
 
     let cancelled = false;
-    setLoading(true);
 
     getSignedUrl(target.id)
       .then((url) => {

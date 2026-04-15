@@ -56,7 +56,7 @@ export function useDrawingGroups(projectId: string) {
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, notifySynced]);
 
   useEffect(() => {
     if (projectId) {

@@ -122,7 +122,21 @@ export default function DrawingViewerPage({ params }: PageProps) {
     deleteMarker,
   } = useMarkers(projectId, activeDrawingId, activeVersion?.id);
 
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfUrl, _setPdfUrl] = useState<string | null>(null);
+  const prevBlobUrlRef = useRef<string | null>(null);
+  // Wrap setPdfUrl to automatically revoke previous blob URLs (prevent memory leaks)
+  const setPdfUrl = useCallback((url: string | null) => {
+    _setPdfUrl((prev) => {
+      if (prev && prev.startsWith("blob:") && prev !== url) {
+        URL.revokeObjectURL(prev);
+      }
+      if (prevBlobUrlRef.current && prevBlobUrlRef.current.startsWith("blob:") && prevBlobUrlRef.current !== url) {
+        URL.revokeObjectURL(prevBlobUrlRef.current);
+      }
+      prevBlobUrlRef.current = url?.startsWith("blob:") ? url : null;
+      return url;
+    });
+  }, []);
   const [urlLoading, setUrlLoading] = useState(true);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [numPages, setNumPages] = useState<number | null>(null);
@@ -133,20 +147,22 @@ export default function DrawingViewerPage({ params }: PageProps) {
   // Read-only check (viewer/guest)
   const [isReadOnly, setIsReadOnly] = useState(false);
   useEffect(() => {
+    let cancelled = false;
     async function checkRole() {
       const supabase = (await import("@/lib/supabase")).createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user || cancelled) return;
       const { data: profile } = await supabase
         .from("profiles")
         .select("tenant_role")
         .eq("id", user.id)
         .single();
-      if (profile?.tenant_role === "viewer" || profile?.tenant_role === "guest") {
+      if (!cancelled && (profile?.tenant_role === "viewer" || profile?.tenant_role === "guest")) {
         setIsReadOnly(true);
       }
     }
     checkRole();
+    return () => { cancelled = true; };
   }, []);
 
   // Version panel state
@@ -241,7 +257,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
     } finally {
       setUrlLoading(false);
     }
-  }, [activeVersion, getVersionSignedUrl]);
+  }, [activeVersion, getVersionSignedUrl, setPdfUrl, t]);
 
   useEffect(() => {
     if (activeVersion) {
@@ -250,6 +266,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
       setNumPages(null);
       setFittedWidth(undefined);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- only refetch when version ID changes, not the full object
   }, [activeVersion?.id, fetchUrl]);
 
   // Update URL query param when version changes (without full navigation)
@@ -723,7 +740,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
                   size="sm"
                   onClick={goToNextPage}
                   disabled={currentPage >= numPages}
-                  aria-label="Naechste Seite"
+                  aria-label="Nächste Seite"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>

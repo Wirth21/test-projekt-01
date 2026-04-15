@@ -13,7 +13,7 @@ export default function LoginPage() {
       title={t("welcomeBack")}
       description={t("loginDescription")}
     >
-      <Suspense>
+      <Suspense fallback={null}>
         <LoginForm />
       </Suspense>
     </AuthCard>

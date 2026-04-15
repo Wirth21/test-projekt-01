@@ -70,7 +70,7 @@ export function useMarkers(projectId: string, drawingId: string, versionId?: str
       setLoading(false);
       initialLoadDone.current = true;
     }
-  }, [baseUrl, versionId, drawingId, projectId]);
+  }, [baseUrl, versionId, drawingId, projectId, notifySynced]);
 
   // Reset markers when drawingId changes to prevent stale data
   useEffect(() => {

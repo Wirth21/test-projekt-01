@@ -33,39 +33,40 @@ function getInitials(name: string): string {
 }
 
 function getActionIcon(actionType: string) {
+  const iconClass = "h-3.5 w-3.5";
   switch (actionType) {
     case "drawing.uploaded":
-      return Upload;
+      return <Upload className={iconClass} />;
     case "drawing.renamed":
-      return Pencil;
+      return <Pencil className={iconClass} />;
     case "drawing.archived":
-      return Archive;
+      return <Archive className={iconClass} />;
     case "drawing.restored":
-      return RotateCcw;
+      return <RotateCcw className={iconClass} />;
     case "version.uploaded":
-      return FileUp;
+      return <FileUp className={iconClass} />;
     case "version.archived":
-      return Archive;
+      return <Archive className={iconClass} />;
     case "drawing.status_changed":
-      return CircleDot;
+      return <CircleDot className={iconClass} />;
     case "project.created":
-      return FolderPlus;
+      return <FolderPlus className={iconClass} />;
     case "project.updated":
-      return FolderEdit;
+      return <FolderEdit className={iconClass} />;
     case "project.archived":
-      return Archive;
+      return <Archive className={iconClass} />;
     case "project.restored":
-      return RotateCcw;
+      return <RotateCcw className={iconClass} />;
     case "member.invited":
-      return UserPlus;
+      return <UserPlus className={iconClass} />;
     case "member.removed":
-      return UserMinus;
+      return <UserMinus className={iconClass} />;
     case "marker.created":
-      return MapPin;
+      return <MapPin className={iconClass} />;
     case "marker.deleted":
-      return Trash2;
+      return <Trash2 className={iconClass} />;
     default:
-      return Pencil;
+      return <Pencil className={iconClass} />;
   }
 }
 
@@ -133,7 +134,7 @@ export function ActivityLogEntryComponent({ entry }: ActivityLogEntryProps) {
 
   const metadata = entry.metadata as Record<string, string | number | undefined>;
   const userName = (metadata.user_name as string) ?? t("unknownUser");
-  const Icon = getActionIcon(entry.action_type);
+  const icon = getActionIcon(entry.action_type);
   const colorClass = getActionColorClass(entry.action_type);
 
   // Determine locale from translation context
@@ -214,7 +215,7 @@ export function ActivityLogEntryComponent({ entry }: ActivityLogEntryProps) {
   return (
     <div className="flex items-start gap-3 py-3 px-4" role="listitem">
       <div className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${colorClass}`}>
-        <Icon className="h-3.5 w-3.5" />
+        {icon}
       </div>
 
       <div className="flex-1 min-w-0">

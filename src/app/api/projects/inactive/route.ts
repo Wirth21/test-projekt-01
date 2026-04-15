@@ -49,7 +49,7 @@ export async function GET() {
 
   // Exclude projects the user is already a member of
   if (memberProjectIds.length > 0) {
-    query = query.not("id", "in", `(${memberProjectIds.join(",")})`);
+    query = query.not("id", "in", `(${memberProjectIds.map((id) => id.replace(/[^a-f0-9-]/gi, "")).join(",")})`);
   }
 
   const { data: projects, error: projectsError } = await query;

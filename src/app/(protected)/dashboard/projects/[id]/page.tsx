@@ -94,7 +94,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
   );
 
   // Fetch signed URLs for thumbnails when drawings change
-  const fetchThumbnailUrls = useCallback(async () => {
+  const fetchThumbnailUrls = useCallback(async (signal: AbortSignal) => {
     const activeDrawings = drawings.filter((d) => !d.is_archived);
     const urls = new Map<string, string>();
 
@@ -102,19 +102,21 @@ export default function ProjectDetailPage({ params }: PageProps) {
       activeDrawings.map(async (d) => {
         try {
           const url = await getSignedUrl(d.id);
-          urls.set(d.id, url);
+          if (!signal.aborted) urls.set(d.id, url);
         } catch {
           // Thumbnail URL failed — card will show fallback
         }
       })
     );
 
-    setThumbnailUrls(urls);
+    if (!signal.aborted) setThumbnailUrls(urls);
   }, [drawings, getSignedUrl]);
 
   useEffect(() => {
     if (drawings.length > 0) {
-      fetchThumbnailUrls();
+      const controller = new AbortController();
+      fetchThumbnailUrls(controller.signal);
+      return () => controller.abort();
     }
   }, [drawings, fetchThumbnailUrls]);
 

@@ -58,7 +58,7 @@ export function useDrawings(projectId: string) {
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, notifySynced]);
 
   useEffect(() => {
     if (projectId) {

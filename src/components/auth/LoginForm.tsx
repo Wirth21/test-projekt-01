@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -38,15 +38,14 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const t = useTranslations("auth");
 
-  // Show status-based error messages from middleware redirects
-  useEffect(() => {
-    const errorParam = searchParams.get("error");
-    if (errorParam === "pending") {
-      setError(t("errors.accountPending"));
-    } else if (errorParam === "disabled") {
-      setError(t("errors.accountDisabled"));
-    }
-  }, [searchParams, t]);
+  // Show status-based error messages from middleware redirects (derived from URL)
+  const errorParam = searchParams.get("error");
+  const urlError = errorParam === "pending"
+    ? t("errors.accountPending")
+    : errorParam === "disabled"
+      ? t("errors.accountDisabled")
+      : null;
+  const displayError = error ?? urlError;
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -80,9 +79,9 @@ export function LoginForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {error && (
+        {displayError && (
           <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>{displayError}</AlertDescription>
           </Alert>
         )}
 

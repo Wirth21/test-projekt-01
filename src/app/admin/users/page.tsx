@@ -46,7 +46,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState(STATUS_ALL);
-  const [selectedUser, setSelectedUser] = useState<AdminProfile | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [createUserOpen, setCreateUserOpen] = useState(false);
 
@@ -85,18 +85,8 @@ export default function AdminUsersPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Keep selectedUser in sync after refetch
-  useEffect(() => {
-    if (selectedUser) {
-      const updated = users.find((u) => u.id === selectedUser.id);
-      if (updated) {
-        setSelectedUser(updated);
-      } else {
-        // User was deleted or filtered out
-        setSelectedUser(null);
-      }
-    }
-  }, [users, selectedUser]);
+  // Derive selectedUser from users list and selectedUserId
+  const selectedUser = selectedUserId ? users.find((u) => u.id === selectedUserId) ?? null : null;
 
   return (
     <div>
@@ -231,7 +221,7 @@ export default function AdminUsersPage() {
                   <TableRow
                     key={user.id}
                     className="cursor-pointer"
-                    onClick={() => setSelectedUser(user)}
+                    onClick={() => setSelectedUserId(user.id)}
                   >
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -277,7 +267,7 @@ export default function AdminUsersPage() {
         user={selectedUser}
         open={selectedUser !== null}
         onOpenChange={(open) => {
-          if (!open) setSelectedUser(null);
+          if (!open) setSelectedUserId(null);
         }}
         onStatusChange={updateUserStatus}
         onProfileUpdate={async (userId, data) => {
@@ -290,8 +280,7 @@ export default function AdminUsersPage() {
             const err = await res.json();
             throw new Error(err.error || "Fehler");
           }
-          const { user: updated } = await res.json();
-          setSelectedUser((prev) => prev ? { ...prev, ...updated } : null);
+          await res.json();
           refetch();
         }}
         isSelf={selectedUser?.id === currentUserId}

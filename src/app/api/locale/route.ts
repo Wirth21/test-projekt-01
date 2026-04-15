@@ -3,7 +3,13 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 // POST /api/locale — update user's locale preference
 export async function POST(request: Request) {
-  const { locale } = await request.json();
+  let locale: string;
+  try {
+    const body = await request.json();
+    locale = body.locale;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
   if (!["de", "en"].includes(locale)) {
     return NextResponse.json({ error: "Invalid locale" }, { status: 400 });

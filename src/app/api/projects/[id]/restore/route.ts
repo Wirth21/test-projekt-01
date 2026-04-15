@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { createServiceRoleClient } from "@/lib/superadmin";
 import { logActivity } from "@/lib/activity-log";
 import { isReadOnlyUser } from "@/lib/admin";
+import { getTenantContext } from "@/lib/tenant";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -27,7 +28,16 @@ export async function POST(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
   }
 
-  // Any non-read-only tenant user can restore — use service role to bypass RLS
+  // Verify tenant context
+  let tenantId: string;
+  try {
+    const ctx = await getTenantContext();
+    tenantId = ctx.tenantId;
+  } catch {
+    return NextResponse.json({ error: "Tenant-Kontext nicht verfügbar" }, { status: 400 });
+  }
+
+  // Restore project — use service role to bypass RLS, but filter by tenant_id
   let project = null;
   let restoreError = null;
   try {
@@ -36,6 +46,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
       .from("projects")
       .update({ is_archived: false, updated_at: new Date().toISOString() })
       .eq("id", id)
+      .eq("tenant_id", tenantId)
       .eq("is_archived", true)
       .select()
       .single();

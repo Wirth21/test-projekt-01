@@ -46,6 +46,7 @@ export function SyncStatusBadge() {
         return t("offline");
       case "stale": {
         if (!lastSynced) return t("neverSynced");
+        // eslint-disable-next-line react-hooks/purity -- intentional: recalculate relative time on each render
         const diff = Date.now() - lastSynced;
         const minutes = Math.floor(diff / 60_000);
         const hours = Math.floor(minutes / 60);

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { getTenantContext } from "@/lib/tenant";
 
-// GET /api/profiles — list all team member profiles
+// GET /api/profiles — list all team member profiles for the current tenant
 export async function GET() {
   const supabase = await createServerSupabaseClient();
 
@@ -17,9 +18,18 @@ export async function GET() {
     );
   }
 
+  let tenantId: string;
+  try {
+    const ctx = await getTenantContext();
+    tenantId = ctx.tenantId;
+  } catch {
+    return NextResponse.json({ error: "Tenant-Kontext nicht verfügbar" }, { status: 400 });
+  }
+
   const { data: profiles, error } = await supabase
     .from("profiles")
     .select("id, display_name, email, created_at")
+    .eq("tenant_id", tenantId)
     .order("created_at", { ascending: true });
 
   if (error) {

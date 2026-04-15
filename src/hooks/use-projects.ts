@@ -161,7 +161,7 @@ export function useProjects() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, notifySynced]);
 
   useEffect(() => {
     fetchProjects();

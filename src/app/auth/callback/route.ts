@@ -35,6 +35,22 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      // Verify profile is active before allowing access
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("status")
+          .eq("id", authUser.id)
+          .single();
+
+        if (profile?.status && profile.status !== "active") {
+          await supabase.auth.signOut();
+          const statusError = profile.status === "pending" ? "pending" : "disabled";
+          return NextResponse.redirect(`${origin}/login?error=${statusError}`);
+        }
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

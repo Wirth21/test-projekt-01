@@ -28,15 +28,12 @@ export function PdfThumbnail({ url, width = 200, cacheKey }: PdfThumbnailProps) 
   const [loaded, setLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [cachedDataUrl, setCachedDataUrl] = useState<string | null>(null);
-  const [showPdfRenderer, setShowPdfRenderer] = useState(false);
+  const [showPdfRenderer, setShowPdfRenderer] = useState(!cacheKey);
   const pageRef = useRef<HTMLDivElement>(null);
 
-  // Try to load cached thumbnail first
+  // Try to load cached thumbnail
   useEffect(() => {
-    if (!cacheKey) {
-      setShowPdfRenderer(true);
-      return;
-    }
+    if (!cacheKey) return;
 
     let cancelled = false;
 
@@ -86,6 +83,7 @@ export function PdfThumbnail({ url, width = 200, cacheKey }: PdfThumbnailProps) 
   if (cachedDataUrl) {
     return (
       <div style={{ width }}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- data URL from IndexedDB cache, not a remote image */}
         <img
           src={cachedDataUrl}
           alt="PDF Vorschau"

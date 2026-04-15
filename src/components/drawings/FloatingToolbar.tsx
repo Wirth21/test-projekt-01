@@ -81,7 +81,9 @@ export function FloatingToolbar({
     document.addEventListener("keydown", handleKeyDown);
 
     // Start the auto-hide timer
-    resetHideTimer();
+    hideTimerRef.current = setTimeout(() => {
+      setVisible(false);
+    }, AUTO_HIDE_DELAY);
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, RefObject } from "react";
+import { useCallback, useEffect, useState, type RefObject } from "react";
 
 /**
  * Hook to manage the Browser Fullscreen API on a specific element.
@@ -9,14 +9,9 @@ import { useCallback, useEffect, useState, RefObject } from "react";
  */
 export function useFullscreen(ref: RefObject<HTMLElement | null>) {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isSupported, setIsSupported] = useState(false);
-
-  // Check support on mount (client-side only)
-  useEffect(() => {
-    setIsSupported(
-      typeof document !== "undefined" && !!document.fullscreenEnabled
-    );
-  }, []);
+  const [isSupported] = useState(
+    () => typeof document !== "undefined" && !!document.fullscreenEnabled
+  );
 
   // Listen for fullscreenchange events to keep state in sync
   useEffect(() => {

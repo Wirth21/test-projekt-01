@@ -58,7 +58,7 @@ export function ProjectSyncButton({
   getVersionSignedUrl,
 }: ProjectSyncButtonProps) {
   const t = useTranslations("sync");
-  const { tenantId, isOnline } = useSyncContext();
+  const { tenantId, isOnline, notifySynced } = useSyncContext();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState<SyncProgress | null>(null);
@@ -171,7 +171,6 @@ export function ProjectSyncButton({
           }
         } catch {
           // Skip failed PDFs, continue with the rest
-          downloaded++; // Count as attempted
         }
 
         setProgress((prev) => ({
@@ -220,6 +219,7 @@ export function ProjectSyncButton({
         phase: "done",
       }));
 
+      notifySynced();
       toast.success(t("projectSynced"));
     } catch (err) {
       if (!controller.signal.aborted) {
@@ -246,6 +246,8 @@ export function ProjectSyncButton({
     fetchMarkers,
     fetchGroups,
     getVersionSignedUrl,
+    notifySynced,
+    projectId,
     t,
   ]);
 

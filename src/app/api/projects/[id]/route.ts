@@ -35,8 +35,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (!membership) {
-    return NextResponse.json({ error: "Nur Projektmitglieder können das Projekt bearbeiten" }, { status: 403 });
+  if (!membership || membership.role !== "owner") {
+    return NextResponse.json({ error: "Nur Projektbesitzer können das Projekt bearbeiten" }, { status: 403 });
   }
 
   let body: unknown;

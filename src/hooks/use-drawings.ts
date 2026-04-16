@@ -66,6 +66,13 @@ export function useDrawings(projectId: string) {
     }
   }, [projectId, fetchDrawings]);
 
+  // Invalidate cache so next fetchDrawings() always hits the network
+  const invalidateCache = async () => {
+    try {
+      await setSyncMeta({ key: `drawings:${projectId}`, lastSynced: 0, tenantId: projectId });
+    } catch { /* ignore */ }
+  };
+
   const uploadDrawing = async (
     file: File,
     onProgress: (pct: number) => void,
@@ -135,6 +142,7 @@ export function useDrawings(projectId: string) {
       throw new Error(json.error ?? "Metadaten konnten nicht gespeichert werden");
     }
 
+    await invalidateCache();
     await fetchDrawings();
     return json.drawing;
   };
@@ -154,6 +162,7 @@ export function useDrawings(projectId: string) {
       throw new Error(json.error ?? "Umbenennung fehlgeschlagen");
     }
 
+    await invalidateCache();
     await fetchDrawings();
   };
 
@@ -168,6 +177,7 @@ export function useDrawings(projectId: string) {
       throw new Error(json.error ?? "Archivierung fehlgeschlagen");
     }
 
+    await invalidateCache();
     await fetchDrawings();
   };
 
@@ -182,6 +192,7 @@ export function useDrawings(projectId: string) {
       throw new Error(json.error ?? "Wiederherstellung fehlgeschlagen");
     }
 
+    await invalidateCache();
     await fetchDrawings();
   };
 

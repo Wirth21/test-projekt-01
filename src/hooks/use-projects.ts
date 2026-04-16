@@ -174,6 +174,15 @@ export function useProjects() {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [fetchProjects]);
 
+  // Invalidate cache so next fetch always hits the network
+  const invalidateCache = async () => {
+    try {
+      if (tenantIdRef.current) {
+        await setSyncMeta({ key: `projects:${tenantIdRef.current}`, lastSynced: 0, tenantId: tenantIdRef.current });
+      }
+    } catch { /* ignore */ }
+  };
+
   const createProject = async (input: CreateProjectInput) => {
     const res = await fetch("/api/projects", {
       method: "POST",
@@ -184,6 +193,7 @@ export function useProjects() {
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Projekt konnte nicht erstellt werden");
 
+    await invalidateCache();
     await fetchProjects();
     return json.project;
   };
@@ -198,6 +208,7 @@ export function useProjects() {
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Projekt konnte nicht aktualisiert werden");
 
+    await invalidateCache();
     await fetchProjects();
   };
 
@@ -207,6 +218,7 @@ export function useProjects() {
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Projekt konnte nicht archiviert werden");
 
+    await invalidateCache();
     await fetchProjects();
   };
 
@@ -216,6 +228,7 @@ export function useProjects() {
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Projekt konnte nicht wiederhergestellt werden");
 
+    await invalidateCache();
     await fetchProjects();
     await fetchArchivedProjects();
   };
@@ -246,9 +259,11 @@ export function useProjects() {
     const json = await res.json();
     if (!res.ok) {
       // Always refresh both lists (user may already be a member from another session)
+      await invalidateCache();
       await Promise.all([fetchProjects(), fetchInactiveProjects()]);
       throw new Error(json.error ?? "Beitreten fehlgeschlagen");
     }
+    await invalidateCache();
     await Promise.all([fetchProjects(), fetchInactiveProjects()]);
   };
 
@@ -256,6 +271,7 @@ export function useProjects() {
     const res = await fetch(`/api/projects/${projectId}/leave`, { method: "POST" });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Verlassen fehlgeschlagen");
+    await invalidateCache();
     await fetchProjects();
   };
 

@@ -28,6 +28,7 @@ export function ProjectCard({ project, onEdit, onInvite, onArchive }: ProjectCar
   const tc = useTranslations("common");
   const tp = useTranslations("projects");
   const isMember = project.role === "owner" || project.role === "member";
+  const isOwner = project.role === "owner";
   const isViewer = project.role === "viewer";
 
   const formattedDate = new Date(project.updated_at).toLocaleDateString("de-DE", {
@@ -58,22 +59,28 @@ export function ProjectCard({ project, onEdit, onInvite, onArchive }: ProjectCar
             <DropdownMenuContent align="end">
               {isMember && (
                 <>
-                  <DropdownMenuItem onClick={() => { setMenuOpen(false); onEdit(project); }}>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    {tc("edit")}
-                  </DropdownMenuItem>
+                  {isOwner && (
+                    <DropdownMenuItem onClick={() => { setMenuOpen(false); onEdit(project); }}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      {tc("edit")}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => { setMenuOpen(false); onInvite(project); }}>
                     <UserPlus className="mr-2 h-4 w-4" />
                     {tp("invite.title")}
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => { setMenuOpen(false); onArchive(project); }}
-                  >
-                    <Archive className="mr-2 h-4 w-4" />
-                    {tp("archiveConfirm.submit")}
-                  </DropdownMenuItem>
+                  {isOwner && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => { setMenuOpen(false); onArchive(project); }}
+                      >
+                        <Archive className="mr-2 h-4 w-4" />
+                        {tp("archiveConfirm.submit")}
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </>
               )}
               {!isMember && (

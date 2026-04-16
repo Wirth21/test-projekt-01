@@ -59,7 +59,14 @@ export default function DashboardPage() {
     isReadOnly,
     fetchInactiveProjects,
     fetchArchivedProjects,
+    refetch,
   } = useProjects();
+
+  // Always refetch when dashboard mounts (e.g. navigating back from a project)
+  useEffect(() => {
+    refetch();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [activeTab, setActiveTab] = useState("active");
   const [restoring, setRestoring] = useState<string | null>(null);
   const [joining, setJoining] = useState<string | null>(null);

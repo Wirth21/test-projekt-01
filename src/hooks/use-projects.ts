@@ -37,7 +37,7 @@ export function useProjects() {
           if (typeof navigator !== "undefined" && !navigator.onLine) return;
           // Check if cache is fresh enough to skip network
           const meta = await getSyncMeta(`projects:${tenantIdRef.current}`);
-          if (meta && Date.now() - meta.lastSynced < 30_000) return;
+          if (meta && Date.now() - meta.lastSynced < 5_000) return;
         }
       }
     } catch {
@@ -165,6 +165,13 @@ export function useProjects() {
 
   useEffect(() => {
     fetchProjects();
+
+    // Refetch when user navigates back to the tab (catches stale cache after navigation)
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") fetchProjects();
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [fetchProjects]);
 
   const createProject = async (input: CreateProjectInput) => {

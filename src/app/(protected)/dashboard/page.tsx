@@ -245,11 +245,19 @@ export default function DashboardPage() {
                   {loading && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                       {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="rounded-lg border bg-card p-6 space-y-3">
-                          <Skeleton className="h-5 w-3/4" />
-                          <Skeleton className="h-4 w-1/3" />
-                          <Skeleton className="h-12 w-full" />
-                          <Skeleton className="h-4 w-1/2" />
+                        <div key={i} className="rounded-lg border bg-card flex flex-col">
+                          <div className="p-4 pb-2 space-y-2">
+                            <Skeleton className="h-5 w-3/4" />
+                            <Skeleton className="h-4 w-16 rounded-full" />
+                          </div>
+                          <div className="px-4 pb-2">
+                            <Skeleton className="h-3 w-full" />
+                          </div>
+                          <div className="px-4 py-2 border-t flex gap-4">
+                            <Skeleton className="h-3 w-8" />
+                            <Skeleton className="h-3 w-8" />
+                            <Skeleton className="h-3 w-8" />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -385,9 +393,15 @@ export default function DashboardPage() {
             {archivedLoading && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="rounded-lg border bg-card p-6 space-y-3">
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-4 w-1/3" />
+                  <div key={i} className="rounded-lg border bg-card flex flex-col">
+                    <div className="p-4 pb-2 space-y-2">
+                      <Skeleton className="h-5 w-3/4" />
+                      <Skeleton className="h-4 w-16 rounded-full" />
+                    </div>
+                    <div className="px-4 py-2 border-t flex gap-4">
+                      <Skeleton className="h-3 w-8" />
+                      <Skeleton className="h-3 w-8" />
+                    </div>
                   </div>
                 ))}
               </div>

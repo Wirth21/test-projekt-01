@@ -5,10 +5,11 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useRef,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
+import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 
 export type SyncState = "synced" | "syncing" | "stale" | "offline";
 
@@ -18,7 +19,9 @@ interface SyncContextValue {
   lastSynced: number | null;
   tenantId: string | null;
   setTenantId: (id: string) => void;
+  /** @deprecated No longer needed — React Query handles sync state. Kept for backward compat. */
   notifySynced: () => void;
+  /** @deprecated No longer needed — React Query handles sync state. Kept for backward compat. */
   notifySyncing: () => void;
 }
 
@@ -40,11 +43,9 @@ const STALE_THRESHOLD = 60_000;
 
 export function SyncProvider({ children }: { children: ReactNode }) {
   const [isOnline, setIsOnline] = useState(true);
-  const [lastSynced, setLastSynced] = useState<number | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [tenantId, setTenantIdState] = useState<string | null>(null);
-  const staleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [, forceUpdate] = useState(0);
+  const isFetching = useIsFetching();
+  const queryClient = useQueryClient();
 
   // Auto-detect tenant ID from user profile
   useEffect(() => {
@@ -61,16 +62,15 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           .single();
         if (profile?.tenant_id) {
           setTenantIdState(profile.tenant_id);
-          try { localStorage.setItem("link2plan_tenant_id", profile.tenant_id); } catch {}
+          try { localStorage.setItem("link2plan_tenant_id", profile.tenant_id); } catch { /* ignore */ }
         }
-      } catch {}
+      } catch { /* ignore */ }
     }
 
-    // Try localStorage first for instant availability
     try {
       const stored = localStorage.getItem("link2plan_tenant_id");
       if (stored) setTenantIdState(stored);
-    } catch {}
+    } catch { /* ignore */ }
 
     detectTenant();
   }, []);
@@ -88,46 +88,34 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Restore lastSynced from localStorage
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("link2plan_last_synced");
-      if (stored) setLastSynced(Number(stored));
-    } catch {}
-  }, []);
+  // Derive lastSynced from React Query's most recent dataUpdatedAt
+  const lastSynced = useMemo(() => {
+    const queries = queryClient.getQueryCache().getAll();
+    const max = queries.reduce((m, q) => Math.max(m, q.state.dataUpdatedAt), 0);
+    return max || null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-derive when isFetching changes
+  }, [queryClient, isFetching]);
 
-  // Re-evaluate staleness periodically
-  useEffect(() => {
-    staleTimerRef.current = setInterval(() => forceUpdate((n) => n + 1), 30_000);
-    return () => { if (staleTimerRef.current) clearInterval(staleTimerRef.current); };
-  }, []);
-
-  const notifySynced = useCallback(() => {
-    const now = Date.now();
-    setLastSynced(now);
-    setIsSyncing(false);
-    try { localStorage.setItem("link2plan_last_synced", String(now)); } catch {}
-  }, []);
-
-  const notifySyncing = useCallback(() => {
-    setIsSyncing(true);
-  }, []);
-
-  const setTenantId = useCallback((id: string) => {
-    setTenantIdState(id);
-    try { localStorage.setItem("link2plan_tenant_id", id); } catch {}
-  }, []);
-
+  // Derive sync state
   let state: SyncState;
   if (!isOnline) {
     state = "offline";
-  } else if (isSyncing) {
+  } else if (isFetching > 0) {
     state = "syncing";
   } else if (lastSynced && Date.now() - lastSynced < STALE_THRESHOLD) {
     state = "synced";
   } else {
     state = "stale";
   }
+
+  const setTenantId = useCallback((id: string) => {
+    setTenantIdState(id);
+    try { localStorage.setItem("link2plan_tenant_id", id); } catch { /* ignore */ }
+  }, []);
+
+  // No-ops for backward compatibility (ProjectSyncButton still calls notifySynced)
+  const notifySynced = useCallback(() => {}, []);
+  const notifySyncing = useCallback(() => {}, []);
 
   return (
     <SyncContext.Provider

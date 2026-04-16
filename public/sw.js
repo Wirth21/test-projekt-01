@@ -124,26 +124,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 3. API requests: network-first, cache fallback
+  // 3. API requests: pass through to network (React Query handles caching)
   if (isApiRequest(url)) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((c) => c.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() =>
-          caches.match(event.request).then((cached) =>
-            cached || new Response(JSON.stringify({ error: "Offline" }), {
-              status: 503,
-              headers: { "Content-Type": "application/json" },
-            })
-          )
-        )
-    );
     return;
   }
 

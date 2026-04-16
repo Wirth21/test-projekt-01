@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { cacheRecords } from "@/lib/offline/db";
+import { useQueryClient } from "@tanstack/react-query";
 import { fetchPdfWithCache, isPdfCached } from "@/lib/offline/pdf-cache";
 import { useSyncContext } from "./SyncProvider";
 
@@ -58,6 +58,7 @@ export function ProjectSyncButton({
   getVersionSignedUrl,
 }: ProjectSyncButtonProps) {
   const t = useTranslations("sync");
+  const queryClient = useQueryClient();
   const { tenantId, isOnline, notifySynced } = useSyncContext();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -103,14 +104,14 @@ export function ProjectSyncButton({
     });
 
     try {
-      // Phase 1: Fetch and cache all metadata
+      // Phase 1: Prefetch all metadata into React Query cache
       const drawings = await fetchDrawings();
-      await cacheRecords("drawings", drawings, tid);
+      queryClient.setQueryData(["drawings", projectId], drawings);
 
       if (controller.signal.aborted) return;
 
       const groups = await fetchGroups();
-      await cacheRecords("drawing_groups", groups, tid);
+      queryClient.setQueryData(["drawing-groups", projectId], groups);
 
       if (controller.signal.aborted) return;
 
@@ -122,10 +123,10 @@ export function ProjectSyncButton({
 
         const versions = await fetchVersions(drawingId);
         allVersions.push(...versions);
-        await cacheRecords("versions", versions, tid);
+        queryClient.setQueryData(["versions", projectId, drawingId], versions);
 
         const markers = await fetchMarkers(drawingId);
-        await cacheRecords("markers", markers, tid);
+        queryClient.setQueryData(["markers", projectId, drawingId, "latest"], markers);
       }
 
       if (controller.signal.aborted) return;
@@ -241,6 +242,7 @@ export function ProjectSyncButton({
     }
   }, [
     tenantId,
+    queryClient,
     fetchDrawings,
     fetchVersions,
     fetchMarkers,

@@ -1,135 +1,112 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DrawingGroup } from "@/lib/types/drawing";
-import { cacheRecords, getCachedByIndex, getSyncMeta, setSyncMeta } from "@/lib/offline/db";
-import { useSyncContext } from "@/components/sync/SyncProvider";
 
 export function useDrawingGroups(projectId: string) {
-  const [groups, setGroups] = useState<DrawingGroup[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { notifySynced } = useSyncContext();
+  const queryClient = useQueryClient();
 
-  const fetchGroups = useCallback(async () => {
-    const cacheKey = `groups:${projectId}`;
-
-    // Try cache first
-    try {
-      const cached = await getCachedByIndex<DrawingGroup>("drawing_groups", "by-project", projectId);
-      if (cached.length > 0) {
-        setGroups(cached);
-        setLoading(false);
-        const meta = await getSyncMeta(cacheKey);
-        if (meta && Date.now() - meta.lastSynced < 30_000) return;
-      }
-    } catch { /* IndexedDB not available */ }
-
-    if (typeof navigator !== "undefined" && !navigator.onLine) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
+  const {
+    data: groups = [],
+    isLoading: loading,
+    error: queryError,
+    refetch,
+  } = useQuery<DrawingGroup[]>({
+    queryKey: ["drawing-groups", projectId],
+    queryFn: async () => {
       const res = await fetch(`/api/projects/${projectId}/groups`);
       const json = await res.json();
 
       if (!res.ok) {
-        setError(json.error ?? "Gruppen konnten nicht geladen werden");
-        return;
+        throw new Error(json.error ?? "Gruppen konnten nicht geladen werden");
       }
 
-      const freshGroups = json.groups ?? [];
-      setGroups(freshGroups);
+      return json.groups ?? [];
+    },
+    staleTime: 30_000,
+    enabled: !!projectId,
+  });
 
-      // Cache result
-      try {
-        await cacheRecords("drawing_groups", freshGroups, projectId);
-        await setSyncMeta({ key: cacheKey, lastSynced: Date.now(), tenantId: projectId });
-      } catch { /* Cache write failed */ }
-      notifySynced();
-    } catch {
-      setError("Ein unerwarteter Fehler ist aufgetreten");
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId, notifySynced]);
+  const error = queryError ? (queryError as Error).message : null;
 
-  useEffect(() => {
-    if (projectId) {
-      fetchGroups();
-    }
-  }, [projectId, fetchGroups]);
-
-  const createGroup = async (name: string): Promise<DrawingGroup> => {
-    const res = await fetch(`/api/projects/${projectId}/groups`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-
-    const json = await res.json();
-    if (!res.ok) {
-      throw new Error(json.error ?? "Gruppe konnte nicht erstellt werden");
-    }
-
-    await fetchGroups();
-    return json.group;
-  };
-
-  const renameGroup = async (groupId: string, name: string) => {
-    const res = await fetch(
-      `/api/projects/${projectId}/groups/${groupId}`,
-      {
-        method: "PATCH",
+  const createGroup = useCallback(
+    async (name: string): Promise<DrawingGroup> => {
+      const res = await fetch(`/api/projects/${projectId}/groups`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error ?? "Gruppe konnte nicht erstellt werden");
       }
-    );
 
-    const json = await res.json();
-    if (!res.ok) {
-      throw new Error(json.error ?? "Umbenennung fehlgeschlagen");
-    }
+      await queryClient.invalidateQueries({ queryKey: ["drawing-groups", projectId] });
+      return json.group;
+    },
+    [projectId, queryClient]
+  );
 
-    await fetchGroups();
-  };
+  const renameGroup = useCallback(
+    async (groupId: string, name: string) => {
+      const res = await fetch(
+        `/api/projects/${projectId}/groups/${groupId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name }),
+        }
+      );
 
-  const archiveGroup = async (groupId: string) => {
-    const res = await fetch(
-      `/api/projects/${projectId}/groups/${groupId}/archive`,
-      { method: "POST" }
-    );
-
-    const json = await res.json();
-    if (!res.ok) {
-      throw new Error(json.error ?? "Archivierung fehlgeschlagen");
-    }
-
-    await fetchGroups();
-  };
-
-  const assignDrawingToGroup = async (
-    drawingId: string,
-    groupId: string | null
-  ) => {
-    const res = await fetch(
-      `/api/projects/${projectId}/drawings/${drawingId}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ group_id: groupId }),
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error ?? "Umbenennung fehlgeschlagen");
       }
-    );
 
-    const json = await res.json();
-    if (!res.ok) {
-      throw new Error(json.error ?? "Gruppenzuweisung fehlgeschlagen");
-    }
-  };
+      await queryClient.invalidateQueries({ queryKey: ["drawing-groups", projectId] });
+    },
+    [projectId, queryClient]
+  );
+
+  const archiveGroup = useCallback(
+    async (groupId: string) => {
+      const res = await fetch(
+        `/api/projects/${projectId}/groups/${groupId}/archive`,
+        { method: "POST" }
+      );
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error ?? "Archivierung fehlgeschlagen");
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["drawing-groups", projectId] });
+    },
+    [projectId, queryClient]
+  );
+
+  const assignDrawingToGroup = useCallback(
+    async (drawingId: string, groupId: string | null) => {
+      const res = await fetch(
+        `/api/projects/${projectId}/drawings/${drawingId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ group_id: groupId }),
+        }
+      );
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error ?? "Gruppenzuweisung fehlgeschlagen");
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["drawings", projectId] });
+    },
+    [projectId, queryClient]
+  );
 
   return {
     groups,
@@ -139,6 +116,6 @@ export function useDrawingGroups(projectId: string) {
     renameGroup,
     archiveGroup,
     assignDrawingToGroup,
-    refetch: fetchGroups,
+    refetch,
   };
 }

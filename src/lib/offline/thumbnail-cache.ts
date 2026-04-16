@@ -1,5 +1,3 @@
-import { getDB } from "./db";
-
 const THUMBNAIL_STORE = "thumbnails";
 
 /**

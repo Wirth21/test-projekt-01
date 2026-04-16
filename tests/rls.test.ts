@@ -11,7 +11,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   serviceClient,
   ensureMembership,
-  removeMembership,
+  forceDeleteTestProject,
   TEST_USERS,
   TEST_PROJECT_ID,
   TEST_TENANT_ID,
@@ -56,10 +56,7 @@ describe("RLS Policies", () => {
   });
 
   afterAll(async () => {
-    // Cleanup: remove test memberships and project
-    await removeMembership(TEST_USERS.member.id, TEST_RLS_PROJECT.id);
-    await removeMembership(TEST_USERS.admin.id, TEST_RLS_PROJECT.id);
-    await sc.from("projects").delete().eq("id", TEST_RLS_PROJECT.id);
+    await forceDeleteTestProject(TEST_RLS_PROJECT.id);
   });
 
   describe("project_members table", () => {

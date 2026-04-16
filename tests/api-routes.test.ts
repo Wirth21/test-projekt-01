@@ -11,7 +11,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   serviceClient,
   ensureMembership,
-  removeMembership,
+  forceDeleteTestProject,
   TEST_USERS,
   TEST_TENANT_ID,
 } from "./helpers";
@@ -60,17 +60,7 @@ describe("API Route Logic", () => {
     if (drawingError) console.error("Drawing insert error:", drawingError.message);
   });
 
-  afterAll(async () => {
-    // Cleanup in reverse order
-    await sc.from("markers").delete().eq("project_id", API_TEST_PROJECT.id);
-    await sc.from("drawing_versions").delete().eq("drawing_id", API_TEST_DRAWING.id);
-    await sc.from("drawings").delete().eq("id", API_TEST_DRAWING.id);
-    await sc.from("activity_log").delete().eq("project_id", API_TEST_PROJECT.id);
-    await sc.from("drawing_groups").delete().eq("project_id", API_TEST_PROJECT.id);
-    await removeMembership(TEST_USERS.member.id, API_TEST_PROJECT.id);
-    await removeMembership(TEST_USERS.admin.id, API_TEST_PROJECT.id);
-    await sc.from("projects").delete().eq("id", API_TEST_PROJECT.id);
-  });
+  // Cleanup is done in the global afterAll below (shared with auth tests)
 
   describe("Project membership flow", () => {
     const tempUserId = TEST_USERS.member.id;
@@ -89,9 +79,7 @@ describe("API Route Logic", () => {
     });
 
     afterAll(async () => {
-      await removeMembership(tempUserId, tempProjectId);
-      await removeMembership(TEST_USERS.admin.id, tempProjectId);
-      await sc.from("projects").delete().eq("id", tempProjectId);
+      await forceDeleteTestProject(tempProjectId);
     });
 
     it("can add membership via service role", async () => {
@@ -395,4 +383,10 @@ describe("Authenticated API tests (requires TEST_ADMIN_PASSWORD + TEST_MEMBER_PA
       expect(data?.name).toBe(API_TEST_PROJECT.name);
     }
   });
+});
+
+// Global cleanup — runs after ALL test suites in this file
+afterAll(async () => {
+  await forceDeleteTestProject(API_TEST_PROJECT.id);
+  await forceDeleteTestProject("00000000-0000-0000-0000-000000000088");
 });

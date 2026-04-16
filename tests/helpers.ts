@@ -74,3 +74,13 @@ export async function removeMembership(userId: string, projectId: string) {
     .eq("project_id", projectId)
     .eq("user_id", userId);
 }
+
+/**
+ * Force-delete a test project and all its data.
+ * Disables owner-protection triggers temporarily.
+ * ONLY use for test cleanup with synthetic project IDs.
+ */
+export async function forceDeleteTestProject(projectId: string) {
+  const sc = serviceClient();
+  await sc.rpc("force_delete_test_project" as never, { p_project_id: projectId });
+}

@@ -82,13 +82,12 @@ export function PdfThumbnail({ url, width = 200, cacheKey }: PdfThumbnailProps) 
   // Show cached thumbnail image (fast, works offline)
   if (cachedDataUrl) {
     return (
-      <div style={{ width }}>
+      <div className="w-full h-full flex items-center justify-center">
         {/* eslint-disable-next-line @next/next/no-img-element -- data URL from IndexedDB cache, not a remote image */}
         <img
           src={cachedDataUrl}
           alt="PDF Vorschau"
-          className="rounded"
-          style={{ width, height: "auto" }}
+          className="w-full h-full object-cover"
         />
       </div>
     );
@@ -102,9 +101,9 @@ export function PdfThumbnail({ url, width = 200, cacheKey }: PdfThumbnailProps) 
   }
 
   return (
-    <div className="relative" style={{ width }} ref={pageRef}>
+    <div className="relative w-full h-full overflow-hidden" ref={pageRef}>
       {!loaded && (
-        <Skeleton className="absolute inset-0 rounded" />
+        <Skeleton className="absolute inset-0" />
       )}
       <Document
         file={url}

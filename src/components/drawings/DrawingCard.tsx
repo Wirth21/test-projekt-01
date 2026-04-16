@@ -90,7 +90,7 @@ export function DrawingCard({
         {/* Thumbnail */}
         <div className="aspect-[3/2] bg-muted flex items-center justify-center overflow-hidden relative">
           {thumbnailUrl ? (
-            <PdfThumbnail url={thumbnailUrl} width={200} cacheKey={`thumb:${drawing.id}`} />
+            <PdfThumbnail url={thumbnailUrl} width={400} cacheKey={`thumb:${drawing.id}`} />
           ) : (
             <div className="flex items-center justify-center w-full h-full">
               <div className="h-10 w-10 text-muted-foreground/40">

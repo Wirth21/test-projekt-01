@@ -42,7 +42,8 @@ export const TEST_USERS = {
   },
 };
 
-export const TEST_PROJECT_ID = "f6515c6f-aa24-49e4-a153-68ea30ce5e59"; // test projekt 1
+// NEVER use real project IDs here — tests must only use synthetic 00000000-... UUIDs
+export const TEST_PROJECT_ID = "00000000-0000-0000-0000-000000000098"; // API_TEST_PROJECT
 export const TEST_TENANT_ID = "ee7f6c96-b58e-469f-a987-68b488449cd3";
 
 /**

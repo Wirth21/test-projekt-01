@@ -13,7 +13,6 @@ import {
   ensureMembership,
   forceDeleteTestProject,
   TEST_USERS,
-  TEST_PROJECT_ID,
   TEST_TENANT_ID,
 } from "./helpers";
 import { createClient } from "@supabase/supabase-js";
@@ -186,9 +185,26 @@ describe("RLS Policies", () => {
 describe("RLS with authenticated users (requires TEST_ADMIN_PASSWORD + TEST_MEMBER_PASSWORD)", () => {
   const adminPassword = process.env.TEST_ADMIN_PASSWORD;
   const memberPassword = process.env.TEST_MEMBER_PASSWORD;
-
-  // Skip these tests if passwords aren't configured
   const runAuthTests = !!(adminPassword && memberPassword);
+
+  const AUTH_TEST_PROJECT_ID = "00000000-0000-0000-0000-000000000077";
+
+  beforeAll(async () => {
+    if (!runAuthTests) return;
+    await sc.from("projects").upsert({
+      id: AUTH_TEST_PROJECT_ID,
+      name: "RLS Auth Test Project",
+      tenant_id: TEST_TENANT_ID,
+      created_by: TEST_USERS.admin.id,
+      is_archived: false,
+    });
+    await ensureMembership(TEST_USERS.admin.id, AUTH_TEST_PROJECT_ID, "owner");
+    await ensureMembership(TEST_USERS.member.id, AUTH_TEST_PROJECT_ID, "member");
+  });
+
+  afterAll(async () => {
+    await forceDeleteTestProject(AUTH_TEST_PROJECT_ID);
+  });
 
   async function signIn(email: string, password: string) {
     const client = createClient(SUPABASE_URL, ANON_KEY);
@@ -202,21 +218,18 @@ describe("RLS with authenticated users (requires TEST_ADMIN_PASSWORD + TEST_MEMB
     const { data, error } = await client
       .from("project_members")
       .select("id, role")
-      .eq("project_id", TEST_PROJECT_ID);
+      .eq("project_id", AUTH_TEST_PROJECT_ID);
 
     expect(error).toBeNull();
     expect(data!.length).toBeGreaterThan(0);
   });
 
   it.skipIf(!runAuthTests)("member can see own membership", async () => {
-    // Ensure member is in the project first
-    await ensureMembership(TEST_USERS.member.id, TEST_PROJECT_ID);
-
     const client = await signIn(TEST_USERS.member.email, memberPassword!);
     const { data, error } = await client
       .from("project_members")
       .select("id, role")
-      .eq("project_id", TEST_PROJECT_ID)
+      .eq("project_id", AUTH_TEST_PROJECT_ID)
       .eq("user_id", TEST_USERS.member.id);
 
     expect(error).toBeNull();
@@ -229,10 +242,9 @@ describe("RLS with authenticated users (requires TEST_ADMIN_PASSWORD + TEST_MEMB
     const { data, error } = await client
       .from("drawings")
       .select("id")
-      .eq("project_id", TEST_PROJECT_ID);
+      .eq("project_id", AUTH_TEST_PROJECT_ID);
 
     expect(error).toBeNull();
-    // May be 0 if no drawings, but shouldn't error
   });
 
   it.skipIf(!runAuthTests)("member can see activity_log via RLS", async () => {
@@ -240,7 +252,7 @@ describe("RLS with authenticated users (requires TEST_ADMIN_PASSWORD + TEST_MEMB
     const { data, error } = await client
       .from("activity_log")
       .select("id")
-      .eq("project_id", TEST_PROJECT_ID);
+      .eq("project_id", AUTH_TEST_PROJECT_ID);
 
     expect(error).toBeNull();
   });

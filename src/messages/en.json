@@ -753,7 +753,7 @@
       "memberRemoved": "{name} removed {removed}",
       "markerCreated": "{name} created marker \"{marker}\" on \"{drawing}\"",
       "markerDeleted": "{name} deleted marker \"{marker}\" from \"{drawing}\"",
-      "statusChanged": "{name} changed status from \"{oldStatus}\" to \"{newStatus}\""
+      "statusChanged": "{name} changed status of \"{drawing}\" from \"{oldStatus}\" to \"{newStatus}\""
     },
     "noStatus": "No status"
   },

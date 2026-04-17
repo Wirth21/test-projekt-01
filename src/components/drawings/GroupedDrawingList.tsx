@@ -67,6 +67,13 @@ export function GroupedDrawingList({
       }
     }
 
+    // Sort drawings alphabetically within each group
+    for (const [, groupDrawings] of map) {
+      groupDrawings.sort((a, b) =>
+        a.display_name.localeCompare(b.display_name, "de", { sensitivity: "base" })
+      );
+    }
+
     return map;
   }, [drawings, activeGroups]);
 

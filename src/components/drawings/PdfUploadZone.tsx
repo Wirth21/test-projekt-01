@@ -10,6 +10,7 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
 interface PdfUploadZoneProps {
   onUpload: (file: File) => void;
+  onUploadMultiple?: (files: File[]) => void;
   uploading: boolean;
   progress: number;
   compact?: boolean;
@@ -17,6 +18,7 @@ interface PdfUploadZoneProps {
 
 export function PdfUploadZone({
   onUpload,
+  onUploadMultiple,
   uploading,
   progress,
   compact = false,
@@ -74,23 +76,35 @@ export function PdfUploadZone({
 
       if (uploading) return;
 
-      const file = e.dataTransfer.files[0];
-      if (file) {
-        handleFile(file);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 1 && onUploadMultiple) {
+        const validFiles = files.filter((f) => !validateFile(f));
+        const firstInvalid = files.find((f) => validateFile(f));
+        if (firstInvalid) setValidationError(validateFile(firstInvalid));
+        else setValidationError(null);
+        if (validFiles.length > 0) onUploadMultiple(validFiles);
+      } else if (files[0]) {
+        handleFile(files[0]);
       }
     },
-    [uploading, handleFile]
+    [uploading, handleFile, onUploadMultiple, validateFile]
   );
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        handleFile(file);
+      const files = Array.from(e.target.files ?? []);
+      if (files.length > 1 && onUploadMultiple) {
+        const validFiles = files.filter((f) => !validateFile(f));
+        const firstInvalid = files.find((f) => validateFile(f));
+        if (firstInvalid) setValidationError(validateFile(firstInvalid));
+        else setValidationError(null);
+        if (validFiles.length > 0) onUploadMultiple(validFiles);
+      } else if (files[0]) {
+        handleFile(files[0]);
       }
       e.target.value = "";
     },
-    [handleFile]
+    [handleFile, onUploadMultiple, validateFile]
   );
 
   // Compact mode: small inline drop zone
@@ -120,6 +134,7 @@ export function PdfUploadZone({
           ref={inputRef}
           type="file"
           accept=".pdf,application/pdf"
+          multiple
           className="hidden"
           onChange={handleInputChange}
           aria-hidden="true"

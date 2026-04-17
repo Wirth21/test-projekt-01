@@ -733,7 +733,7 @@
       "memberRemoved": "{name} hat {removed} entfernt",
       "markerCreated": "{name} hat Marker \u201E{marker}\u201C auf \u201E{drawing}\u201C erstellt",
       "markerDeleted": "{name} hat Marker \u201E{marker}\u201C von \u201E{drawing}\u201C geloescht",
-      "statusChanged": "{name} hat den Status von \u201E{oldStatus}\u201C auf \u201E{newStatus}\u201C geaendert"
+      "statusChanged": "{name} hat den Status von \u201E{drawing}\u201C von \u201E{oldStatus}\u201C auf \u201E{newStatus}\u201C geaendert"
     },
     "noStatus": "Kein Status"
   },

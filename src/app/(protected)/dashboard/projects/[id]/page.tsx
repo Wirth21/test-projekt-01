@@ -138,6 +138,29 @@ export default function ProjectDetailPage({ params }: PageProps) {
     }
   }
 
+  async function handleUploadMultiple(files: File[]) {
+    setUploading(true);
+    let uploaded = 0;
+    for (const file of files) {
+      setUploadProgress(Math.round((uploaded / files.length) * 100));
+      try {
+        await uploadDrawing(file, () => {}, {
+          status_id: defaultStatus?.id ?? null,
+        });
+        uploaded++;
+      } catch (err) {
+        toast.error(
+          `${file.name}: ${err instanceof Error ? err.message : t("toasts.uploadFailed")}`
+        );
+      }
+    }
+    setUploading(false);
+    setUploadProgress(0);
+    if (uploaded > 0) {
+      toast.success(t("toasts.uploaded") + ` (${uploaded}/${files.length})`);
+    }
+  }
+
   async function handleRename(drawingId: string, displayName: string) {
     try {
       await renameDrawing(drawingId, displayName);
@@ -451,6 +474,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                 </Button>
                 <PdfUploadZone
                   onUpload={handleUpload}
+                  onUploadMultiple={handleUploadMultiple}
                   uploading={uploading}
                   progress={uploadProgress}
                   compact

@@ -170,6 +170,7 @@ export function ActivityLogEntryComponent({ entry }: ActivityLogEntryProps) {
       case "drawing.status_changed":
         return t("actions.statusChanged", {
           name: userName,
+          drawing: metadata.drawing_name ?? "",
           oldStatus: metadata.old_status ?? t("noStatus"),
           newStatus: metadata.new_status ?? t("noStatus"),
         });

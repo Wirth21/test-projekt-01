@@ -94,6 +94,13 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Status konnte nicht aktualisiert werden" }, { status: 500 });
   }
 
+  // Fetch drawing name for activity log
+  const { data: drawingInfo } = await supabase
+    .from("drawings")
+    .select("display_name")
+    .eq("id", drawingId)
+    .single();
+
   // Log activity
   await logActivity(supabase, {
     projectId,
@@ -103,6 +110,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     targetId: drawingId,
     metadata: {
       change_type: "status",
+      drawing_name: drawingInfo?.display_name ?? "",
       version_id,
       old_status: oldStatusName,
       new_status: newStatusName,

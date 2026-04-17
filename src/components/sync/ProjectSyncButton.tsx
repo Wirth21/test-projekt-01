@@ -192,12 +192,9 @@ export function ProjectSyncButton({
         const routesToPrefetch = [
           "/dashboard",
           `/dashboard/projects/${projectId}`,
-          ...drawings.map(
-            (d) => `/dashboard/projects/${projectId}/drawings/${d.id as string}`
-          ),
         ];
 
-        const cache = await caches.open("link2plan-app-v3");
+        const cache = await caches.open("link2plan-app-v4");
         for (const route of routesToPrefetch) {
           if (controller.signal.aborted) return;
           try {

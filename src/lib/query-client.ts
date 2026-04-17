@@ -5,7 +5,7 @@ function makeQueryClient() {
     defaultOptions: {
       queries: {
         staleTime: 30_000,
-        gcTime: 10 * 60_000,
+        gcTime: 24 * 60 * 60_000, // 24h — must be >= persister maxAge
         refetchOnWindowFocus: true,
         refetchOnReconnect: true,
         retry: 1,

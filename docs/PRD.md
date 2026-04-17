@@ -29,7 +29,7 @@ Ein webbasiertes Team-Tool zur Verwaltung technischer PDF-Pläne (z.B. Baupläne
 | P2 | PWA & Android-Installation | Done |
 | P2 | Sentry Error Tracking | Done |
 | P2 | Branding (Logo, Favicon, Impressum) | Done |
-| P1 | Offline-First Caching & Synchronisation | Planned |
+| P1 | Offline-First Caching & Synchronisation | Done |
 
 ## Success Metrics
 - Teams können Projekte mit PDFs anlegen und gemeinsam nutzen

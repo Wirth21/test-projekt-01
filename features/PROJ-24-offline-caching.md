@@ -1,6 +1,6 @@
 # PROJ-24: Offline-First Caching & Synchronisation
 
-## Status: In Review
+## Status: QA Passed
 **Created:** 2026-04-09
 **Last Updated:** 2026-04-09
 
@@ -317,8 +317,42 @@ src/
 | `public/sw.js` | PDF-Cache-Strategie hinzufügen |
 | `messages/de.json` + `messages/en.json` | Sync-bezogene Übersetzungen |
 
+## Migration: IndexedDB → React Query (April 2026)
+
+Die ursprüngliche Architektur (Custom IndexedDB + idb Library) wurde komplett durch React Query (TanStack Query) ersetzt. Grund: Die manuelle Cache-Verwaltung in 5 Hooks verursachte Ghost-Daten, fehlende Cache-Invalidierung nach Mutations, und Triple-Caching-Konflikte mit dem Service Worker.
+
+### Was geändert wurde:
+- `src/lib/offline/db.ts` — **GELÖSCHT** (ersetzt durch React Query Cache)
+- `idb` Package — **ENTFERNT**
+- Alle 7 Data-Hooks — umgeschrieben auf `useQuery`/`useMutation`
+- `public/sw.js` — API-Response-Caching entfernt (Section 3)
+- `SyncProvider` — leitet Sync-State aus React Query ab (`useIsFetching`, `dataUpdatedAt`)
+- `ProjectSyncButton` — nutzt `queryClient.setQueryData()` statt `cacheRecords()`
+
+### Was gleich geblieben ist:
+- `src/lib/offline/pdf-cache.ts` — PDF-Caching via Cache API (unverändert)
+- `src/lib/offline/thumbnail-cache.ts` — Thumbnail-Caching (unverändert)
+- Service Worker cached weiterhin PDFs und statische Assets
+- Alle Component-Interfaces unverändert (zero Page-Änderungen)
+
+### Offline-Persistence:
+- `@tanstack/react-query-persist-client` speichert den gesamten React Query Cache automatisch in IndexedDB
+- maxAge: 24 Stunden — beim App-Start werden gecachte Daten sofort angezeigt
+- `refetchOnReconnect: true` — automatischer Refresh wenn wieder online
+
 ## QA Test Results
-_To be added by /qa_
+
+### Automatisierte Tests (38 Tests, alle grün):
+- RLS Integration Tests: SECURITY DEFINER Funktionen, Datenisolation
+- API Route Logic Tests: Projekt CRUD, Mitgliedschaft, Zeichnungen, Activity Log
+- Authentifizierte User Tests: Member sieht Mitgliedschaften, Drawings, Activity Log
+
+### Manuelle Tests:
+- Projekt erstellen → Zeichnung hochladen → sofort sichtbar ✓
+- Seite verlassen → zurückkommen → keine Ghost-Daten ✓
+- Browser schließen → wieder öffnen → Daten sofort da (aus Persistence) ✓
+- Multi-PDF Upload (mehrere Dateien droppen) ✓
 
 ## Deployment
-_To be added by /deploy_
+- Deployed auf Vercel (link2plan.de) via auto-deploy
+- CI: GitHub Actions (lint + build + tests)

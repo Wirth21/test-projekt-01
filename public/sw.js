@@ -1,6 +1,6 @@
-const CACHE_NAME = "link2plan-v4";
+const CACHE_NAME = "link2plan-v5";
 const PDF_CACHE_NAME = "link2plan-pdfs";
-const APP_SHELL_CACHE = "link2plan-app-v3";
+const APP_SHELL_CACHE = "link2plan-app-v4";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {

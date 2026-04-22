@@ -58,6 +58,27 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
+// Module-level cache for version signed URLs. Supabase signs URLs for 1 h, so
+// we hold on to them for slightly less (50 min) and reuse across remounts —
+// the viewer re-mounts every time a user opens a drawing, and without this
+// we'd fire a fresh /versions/[id]/url API call every single time.
+const SIGNED_URL_TTL_MS = 50 * 60 * 1000;
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
+
+function readSignedUrlCache(versionId: string): string | null {
+  const entry = signedUrlCache.get(versionId);
+  if (!entry) return null;
+  if (entry.expiresAt < Date.now()) {
+    signedUrlCache.delete(versionId);
+    return null;
+  }
+  return entry.url;
+}
+
+function writeSignedUrlCache(versionId: string, url: string) {
+  signedUrlCache.set(versionId, { url, expiresAt: Date.now() + SIGNED_URL_TTL_MS });
+}
+
 interface PageProps {
   params: Promise<{ id: string; drawingId: string }>;
 }
@@ -235,6 +256,20 @@ export default function DrawingViewerPage({ params }: PageProps) {
     const isSameVersion = prevVersionRef.current === activeVersion.id;
     prevVersionRef.current = activeVersion.id;
 
+    // Fast path: module-level cache hit. Reusing the exact same URL string
+    // also lets react-pdf skip re-parsing the PDFDocumentProxy on remount.
+    const cached = readSignedUrlCache(activeVersion.id);
+    if (cached) {
+      setPdfUrl(cached);
+      setUrlLoading(false);
+      setUrlError(null);
+      if (!isSameVersion) {
+        setPdfLoading(true);
+        setPdfError(false);
+      }
+      return;
+    }
+
     setUrlLoading(true);
     setUrlError(null);
     if (!isSameVersion) {
@@ -259,6 +294,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
 
     try {
       const url = await getVersionSignedUrl(activeVersion.id);
+      writeSignedUrlCache(activeVersion.id, url);
       setPdfUrl(url);
     } catch (err) {
       // Network failed — try offline cache as last resort

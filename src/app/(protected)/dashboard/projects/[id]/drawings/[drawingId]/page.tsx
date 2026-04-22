@@ -182,9 +182,14 @@ export default function DrawingViewerPage({ params }: PageProps) {
   // Computed PDF width to fit container — stored as ref to avoid re-render loops
   const [fittedWidth, setFittedWidth] = useState<number | undefined>(undefined);
 
-  // Progressive rendering: show fast low-res immediately, upgrade to sharp in background
-  const lowDpr = typeof window !== "undefined" ? Math.ceil(window.devicePixelRatio) : 2;
-  const highDpr = 4;
+  // Progressive rendering: show fast low-res immediately, upgrade to sharp in background.
+  // highDpr scales with the device so zooming stays crisp on high-DPR mobiles
+  // (a fixed value of 4 is plenty on desktop but too close to native DPR on a
+  // ~3x Android screen, making zoom feel blurry). Capped at 6 so the backing
+  // canvas stays well under Android Chrome's ~16 MP limit.
+  const deviceDpr = typeof window !== "undefined" ? window.devicePixelRatio : 1;
+  const lowDpr = Math.ceil(deviceDpr);
+  const highDpr = Math.min(6, Math.max(4, Math.ceil(deviceDpr) * 2));
   const [hiResReady, setHiResReady] = useState(false);
 
   // Reset hi-res state when version/page changes

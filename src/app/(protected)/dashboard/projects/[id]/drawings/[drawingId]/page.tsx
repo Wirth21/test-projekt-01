@@ -1013,28 +1013,29 @@ export default function DrawingViewerPage({ params }: PageProps) {
                       justifyContent: "center",
                     }}
                   >
+                    {/* Thumbnail placeholder. Covers the whole rendering area
+                        from the moment we navigate until the low-res PDF
+                        canvas paints. Must live outside Document so it also
+                        bridges the gap between onLoadSuccess and the first
+                        Page.onRenderSuccess — Document only shows its
+                        `loading` slot during parse, not during rasterization. */}
+                    {!lowResReady && drawing?.thumbnail_url && currentPage === 1 && (
+                      <img
+                        src={drawing.thumbnail_url}
+                        alt=""
+                        className="absolute inset-0 m-auto shadow-lg max-w-full max-h-full object-contain z-10 pointer-events-none"
+                        style={{ maxHeight: "85vh" }}
+                        aria-hidden="true"
+                      />
+                    )}
                     <Document
                       file={pdfUrl}
                       onLoadSuccess={handleDocumentLoadSuccess}
                       onLoadError={handleDocumentLoadError}
                       loading={
-                        drawing?.thumbnail_url ? (
-                          // Use the pre-rendered JPEG as a placeholder while
-                          // PDF.js fetches and parses the real document. Gives
-                          // the user something to look at within ~100 ms
-                          // instead of 1–3 s of blank space on mobile.
-                          // eslint-disable-next-line @next/next/no-img-element -- signed URL from Supabase Storage
-                          <img
-                            src={drawing.thumbnail_url}
-                            alt=""
-                            className="shadow-lg max-w-full max-h-full object-contain"
-                            style={{ maxHeight: "85vh" }}
-                          />
-                        ) : (
-                          <div className="flex items-center justify-center h-full">
-                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                          </div>
-                        )
+                        <div className="flex items-center justify-center h-full">
+                          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        </div>
                       }
                     >
                       {pdfLoading && !fittedWidth && (

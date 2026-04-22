@@ -61,16 +61,18 @@ export async function GET() {
     );
   }
 
-  // Get member counts using SECURITY DEFINER function (bypasses RLS)
-  // since the user is not a member of these projects and can't read project_members
+  // Get counts using SECURITY DEFINER function (bypasses RLS) — one RPC per
+  // project returns all three counts in a single round trip.
+  type Stats = { drawing_count: number; marker_count: number; member_count: number };
   const projectsWithCount = await Promise.all(
     (projects || []).map(async (p) => {
-      const { data: countResult } = await supabase.rpc("project_member_count", {
-        p_project_id: p.id,
-      });
+      const { data } = await supabase.rpc("project_stats", { p_project_id: p.id });
+      const stats = (data ?? null) as Stats | null;
       return {
         ...p,
-        member_count: countResult ?? 0,
+        pdf_count: stats?.drawing_count ?? 0,
+        marker_count: stats?.marker_count ?? 0,
+        member_count: stats?.member_count ?? 0,
       };
     })
   );

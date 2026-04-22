@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase";
 import { useProjects, useProjectMembers } from "@/hooks/use-projects";
+import { useUser } from "@/components/providers/UserProvider";
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
@@ -43,6 +44,7 @@ export default function DashboardPage() {
   const tp = useTranslations("projects");
   const tn = useTranslations("nav");
   const ta = useTranslations("auth");
+  const { isAdmin, isReadOnly } = useUser();
   const {
     projects,
     loading,
@@ -56,7 +58,6 @@ export default function DashboardPage() {
     archiveProject,
     restoreProject,
     joinProject,
-    isReadOnly,
     fetchInactiveProjects,
     fetchArchivedProjects,
   } = useProjects();
@@ -64,22 +65,6 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("active");
   const [restoring, setRestoring] = useState<string | null>(null);
   const [joining, setJoining] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    async function checkAdmin() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .single();
-      if (profile?.is_admin) setIsAdmin(true);
-    }
-    checkAdmin();
-  }, []);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editProject, setEditProject] = useState<ProjectWithRole | null>(null);

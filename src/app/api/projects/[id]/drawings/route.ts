@@ -41,7 +41,8 @@ export async function GET(_request: Request, { params }: RouteParams) {
       )
     `)
     .eq("project_id", projectId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(500);
 
   if (fetchError) {
     return NextResponse.json({ error: "Zeichnungen konnten nicht geladen werden" }, { status: 500 });

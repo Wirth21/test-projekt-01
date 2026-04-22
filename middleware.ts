@@ -171,11 +171,16 @@ export async function middleware(request: NextRequest) {
   //    Applies to both page and API routes so getTenantContext() works everywhere
   // ──────────────────────────────────────────────
   if (user) {
-    let profile: { status: string; is_admin: boolean; tenant_id: string } | null = null;
+    let profile: {
+      status: string;
+      is_admin: boolean;
+      tenant_id: string;
+      tenant_role: string | null;
+    } | null = null;
     try {
       const { data } = await supabase
         .from("profiles")
-        .select("status, is_admin, tenant_id")
+        .select("status, is_admin, tenant_id, tenant_role")
         .eq("id", user.id)
         .single();
       profile = data;
@@ -205,9 +210,14 @@ export async function middleware(request: NextRequest) {
         }
       }
 
-      // Set tenant context header LAST — after all Supabase calls that might
-      // trigger setAll callback and overwrite supabaseResponse
+      // Set request context headers LAST — after all Supabase calls that might
+      // trigger setAll callback and overwrite supabaseResponse.
+      // Downstream server components read these via next/headers to avoid
+      // re-querying the profile on every render.
       request.headers.set("x-tenant-id", profile.tenant_id);
+      request.headers.set("x-user-id", user.id);
+      request.headers.set("x-is-admin", profile.is_admin ? "1" : "0");
+      request.headers.set("x-tenant-role", profile.tenant_role ?? "user");
       supabaseResponse = NextResponse.next({ request });
     }
   }

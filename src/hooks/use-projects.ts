@@ -3,9 +3,9 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase";
+import { useUser } from "@/components/providers/UserProvider";
 import type { ProjectWithRole, ProjectMember } from "@/lib/types/project";
 import type { CreateProjectInput, EditProjectInput } from "@/lib/validations/project";
-import type { TenantRole } from "@/lib/types/admin";
 
 // --- Query functions ---
 
@@ -33,27 +33,15 @@ async function fetchProjectStats(
   );
 }
 
-async function fetchActiveProjects(supabase: ReturnType<typeof createClient>) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Nicht eingeloggt");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("tenant_role, tenant_id")
-    .eq("id", user.id)
-    .single();
-
-  const tenantRole = (profile?.tenant_role as TenantRole) ?? "user";
-  const isReadOnly = tenantRole === "viewer" || tenantRole === "guest";
-
-  if (profile?.tenant_id) {
-    try { localStorage.setItem("link2plan_tenant_id", profile.tenant_id); } catch { /* ignore */ }
-  }
-
+async function fetchActiveProjects(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  isReadOnly: boolean
+): Promise<ProjectWithRole[]> {
   const { data: memberships, error: memberError } = await supabase
     .from("project_members")
     .select("project_id, role")
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   if (memberError) throw new Error("Projekte konnten nicht geladen werden");
 
@@ -70,7 +58,7 @@ async function fetchActiveProjects(supabase: ReturnType<typeof createClient>) {
   const projectIds = (data ?? []).map((p) => p.id);
   const countMap = await fetchProjectStats(supabase, projectIds);
 
-  const projects: ProjectWithRole[] = (data || []).map((p) => ({
+  return (data || []).map((p) => ({
     ...p,
     role: isReadOnly
       ? ("viewer" as const)
@@ -79,18 +67,16 @@ async function fetchActiveProjects(supabase: ReturnType<typeof createClient>) {
     marker_count: countMap.get(p.id)?.marker_count ?? 0,
     member_count: countMap.get(p.id)?.member_count ?? 0,
   }));
-
-  return { projects, tenantRole };
 }
 
-async function fetchArchivedProjectsData(supabase: ReturnType<typeof createClient>) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
+async function fetchArchivedProjectsData(
+  supabase: ReturnType<typeof createClient>,
+  userId: string
+): Promise<ProjectWithRole[]> {
   const { data: memberships } = await supabase
     .from("project_members")
     .select("project_id, role")
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   const roleMap = new Map((memberships ?? []).map((m) => [m.project_id, m.role]));
 
@@ -117,18 +103,16 @@ async function fetchArchivedProjectsData(supabase: ReturnType<typeof createClien
 export function useProjects() {
   const queryClient = useQueryClient();
   const supabase = createClient();
+  const { userId, isReadOnly } = useUser();
 
   // Active projects
-  const { data: projectsData, isLoading: loading, error: queryError } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => fetchActiveProjects(supabase),
+  const { data: projects = [], isLoading: loading, error: queryError } = useQuery({
+    queryKey: ["projects", userId],
+    queryFn: () => fetchActiveProjects(supabase, userId, isReadOnly),
     staleTime: 5_000,
     refetchOnWindowFocus: true,
   });
 
-  const projects = projectsData?.projects ?? [];
-  const tenantRole = projectsData?.tenantRole ?? "user";
-  const isReadOnly = tenantRole === "viewer" || tenantRole === "guest";
   const error = queryError?.message ?? null;
 
   // Inactive projects (on-demand)
@@ -147,8 +131,8 @@ export function useProjects() {
 
   // Archived projects (on-demand)
   const { data: archivedData, isLoading: archivedLoading, refetch: refetchArchived } = useQuery({
-    queryKey: ["projects", "archived"],
-    queryFn: () => fetchArchivedProjectsData(supabase),
+    queryKey: ["projects", "archived", userId],
+    queryFn: () => fetchArchivedProjectsData(supabase, userId),
     staleTime: 30_000,
     enabled: false, // only fetch on demand
   });
@@ -227,8 +211,6 @@ export function useProjects() {
     projects,
     loading,
     error,
-    tenantRole,
-    isReadOnly,
     inactiveProjects,
     inactiveLoading,
     archivedProjects,

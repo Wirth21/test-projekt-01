@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
+import { useUser } from "@/components/providers/UserProvider";
 
 export type SyncState = "synced" | "syncing" | "stale" | "offline";
 
@@ -18,6 +19,7 @@ interface SyncContextValue {
   isOnline: boolean;
   lastSynced: number | null;
   tenantId: string | null;
+  /** @deprecated tenantId comes from UserProvider; retained for backward compat. */
   setTenantId: (id: string) => void;
   /** @deprecated No longer needed — React Query handles sync state. Kept for backward compat. */
   notifySynced: () => void;
@@ -42,38 +44,17 @@ export function useSyncContext() {
 const STALE_THRESHOLD = 60_000;
 
 export function SyncProvider({ children }: { children: ReactNode }) {
+  const { tenantId } = useUser();
   const [isOnline, setIsOnline] = useState(true);
-  const [tenantId, setTenantIdState] = useState<string | null>(null);
   const isFetching = useIsFetching();
   const queryClient = useQueryClient();
 
-  // Auto-detect tenant ID from user profile
+  // Mirror tenantId into localStorage for offline fallback (e.g. when the
+  // service worker serves a cached page without middleware having run).
   useEffect(() => {
-    async function detectTenant() {
-      try {
-        const { createClient } = await import("@/lib/supabase");
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("tenant_id")
-          .eq("id", user.id)
-          .single();
-        if (profile?.tenant_id) {
-          setTenantIdState(profile.tenant_id);
-          try { localStorage.setItem("link2plan_tenant_id", profile.tenant_id); } catch { /* ignore */ }
-        }
-      } catch { /* ignore */ }
-    }
-
-    try {
-      const stored = localStorage.getItem("link2plan_tenant_id");
-      if (stored) setTenantIdState(stored);
-    } catch { /* ignore */ }
-
-    detectTenant();
-  }, []);
+    if (!tenantId) return;
+    try { localStorage.setItem("link2plan_tenant_id", tenantId); } catch { /* ignore */ }
+  }, [tenantId]);
 
   // Online/offline detection
   useEffect(() => {
@@ -108,9 +89,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     state = "stale";
   }
 
-  const setTenantId = useCallback((id: string) => {
-    setTenantIdState(id);
-    try { localStorage.setItem("link2plan_tenant_id", id); } catch { /* ignore */ }
+  const setTenantId = useCallback((_id: string) => {
+    // No-op: tenantId is now owned by UserProvider and cannot change mid-session.
   }, []);
 
   // No-ops for backward compatibility (ProjectSyncButton still calls notifySynced)

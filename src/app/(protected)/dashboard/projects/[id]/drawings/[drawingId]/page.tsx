@@ -203,34 +203,38 @@ export default function DrawingViewerPage({ params }: PageProps) {
   // Computed PDF width to fit container — stored as ref to avoid re-render loops
   const [fittedWidth, setFittedWidth] = useState<number | undefined>(undefined);
 
-  // Progressive rendering: a fast low-res canvas appears immediately, then a
-  // hi-res one renders in the background and replaces it on success.
+  // Progressive rendering: a fast low-res canvas appears immediately, then
+  // a hi-res one renders in the background and replaces it on success.
   //
-  // We don't re-render on zoom (that worked conceptually but blanked the
-  // canvas on every tier change, which is much worse than a bit of CSS
-  // stretching). Instead we render the hi-res canvas at enough pixels up
-  // front that zooming up to ~3-4× stays sharp.
+  // Hi-res rendering is gated on the low-res being done (see lowResReady
+  // below). On mobile PDF.js effectively owns a single worker, so kicking
+  // off both renders at the same time used to delay the first-paint — now
+  // the user sees the low-res version first and the hi-res arrives later.
   //
-  // highDpr is picked aggressively on high-DPR devices (mobile ≈ 3x screens
-  // with small fittedWidth have plenty of canvas headroom), then clamped by
-  // a canvas-area cap so we don't exceed mobile Chrome's bitmap budget.
+  // highDpr is picked for device density × 3 (was ×4), clamped 4..10
+  // (was ..16). The 4k→16k canvas-pixel-per-CSS-px reduction cuts mobile
+  // render time roughly in half while still giving ~3× zoom headroom on
+  // a 3× DPR phone. Final value is also clamped by the canvas-area
+  // budget so we never exceed mobile Chrome's bitmap limit.
   const deviceDpr = typeof window !== "undefined" ? window.devicePixelRatio : 1;
   const lowDpr = Math.ceil(deviceDpr);
-  const baseHighDpr = Math.min(16, Math.max(4, Math.ceil(deviceDpr * 4)));
+  const baseHighDpr = Math.min(10, Math.max(4, Math.ceil(deviceDpr * 3)));
 
+  const [lowResReady, setLowResReady] = useState(false);
   const [hiResReady, setHiResReady] = useState(false);
 
   // ~45 MP cap leaves comfortable headroom below mobile Chrome's canvas
-  // limit (~64 MP) while allowing fittedWidth ≈ 360 at DPR 12.
+  // limit (~64 MP) while keeping enough budget for DPR ≥ 10 on mobile.
   const MAX_CANVAS_AREA_PX = 45_000_000;
   const A4_ASPECT = 1.45;
   const canvasDprCap = fittedWidth
     ? Math.max(2, Math.floor(Math.sqrt(MAX_CANVAS_AREA_PX / (fittedWidth * fittedWidth * A4_ASPECT))))
-    : 16;
+    : 10;
   const highDpr = Math.max(4, Math.min(canvasDprCap, baseHighDpr));
 
-  // Reset hi-res state when version/page changes
+  // Reset both progressive tiers when the visible page/drawing changes
   useEffect(() => {
+    setLowResReady(false);
     setHiResReady(false);
   }, [currentPage, activeDrawingId]);
 
@@ -1025,7 +1029,7 @@ export default function DrawingViewerPage({ params }: PageProps) {
                         </div>
                       )}
                       <div className="relative">
-                        {/* Low-res: renders fast, shown immediately */}
+                        {/* Low-res: renders fast, shown immediately. */}
                         {!hiResReady && (
                           <Page
                             pageNumber={currentPage}
@@ -1035,21 +1039,27 @@ export default function DrawingViewerPage({ params }: PageProps) {
                             width={fittedWidth}
                             devicePixelRatio={lowDpr}
                             canvasBackground="white"
+                            onRenderSuccess={() => setLowResReady(true)}
                           />
                         )}
-                        {/* Hi-res: renders in background, replaces low-res when done */}
-                        <div className={hiResReady ? "" : "absolute inset-0 opacity-0 pointer-events-none"}>
-                          <Page
-                            pageNumber={currentPage}
-                            renderTextLayer={false}
-                            renderAnnotationLayer={false}
-                            className="shadow-lg"
-                            width={fittedWidth}
-                            devicePixelRatio={highDpr}
-                            canvasBackground="white"
-                            onRenderSuccess={() => setHiResReady(true)}
-                          />
-                        </div>
+                        {/* Hi-res: only starts rendering once low-res is on
+                            screen, so the user sees the PDF as early as
+                            possible without PDF.js splitting the main-thread
+                            budget between both renders. */}
+                        {lowResReady && (
+                          <div className={hiResReady ? "" : "absolute inset-0 opacity-0 pointer-events-none"}>
+                            <Page
+                              pageNumber={currentPage}
+                              renderTextLayer={false}
+                              renderAnnotationLayer={false}
+                              className="shadow-lg"
+                              width={fittedWidth}
+                              devicePixelRatio={highDpr}
+                              canvasBackground="white"
+                              onRenderSuccess={() => setHiResReady(true)}
+                            />
+                          </div>
+                        )}
                       </div>
                     </Document>
 

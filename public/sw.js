@@ -1,6 +1,6 @@
-const CACHE_NAME = "link2plan-v6";
+const CACHE_NAME = "link2plan-v7";
 const PDF_CACHE_NAME = "link2plan-pdfs";
-const APP_SHELL_CACHE = "link2plan-app-v5";
+const APP_SHELL_CACHE = "link2plan-app-v6";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -72,10 +72,16 @@ async function findCachedPage(cache, targetPathname) {
   const byFull = await cache.match(fullUrl);
   if (byFull) return byFull;
 
-  // 3. Scan all cache keys for pathname match
+  // 3. Scan all cache keys for pathname match.
+  //    CAREFUL: Next.js caches RSC flight payloads under URLs like
+  //    `/foo?_rsc=abc`, whose pathname matches the HTML route. Serving that
+  //    RSC body as a top-level navigation response makes the browser render
+  //    the raw flight protocol as plain text. Skip those entries here.
   const keys = await cache.keys();
   for (const request of keys) {
-    const cachedPath = getPathname(typeof request === "string" ? request : request.url);
+    const reqUrl = typeof request === "string" ? request : request.url;
+    if (reqUrl.includes("_rsc=")) continue;
+    const cachedPath = getPathname(reqUrl);
     if (cachedPath === targetPathname) {
       return cache.match(request);
     }

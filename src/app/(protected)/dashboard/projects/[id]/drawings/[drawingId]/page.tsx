@@ -182,15 +182,30 @@ export default function DrawingViewerPage({ params }: PageProps) {
   // Computed PDF width to fit container — stored as ref to avoid re-render loops
   const [fittedWidth, setFittedWidth] = useState<number | undefined>(undefined);
 
-  // Progressive rendering: show fast low-res immediately, upgrade to sharp in background.
-  // highDpr scales with the device so zooming stays crisp on high-DPR mobiles
-  // (a fixed value of 4 is plenty on desktop but too close to native DPR on a
-  // ~3x Android screen, making zoom feel blurry). Capped at 6 so the backing
-  // canvas stays well under Android Chrome's ~16 MP limit.
+  // Progressive + zoom-aware rendering:
+  //   1. A fast low-res canvas renders immediately (devicePixelRatio = lowDpr).
+  //   2. A hi-res canvas renders in the background and replaces it on success.
+  //   3. When the user zooms in, we bump the hi-res DPR (via renderTier) so
+  //      the image stays crisp. Without this the canvas is just CSS-stretched
+  //      and pixelates — which is what you hit on PWA / high-DPR mobiles.
+  //
+  // Zoom changes are snapped to tiers so we don't re-render on every wheel
+  // tick. The effective DPR is clamped so the backing canvas stays under
+  // ~14 MP (Android Chrome's bitmap limit) — beyond that the render would
+  // silently fail and we'd end up worse off than before.
   const deviceDpr = typeof window !== "undefined" ? window.devicePixelRatio : 1;
   const lowDpr = Math.ceil(deviceDpr);
-  const highDpr = Math.min(6, Math.max(4, Math.ceil(deviceDpr) * 2));
+  const baseHighDpr = Math.min(8, Math.max(4, Math.round(deviceDpr * 2.5)));
+
+  const [renderTier, setRenderTier] = useState(1); // 1 (no zoom), 2 (≥1.5×), or 4 (≥3×)
   const [hiResReady, setHiResReady] = useState(false);
+
+  const MAX_CANVAS_AREA_PX = 14_000_000;
+  const A4_ASPECT = 1.45;
+  const canvasDprCap = fittedWidth
+    ? Math.max(2, Math.floor(Math.sqrt(MAX_CANVAS_AREA_PX / (fittedWidth * fittedWidth * A4_ASPECT))))
+    : 12;
+  const highDpr = Math.max(4, Math.min(canvasDprCap, baseHighDpr * renderTier));
 
   // Reset hi-res state when version/page changes
   useEffect(() => {
@@ -890,6 +905,12 @@ export default function DrawingViewerPage({ params }: PageProps) {
             limitToBounds={false}
             wheel={{ step: 0.1 }}
             panning={{ disabled: editMode }}
+            onTransformed={(_ref, state) => {
+              // Snap the continuous zoom level into a small number of render
+              // tiers so we only re-render the hi-res canvas at hard breaks.
+              const nextTier = state.scale < 1.5 ? 1 : state.scale < 3 ? 2 : 4;
+              setRenderTier((prev) => (prev === nextTier ? prev : nextTier));
+            }}
           >
             {({ zoomIn, zoomOut, resetTransform }) => (
               <>

@@ -11,8 +11,8 @@ if (typeof window !== "undefined" && !pdfjs.GlobalWorkerOptions.workerSrc) {
   ).toString();
 }
 
-export const THUMBNAIL_WIDTH_PX = 600;
-export const THUMBNAIL_JPEG_QUALITY = 0.75;
+export const THUMBNAIL_WIDTH_PX = 800;
+export const THUMBNAIL_JPEG_QUALITY = 0.8;
 
 /**
  * Render page 1 of a PDF file to a JPEG blob suitable for use as a thumbnail.

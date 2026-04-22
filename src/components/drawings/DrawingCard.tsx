@@ -107,7 +107,7 @@ export function DrawingCard({
             // fall back to in-browser PDF rendering + IndexedDB cache.
             <PdfThumbnail
               url={legacyPdfUrl}
-              width={600}
+              width={800}
               cacheKey={`thumb:${drawing.id}`}
               drawingId={drawing.id}
               versionId={drawing.latest_version?.id ?? null}

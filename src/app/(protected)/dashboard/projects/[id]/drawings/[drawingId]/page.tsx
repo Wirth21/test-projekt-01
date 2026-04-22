@@ -1018,9 +1018,23 @@ export default function DrawingViewerPage({ params }: PageProps) {
                       onLoadSuccess={handleDocumentLoadSuccess}
                       onLoadError={handleDocumentLoadError}
                       loading={
-                        <div className="flex items-center justify-center h-full">
-                          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                        </div>
+                        drawing?.thumbnail_url ? (
+                          // Use the pre-rendered JPEG as a placeholder while
+                          // PDF.js fetches and parses the real document. Gives
+                          // the user something to look at within ~100 ms
+                          // instead of 1–3 s of blank space on mobile.
+                          // eslint-disable-next-line @next/next/no-img-element -- signed URL from Supabase Storage
+                          <img
+                            src={drawing.thumbnail_url}
+                            alt=""
+                            className="shadow-lg max-w-full max-h-full object-contain"
+                            style={{ maxHeight: "85vh" }}
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                          </div>
+                        )
                       }
                     >
                       {pdfLoading && !fittedWidth && (

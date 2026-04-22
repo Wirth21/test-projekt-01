@@ -43,8 +43,8 @@ if (!SUPABASE_URL || !SERVICE_ROLE) {
 
 const sb = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
-const THUMB_WIDTH = 400;
-const THUMB_QUALITY = 0.7;
+const THUMB_WIDTH = 600;
+const THUMB_QUALITY = 0.75;
 
 function thumbnailPathFor(pdfPath) {
   return pdfPath.replace(/\.pdf$/i, ".thumb.jpg");

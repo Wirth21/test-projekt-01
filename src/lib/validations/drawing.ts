@@ -24,6 +24,11 @@ export const createDrawingSchema = z.object({
     .uuid("Ungültige Status-ID")
     .nullable()
     .optional(),
+  thumbnail_path: z
+    .string()
+    .min(1)
+    .nullable()
+    .optional(),
 });
 
 export type CreateDrawingInput = z.infer<typeof createDrawingSchema>;

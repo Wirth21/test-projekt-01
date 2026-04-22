@@ -9,7 +9,7 @@ interface GroupedDrawingListProps {
   drawings: Drawing[];
   groups: DrawingGroup[];
   projectId: string;
-  thumbnailUrls: Map<string, string>;
+  legacyPdfUrls: Map<string, string>;
   onRenameDrawing: (drawingId: string, displayName: string) => Promise<void>;
   onArchiveDrawing: (drawingId: string) => Promise<void>;
   onRenameGroup: (groupId: string, name: string) => Promise<void>;
@@ -25,7 +25,7 @@ export function GroupedDrawingList({
   drawings,
   groups,
   projectId,
-  thumbnailUrls,
+  legacyPdfUrls,
   onRenameDrawing,
   onArchiveDrawing,
   onRenameGroup,
@@ -101,7 +101,7 @@ export function GroupedDrawingList({
         drawings={ungroupedDrawings}
         allGroups={activeGroups}
         projectId={projectId}
-        thumbnailUrls={thumbnailUrls}
+        legacyPdfUrls={legacyPdfUrls}
         onRenameDrawing={onRenameDrawing}
         onArchiveDrawing={onArchiveDrawing}
         onAssignGroup={onAssignGroup}
@@ -123,7 +123,7 @@ export function GroupedDrawingList({
           drawings={groupedDrawings.get(group.id) ?? []}
           allGroups={activeGroups}
           projectId={projectId}
-          thumbnailUrls={thumbnailUrls}
+          legacyPdfUrls={legacyPdfUrls}
           onRenameDrawing={onRenameDrawing}
           onArchiveDrawing={onArchiveDrawing}
           onRenameGroup={onRenameGroup}
@@ -143,7 +143,7 @@ export function GroupedDrawingList({
           drawings={ungroupedDrawings}
           allGroups={activeGroups}
           projectId={projectId}
-          thumbnailUrls={thumbnailUrls}
+          legacyPdfUrls={legacyPdfUrls}
           onRenameDrawing={onRenameDrawing}
           onArchiveDrawing={onArchiveDrawing}
           onAssignGroup={onAssignGroup}

@@ -66,21 +66,33 @@ export async function cacheThumbnail(key: string, dataUrl: string): Promise<void
   }
 }
 
-/** Generate a thumbnail from a canvas element and cache it */
-export function canvasToThumbnail(canvas: HTMLCanvasElement, maxWidth: number = 200): string {
-  // Create a smaller canvas for the thumbnail
+/** Downscale a canvas into a thumbnail-sized canvas (internal helper). */
+function downscaleCanvas(canvas: HTMLCanvasElement, maxWidth: number): HTMLCanvasElement {
   const scale = maxWidth / canvas.width;
   const thumbCanvas = document.createElement("canvas");
   thumbCanvas.width = maxWidth;
   thumbCanvas.height = Math.round(canvas.height * scale);
-
   const ctx = thumbCanvas.getContext("2d");
-  if (ctx) {
-    ctx.drawImage(canvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
-  }
+  if (ctx) ctx.drawImage(canvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
+  return thumbCanvas;
+}
 
+/** Generate a thumbnail data URL from a canvas (for IndexedDB caching). */
+export function canvasToThumbnail(canvas: HTMLCanvasElement, maxWidth: number = 200): string {
   // Convert to JPEG at 60% quality for small size (~10-30KB per thumbnail)
-  return thumbCanvas.toDataURL("image/jpeg", 0.6);
+  return downscaleCanvas(canvas, maxWidth).toDataURL("image/jpeg", 0.6);
+}
+
+/** Generate a thumbnail JPEG Blob from a canvas (for Storage upload). */
+export function canvasToThumbnailBlob(
+  canvas: HTMLCanvasElement,
+  maxWidth: number = 400,
+  quality: number = 0.7
+): Promise<Blob | null> {
+  const thumb = downscaleCanvas(canvas, maxWidth);
+  return new Promise((resolve) => {
+    thumb.toBlob((blob) => resolve(blob), "image/jpeg", quality);
+  });
 }
 
 /** Clear all cached thumbnails */

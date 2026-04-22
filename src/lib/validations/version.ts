@@ -21,6 +21,11 @@ export const createVersionSchema = z.object({
     .trim()
     .refine((val) => val.trim().length > 0, "Label darf nicht nur aus Leerzeichen bestehen")
     .optional(),
+  thumbnail_path: z
+    .string()
+    .min(1)
+    .nullable()
+    .optional(),
 });
 
 export type CreateVersionInput = z.infer<typeof createVersionSchema>;

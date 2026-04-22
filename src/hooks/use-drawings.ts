@@ -3,6 +3,8 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase";
+import { renderPdfThumbnail } from "@/lib/thumbnails/render";
+import { uploadThumbnail } from "@/lib/thumbnails/upload";
 import type { Drawing, DrawingStatus } from "@/lib/types/drawing";
 
 export function useDrawings(projectId: string) {
@@ -80,6 +82,18 @@ export function useDrawings(projectId: string) {
         xhr.send(file);
       });
 
+      // Best-effort: render page 1 to a small JPEG and upload it as a
+      // thumbnail. If this fails (corrupt PDF, storage error, …) the PDF
+      // upload has already succeeded — viewers will fall back to client-side
+      // PDF rendering for the preview.
+      let thumbnailPath: string | null = null;
+      try {
+        const jpeg = await renderPdfThumbnail(file);
+        if (jpeg) thumbnailPath = await uploadThumbnail(storagePath, jpeg);
+      } catch {
+        thumbnailPath = null;
+      }
+
       // Record metadata via API (creates drawing + v1 version)
       const payload: Record<string, unknown> = {
         display_name: file.name.replace(/\.pdf$/i, ""),
@@ -89,6 +103,9 @@ export function useDrawings(projectId: string) {
 
       if (options?.status_id) {
         payload.status_id = options.status_id;
+      }
+      if (thumbnailPath) {
+        payload.thumbnail_path = thumbnailPath;
       }
 
       const res = await fetch(`/api/projects/${projectId}/drawings`, {

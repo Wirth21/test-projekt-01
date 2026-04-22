@@ -30,6 +30,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
         version_number,
         label,
         storage_path,
+        thumbnail_path,
         file_size,
         page_count,
         is_archived,
@@ -56,6 +57,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       version_number: number;
       label: string;
       storage_path: string;
+      thumbnail_path: string | null;
       file_size: number;
       page_count: number | null;
       is_archived: boolean;
@@ -79,8 +81,33 @@ export async function GET(_request: Request, { params }: RouteParams) {
       ...drawingBase,
       version_count: versions.length,
       latest_version: latestVersion,
+      thumbnail_url: null as string | null,
     };
   });
+
+  // Batch-sign thumbnail URLs (1 hour). Much cheaper than one request per
+  // drawing: clients can render previews immediately without a second
+  // round trip per card.
+  const thumbPaths = enrichedDrawings
+    .map((d) => d.latest_version?.thumbnail_path)
+    .filter((p): p is string => !!p);
+
+  if (thumbPaths.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from("drawings")
+      .createSignedUrls(thumbPaths, 3600);
+
+    if (signed) {
+      const urlByPath = new Map<string, string>();
+      for (const item of signed) {
+        if (item.path && item.signedUrl) urlByPath.set(item.path, item.signedUrl);
+      }
+      for (const d of enrichedDrawings) {
+        const path = d.latest_version?.thumbnail_path;
+        if (path) d.thumbnail_url = urlByPath.get(path) ?? null;
+      }
+    }
+  }
 
   return NextResponse.json({ drawings: enrichedDrawings });
 }
@@ -109,7 +136,14 @@ export async function POST(request: Request, { params }: RouteParams) {
     );
   }
 
-  const { display_name, storage_path, file_size, page_count, status_id: initialStatusId } = result.data;
+  const {
+    display_name,
+    storage_path,
+    file_size,
+    page_count,
+    status_id: initialStatusId,
+    thumbnail_path,
+  } = result.data;
 
   // Check plan limits for file size and storage
   let tenantId: string;
@@ -175,6 +209,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       version_number: 1,
       label: defaultLabel,
       storage_path,
+      thumbnail_path: thumbnail_path ?? null,
       file_size,
       page_count: page_count ?? null,
       created_by: user.id,

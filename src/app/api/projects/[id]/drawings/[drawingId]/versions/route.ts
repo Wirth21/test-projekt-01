@@ -95,7 +95,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     );
   }
 
-  const { storage_path, file_size, page_count, label } = result.data;
+  const { storage_path, file_size, page_count, label, thumbnail_path } = result.data;
 
   // Check plan limits for file size and storage
   let tenantId: string;
@@ -172,6 +172,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       version_number: nextVersionNumber,
       label: label ?? defaultLabel,
       storage_path,
+      thumbnail_path: thumbnail_path ?? null,
       file_size,
       page_count: page_count ?? null,
       is_archived: false,

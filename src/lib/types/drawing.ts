@@ -11,6 +11,8 @@ export interface Drawing {
   version_count?: number;
   /** Latest active version (populated by API join when available) */
   latest_version?: DrawingVersion | null;
+  /** Pre-signed URL for latest_version.thumbnail_path, if available (populated by API) */
+  thumbnail_url?: string | null;
 }
 
 export interface DrawingVersion {
@@ -19,6 +21,8 @@ export interface DrawingVersion {
   version_number: number;
   label: string;
   storage_path: string;
+  /** Storage path of the pre-generated JPEG thumbnail (null for legacy versions) */
+  thumbnail_path: string | null;
   file_size: number;
   page_count: number | null;
   is_archived: boolean;

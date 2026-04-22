@@ -89,36 +89,48 @@ export default function ProjectDetailPage({ params }: PageProps) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [drawingTab, setDrawingTab] = useState("active");
   const [restoringDrawing, setRestoringDrawing] = useState<string | null>(null);
-  const [thumbnailUrls, setThumbnailUrls] = useState<Map<string, string>>(
+  // Pre-signed thumbnail JPEG URLs for modern uploads come straight from
+  // /api/projects/[id]/drawings as drawing.thumbnail_url. We only need to
+  // fetch PDF URLs on demand for legacy drawings (no thumbnail yet).
+  const [legacyPdfUrls, setLegacyPdfUrls] = useState<Map<string, string>>(
     new Map()
   );
 
-  // Fetch signed URLs for thumbnails when drawings change
-  const fetchThumbnailUrls = useCallback(async (signal: AbortSignal) => {
-    const activeDrawings = drawings.filter((d) => !d.is_archived);
-    const urls = new Map<string, string>();
+  const fetchLegacyPdfUrls = useCallback(async (signal: AbortSignal) => {
+    const legacyDrawings = drawings.filter(
+      (d) => !d.is_archived && !d.thumbnail_url
+    );
+    if (legacyDrawings.length === 0) {
+      if (!signal.aborted) setLegacyPdfUrls(new Map());
+      return;
+    }
 
+    const urls = new Map<string, string>();
     await Promise.allSettled(
-      activeDrawings.map(async (d) => {
+      legacyDrawings.map(async (d) => {
         try {
           const url = await getSignedUrl(d.id);
           if (!signal.aborted) urls.set(d.id, url);
         } catch {
-          // Thumbnail URL failed — card will show fallback
+          // Fallback SVG will be shown
         }
       })
     );
 
-    if (!signal.aborted) setThumbnailUrls(urls);
+    if (!signal.aborted) setLegacyPdfUrls(urls);
   }, [drawings, getSignedUrl]);
 
   useEffect(() => {
     if (drawings.length > 0) {
       const controller = new AbortController();
-      fetchThumbnailUrls(controller.signal);
+      fetchLegacyPdfUrls(controller.signal);
       return () => controller.abort();
     }
-  }, [drawings, fetchThumbnailUrls]);
+  }, [drawings, fetchLegacyPdfUrls]);
+
+  // DrawingCard reads drawing.thumbnail_url directly for modern uploads;
+  // legacyPdfUrls feeds the PDF fallback for drawings without a server-side
+  // thumbnail yet.
 
   async function handleUpload(file: File) {
     setUploading(true);
@@ -518,7 +530,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                     drawings={drawings.filter((d) => !d.is_archived)}
                     groups={groups}
                     projectId={id}
-                    thumbnailUrls={thumbnailUrls}
+                    legacyPdfUrls={legacyPdfUrls}
                     onRenameDrawing={handleRename}
                     onArchiveDrawing={handleArchive}
                     onRenameGroup={handleRenameGroup}

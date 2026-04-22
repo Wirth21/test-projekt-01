@@ -29,7 +29,9 @@ import type { Drawing, DrawingGroup, DrawingStatus } from "@/lib/types/drawing";
 interface DrawingCardProps {
   drawing: Drawing;
   projectId: string;
-  thumbnailUrl: string | null;
+  /** Signed URL for the raw PDF, used only as a fallback when the drawing
+   *  has no server-side thumbnail yet (legacy uploads). */
+  legacyPdfUrl: string | null;
   onRename: (drawingId: string, displayName: string) => Promise<void>;
   onArchive: (drawingId: string) => Promise<void>;
   groups?: DrawingGroup[];
@@ -43,7 +45,7 @@ interface DrawingCardProps {
 export function DrawingCard({
   drawing,
   projectId,
-  thumbnailUrl,
+  legacyPdfUrl,
   onRename,
   onArchive,
   groups,
@@ -89,8 +91,29 @@ export function DrawingCard({
       >
         {/* Thumbnail */}
         <div className="aspect-[3/2] bg-muted flex items-center justify-center overflow-hidden relative">
-          {thumbnailUrl ? (
-            <PdfThumbnail url={thumbnailUrl} width={400} cacheKey={`thumb:${drawing.id}`} />
+          {drawing.thumbnail_url ? (
+            // Modern path: pre-rendered JPEG is served directly — no PDF.js
+            // load, no per-mount work, just a tiny image.
+            // eslint-disable-next-line @next/next/no-img-element -- signed URL from Supabase Storage, not a static asset
+            <img
+              src={drawing.thumbnail_url}
+              alt={`Vorschau ${drawing.display_name}`}
+              className="w-full h-full object-contain p-2"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : legacyPdfUrl ? (
+            // Legacy drawings uploaded before server-side thumbnails existed:
+            // fall back to in-browser PDF rendering + IndexedDB cache.
+            <PdfThumbnail
+              url={legacyPdfUrl}
+              width={400}
+              cacheKey={`thumb:${drawing.id}`}
+              drawingId={drawing.id}
+              versionId={drawing.latest_version?.id ?? null}
+              projectId={projectId}
+              pdfStoragePath={drawing.latest_version?.storage_path ?? null}
+            />
           ) : (
             <div className="flex items-center justify-center w-full h-full">
               <div className="h-10 w-10 text-muted-foreground/40">

@@ -7,7 +7,7 @@ import type { Drawing, DrawingGroup, DrawingStatus } from "@/lib/types/drawing";
 interface DrawingGridProps {
   drawings: Drawing[];
   projectId: string;
-  thumbnailUrls: Map<string, string>;
+  legacyPdfUrls: Map<string, string>;
   onRename: (drawingId: string, displayName: string) => Promise<void>;
   onArchive: (drawingId: string) => Promise<void>;
   groups?: DrawingGroup[];
@@ -21,7 +21,7 @@ interface DrawingGridProps {
 export function DrawingGrid({
   drawings,
   projectId,
-  thumbnailUrls,
+  legacyPdfUrls,
   onRename,
   onArchive,
   groups,
@@ -49,7 +49,7 @@ export function DrawingGrid({
           key={drawing.id}
           drawing={drawing}
           projectId={projectId}
-          thumbnailUrl={thumbnailUrls.get(drawing.id) ?? null}
+          legacyPdfUrl={legacyPdfUrls.get(drawing.id) ?? null}
           onRename={onRename}
           onArchive={onArchive}
           groups={groups}

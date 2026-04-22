@@ -25,7 +25,7 @@ interface DrawingGroupSectionProps {
   drawings: Drawing[];
   allGroups: DrawingGroup[];
   projectId: string;
-  thumbnailUrls: Map<string, string>;
+  legacyPdfUrls: Map<string, string>;
   onRenameDrawing: (drawingId: string, displayName: string) => Promise<void>;
   onArchiveDrawing: (drawingId: string) => Promise<void>;
   onRenameGroup?: (groupId: string, name: string) => Promise<void>;
@@ -43,7 +43,7 @@ export function DrawingGroupSection({
   drawings,
   allGroups,
   projectId,
-  thumbnailUrls,
+  legacyPdfUrls,
   onRenameDrawing,
   onArchiveDrawing,
   onRenameGroup,
@@ -119,7 +119,7 @@ export function DrawingGroupSection({
             <DrawingGrid
               drawings={drawings}
               projectId={projectId}
-              thumbnailUrls={thumbnailUrls}
+              legacyPdfUrls={legacyPdfUrls}
               onRename={onRenameDrawing}
               onArchive={onArchiveDrawing}
               groups={allGroups}

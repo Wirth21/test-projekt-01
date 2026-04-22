@@ -10,7 +10,9 @@ import {
   getCachedThumbnail,
   cacheThumbnail,
   canvasToThumbnail,
+  canvasToThumbnailBlob,
 } from "@/lib/offline/thumbnail-cache";
+import { uploadThumbnail } from "@/lib/thumbnails/upload";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -22,9 +24,29 @@ interface PdfThumbnailProps {
   width?: number;
   /** Unique cache key — use drawingId or versionId */
   cacheKey?: string;
+  /** Context for the lazy-repair path (legacy drawings). When all four are
+   *  present AND the drawing still has no server-side thumbnail, the
+   *  rendered JPEG is uploaded once and linked via the thumbnail API so the
+   *  next viewer skips this work entirely. */
+  drawingId?: string;
+  versionId?: string | null;
+  projectId?: string;
+  pdfStoragePath?: string | null;
 }
 
-export function PdfThumbnail({ url, width = 200, cacheKey }: PdfThumbnailProps) {
+// Per-session guard so we only repair a given version once, even if the
+// component remounts (e.g. user scrolls the grid away and back).
+const repairedVersionIds = new Set<string>();
+
+export function PdfThumbnail({
+  url,
+  width = 200,
+  cacheKey,
+  drawingId,
+  versionId,
+  projectId,
+  pdfStoragePath,
+}: PdfThumbnailProps) {
   const [loaded, setLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [cachedDataUrl, setCachedDataUrl] = useState<string | null>(null);
@@ -50,21 +72,50 @@ export function PdfThumbnail({ url, width = 200, cacheKey }: PdfThumbnailProps) 
     return () => { cancelled = true; };
   }, [cacheKey]);
 
-  // After PDF renders, capture thumbnail and cache it
-  function handleRenderSuccess() {
+  async function handleRenderSuccess() {
     setLoaded(true);
 
-    if (!cacheKey || !pageRef.current) return;
-
-    // Find the canvas rendered by react-pdf
+    if (!pageRef.current) return;
     const canvas = pageRef.current.querySelector("canvas");
     if (!canvas) return;
 
-    try {
-      const dataUrl = canvasToThumbnail(canvas, width);
-      cacheThumbnail(cacheKey, dataUrl);
-    } catch {
-      // Canvas tainted or other error — ignore
+    // Cache in IndexedDB for fast client-side reloads.
+    if (cacheKey) {
+      try {
+        const dataUrl = canvasToThumbnail(canvas, width);
+        cacheThumbnail(cacheKey, dataUrl);
+      } catch {
+        // Canvas tainted or other error — ignore
+      }
+    }
+
+    // Lazy-repair: upload the rendered thumbnail so future viewers don't
+    // re-render the PDF. Runs once per session per version, only when the
+    // parent supplied the context needed to map a Storage path.
+    if (
+      versionId &&
+      drawingId &&
+      projectId &&
+      pdfStoragePath &&
+      !repairedVersionIds.has(versionId)
+    ) {
+      repairedVersionIds.add(versionId);
+      try {
+        const blob = await canvasToThumbnailBlob(canvas, 400, 0.7);
+        if (!blob) return;
+        const thumbnailPath = await uploadThumbnail(pdfStoragePath, blob);
+        if (!thumbnailPath) return;
+        await fetch(
+          `/api/projects/${projectId}/drawings/${drawingId}/versions/${versionId}/thumbnail`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ thumbnail_path: thumbnailPath }),
+          }
+        );
+      } catch {
+        // Best-effort — swallow errors so they don't surface as toasts.
+      }
     }
   }
 

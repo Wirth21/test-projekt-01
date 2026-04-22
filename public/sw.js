@@ -1,6 +1,6 @@
-const CACHE_NAME = "link2plan-v5";
+const CACHE_NAME = "link2plan-v6";
 const PDF_CACHE_NAME = "link2plan-pdfs";
-const APP_SHELL_CACHE = "link2plan-app-v4";
+const APP_SHELL_CACHE = "link2plan-app-v5";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -137,12 +137,22 @@ self.addEventListener("fetch", (event) => {
   if (isRscRequest && isDashboardRoute(url)) {
     event.respondWith(
       fetch(event.request)
-        .then((response) => {
+        .then(async (response) => {
           if (response.ok) {
             const clone = response.clone();
             caches.open(APP_SHELL_CACHE).then((c) => c.put(event.request, clone));
+            return response;
           }
-          return response;
+          // Non-ok (502/503/504 from edge): try cached RSC, else redirect to full nav
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+          try {
+            const parsed = new URL(url);
+            parsed.searchParams.delete("_rsc");
+            return Response.redirect(parsed.toString(), 302);
+          } catch {
+            return response;
+          }
         })
         .catch(() =>
           caches.match(event.request).then((cached) => {
@@ -161,11 +171,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 5. Dashboard navigation: network-first, then smart cache lookup
+  // 5. Dashboard navigation: network-first, cache ONLY on ok, fall back on 5xx
   if (event.request.mode === "navigate" && isDashboardRoute(url)) {
     event.respondWith(
       fetch(event.request)
-        .then((response) => {
+        .then(async (response) => {
           if (response.ok) {
             // Cache with both the request AND the pathname for reliable offline matching
             const pathname = getPathname(url);
@@ -176,8 +186,15 @@ self.addEventListener("fetch", (event) => {
               // Also store by pathname for prefetch compatibility
               c.put(pathname, clone2);
             });
+            return response;
           }
-          return response;
+          // Non-ok (e.g. 504 from Vercel edge): serve stale cache instead of error page
+          const cache = await caches.open(APP_SHELL_CACHE);
+          const pathname = getPathname(url);
+          const cached = await findCachedPage(cache, pathname);
+          if (cached) return cached;
+          const offline = await caches.match(OFFLINE_URL);
+          return offline || response;
         })
         .catch(async () => {
           const cache = await caches.open(APP_SHELL_CACHE);
@@ -195,16 +212,20 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 6. Other navigation: network-first, cache fallback
+  // 6. Other navigation: network-first, cache fallback on 5xx or network error
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
-        .then((response) => {
+        .then(async (response) => {
           if (response.ok) {
             const clone = response.clone();
             caches.open(APP_SHELL_CACHE).then((c) => c.put(event.request, clone));
+            return response;
           }
-          return response;
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+          const offline = await caches.match(OFFLINE_URL);
+          return offline || response;
         })
         .catch(() =>
           caches.match(event.request).then((cached) =>

@@ -9,6 +9,30 @@ import type { TenantRole } from "@/lib/types/admin";
 
 // --- Query functions ---
 
+type ProjectStats = { drawing_count: number; marker_count: number; member_count: number };
+
+async function fetchProjectStats(
+  supabase: ReturnType<typeof createClient>,
+  projectIds: string[]
+) {
+  const results = await Promise.all(
+    projectIds.map((pid) =>
+      supabase.rpc("project_stats", { p_project_id: pid })
+        .then(({ data }) => ({ id: pid, stats: (data ?? null) as ProjectStats | null }))
+    )
+  );
+  return new Map(
+    results.map((r) => [
+      r.id,
+      {
+        pdf_count: r.stats?.drawing_count ?? 0,
+        marker_count: r.stats?.marker_count ?? 0,
+        member_count: r.stats?.member_count ?? 0,
+      },
+    ])
+  );
+}
+
 async function fetchActiveProjects(supabase: ReturnType<typeof createClient>) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Nicht eingeloggt");
@@ -44,24 +68,7 @@ async function fetchActiveProjects(supabase: ReturnType<typeof createClient>) {
   if (projectsError) throw new Error("Projekte konnten nicht geladen werden");
 
   const projectIds = (data ?? []).map((p) => p.id);
-
-  const counts = await Promise.all(
-    projectIds.map(async (pid) => {
-      const [drawingRes, markerRes, memberRes] = await Promise.all([
-        supabase.rpc("project_drawing_count", { p_project_id: pid }),
-        supabase.rpc("project_marker_count", { p_project_id: pid }),
-        supabase.rpc("project_member_count", { p_project_id: pid }),
-      ]);
-      return {
-        id: pid,
-        pdf_count: drawingRes.data ?? 0,
-        marker_count: markerRes.data ?? 0,
-        member_count: memberRes.data ?? 0,
-      };
-    })
-  );
-
-  const countMap = new Map(counts.map((c) => [c.id, c]));
+  const countMap = await fetchProjectStats(supabase, projectIds);
 
   const projects: ProjectWithRole[] = (data || []).map((p) => ({
     ...p,
@@ -94,22 +101,7 @@ async function fetchArchivedProjectsData(supabase: ReturnType<typeof createClien
     .order("updated_at", { ascending: false });
 
   const archivedIds = (projectsData || []).map((p) => p.id);
-  const archivedCounts = await Promise.all(
-    archivedIds.map(async (pid) => {
-      const [drawingRes, markerRes, memberRes] = await Promise.all([
-        supabase.rpc("project_drawing_count", { p_project_id: pid }),
-        supabase.rpc("project_marker_count", { p_project_id: pid }),
-        supabase.rpc("project_member_count", { p_project_id: pid }),
-      ]);
-      return {
-        id: pid,
-        pdf_count: drawingRes.data ?? 0,
-        marker_count: markerRes.data ?? 0,
-        member_count: memberRes.data ?? 0,
-      };
-    })
-  );
-  const archivedCountMap = new Map(archivedCounts.map((c) => [c.id, c]));
+  const archivedCountMap = await fetchProjectStats(supabase, archivedIds);
 
   return (projectsData || []).map((p): ProjectWithRole => ({
     ...p,

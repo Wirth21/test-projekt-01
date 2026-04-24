@@ -1,7 +1,19 @@
-const CACHE_NAME = "link2plan-v7";
+const CACHE_NAME = "link2plan-v8";
 const PDF_CACHE_NAME = "link2plan-pdfs";
 const APP_SHELL_CACHE = "link2plan-app-v6";
 const OFFLINE_URL = "/offline.html";
+
+// Minimal HTML returned when the user is online but the server replied
+// with 5xx or the fetch threw (e.g. Vercel cold-start timeout, edge
+// reset). NEVER serve offline.html in this case — it would tell the
+// user they have no internet, which is false.
+function makeServerErrorResponse(status) {
+  const body = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kurz nicht erreichbar</title><style>body{font-family:system-ui,sans-serif;max-width:480px;margin:80px auto;padding:0 24px;color:#111;text-align:center}h1{font-size:22px;margin-bottom:8px}p{color:#555;margin:8px 0}button{margin-top:16px;padding:10px 20px;font-size:15px;border:none;border-radius:8px;background:#3b82f6;color:#fff;cursor:pointer}button:hover{background:#2563eb}</style></head><body><h1>Server kurz nicht erreichbar</h1><p>Bitte versuche es in einem Moment erneut. Deine Internetverbindung ist in Ordnung.</p><button onclick="window.location.reload()">Erneut versuchen</button></body></html>`;
+  return new Response(body, {
+    status: status || 503,
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -177,42 +189,50 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 5. Dashboard navigation: network-first, cache ONLY on ok, fall back on 5xx
+  // 5. Dashboard navigation: network-first, cache ONLY on ok.
+  //    On non-ok response: try stale cache, else — crucially — DO NOT
+  //    serve offline.html if the user is online (would falsely claim
+  //    "no internet"). Serve a server-error page instead. Only show
+  //    offline.html when navigator.onLine === false.
   if (event.request.mode === "navigate" && isDashboardRoute(url)) {
     event.respondWith(
       fetch(event.request)
         .then(async (response) => {
           if (response.ok) {
-            // Cache with both the request AND the pathname for reliable offline matching
             const pathname = getPathname(url);
             const clone1 = response.clone();
             const clone2 = response.clone();
             caches.open(APP_SHELL_CACHE).then((c) => {
               c.put(event.request, clone1);
-              // Also store by pathname for prefetch compatibility
               c.put(pathname, clone2);
             });
             return response;
           }
-          // Non-ok (e.g. 504 from Vercel edge): serve stale cache instead of error page
+          // Non-ok (e.g. 504 from Vercel edge): try stale cache first.
           const cache = await caches.open(APP_SHELL_CACHE);
           const pathname = getPathname(url);
           const cached = await findCachedPage(cache, pathname);
           if (cached) return cached;
-          const offline = await caches.match(OFFLINE_URL);
-          return offline || response;
+          // No cache. User got a real server response — they are online.
+          // Show a server-error page (retry button) instead of misleading
+          // "you are offline" screen.
+          if (self.navigator && self.navigator.onLine === false) {
+            const offline = await caches.match(OFFLINE_URL);
+            if (offline) return offline;
+          }
+          return makeServerErrorResponse(response.status);
         })
         .catch(async () => {
           const cache = await caches.open(APP_SHELL_CACHE);
           const pathname = getPathname(url);
-
-          // 1. Smart cache lookup (handles both relative and absolute URLs)
           const cached = await findCachedPage(cache, pathname);
           if (cached) return cached;
-
-          // 2. Last resort: offline page
-          const offline = await caches.match(OFFLINE_URL);
-          return offline || new Response("Offline", { status: 503 });
+          // Fetch threw. Differentiate truly offline vs. transient.
+          if (self.navigator && self.navigator.onLine === false) {
+            const offline = await caches.match(OFFLINE_URL);
+            return offline || new Response("Offline", { status: 503 });
+          }
+          return makeServerErrorResponse(503);
         })
     );
     return;
@@ -230,14 +250,21 @@ self.addEventListener("fetch", (event) => {
           }
           const cached = await caches.match(event.request);
           if (cached) return cached;
-          const offline = await caches.match(OFFLINE_URL);
-          return offline || response;
+          if (self.navigator && self.navigator.onLine === false) {
+            const offline = await caches.match(OFFLINE_URL);
+            if (offline) return offline;
+          }
+          return makeServerErrorResponse(response.status);
         })
-        .catch(() =>
-          caches.match(event.request).then((cached) =>
-            cached || caches.match(OFFLINE_URL)
-          )
-        )
+        .catch(async () => {
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+          if (self.navigator && self.navigator.onLine === false) {
+            const offline = await caches.match(OFFLINE_URL);
+            return offline || new Response("Offline", { status: 503 });
+          }
+          return makeServerErrorResponse(503);
+        })
     );
     return;
   }

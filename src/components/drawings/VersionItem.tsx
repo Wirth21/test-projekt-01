@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { MoreVertical, Pencil, Archive, CircleDot } from "lucide-react";
+import {
+  MoreVertical,
+  Pencil,
+  Archive,
+  CircleDot,
+  Calendar,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { RenameVersionDialog } from "@/components/drawings/RenameVersionDialog";
 import { ArchiveVersionDialog } from "@/components/drawings/ArchiveVersionDialog";
+import { EditVersionDateDialog } from "@/components/drawings/EditVersionDateDialog";
 import type { DrawingVersion, DrawingStatus } from "@/lib/types/drawing";
 
 interface VersionItemProps {
@@ -23,9 +32,13 @@ interface VersionItemProps {
   isActive: boolean;
   isLatest: boolean;
   canArchive: boolean;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
   onSelect: (versionId: string) => void;
   onRename: (versionId: string, label: string) => Promise<void>;
   onArchive: (versionId: string) => Promise<void>;
+  onUpdateDate?: (versionId: string, isoDate: string) => Promise<void>;
+  onMove?: (versionId: string, direction: "up" | "down") => Promise<void>;
   statusId?: string | null;
   statuses?: DrawingStatus[];
   onStatusChange?: (statusId: string | null) => Promise<void>;
@@ -36,15 +49,20 @@ export function VersionItem({
   isActive,
   isLatest,
   canArchive,
+  canMoveUp = false,
+  canMoveDown = false,
   onSelect,
   onRename,
   onArchive,
+  onUpdateDate,
+  onMove,
   statusId,
   statuses,
   onStatusChange,
 }: VersionItemProps) {
   const [renameOpen, setRenameOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
 
   const formattedDate = new Date(version.created_at).toLocaleDateString(
     "de-DE",
@@ -120,28 +138,70 @@ export function VersionItem({
             </p>
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 shrink-0"
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Versionsaktionen"
-              >
-                <MoreVertical className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setRenameOpen(true);
-                }}
-              >
-                <Pencil className="mr-2 h-4 w-4" />
-                Label umbenennen
-              </DropdownMenuItem>
+          <div className="flex items-center gap-0.5 shrink-0">
+            {onMove && !version.is_archived && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void onMove(version.id, "up");
+                  }}
+                  disabled={!canMoveUp}
+                  aria-label="Nach oben verschieben"
+                >
+                  <ArrowUp className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void onMove(version.id, "down");
+                  }}
+                  disabled={!canMoveDown}
+                  aria-label="Nach unten verschieben"
+                >
+                  <ArrowDown className="h-3.5 w-3.5" />
+                </Button>
+              </>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label="Versionsaktionen"
+                >
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setRenameOpen(true);
+                  }}
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Label umbenennen
+                </DropdownMenuItem>
+                {onUpdateDate && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDateOpen(true);
+                    }}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Datum ändern
+                  </DropdownMenuItem>
+                )}
               {statuses && statuses.length > 0 && onStatusChange && (
                 <>
                   <DropdownMenuSeparator />
@@ -202,6 +262,7 @@ export function VersionItem({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        </div>
       </div>
 
       <RenameVersionDialog
@@ -219,6 +280,16 @@ export function VersionItem({
         versionNumber={version.version_number}
         onConfirm={() => onArchive(version.id)}
       />
+
+      {onUpdateDate && (
+        <EditVersionDateDialog
+          open={dateOpen}
+          onOpenChange={setDateOpen}
+          versionNumber={version.version_number}
+          currentDate={version.created_at}
+          onSubmit={(isoDate) => onUpdateDate(version.id, isoDate)}
+        />
+      )}
     </>
   );
 }

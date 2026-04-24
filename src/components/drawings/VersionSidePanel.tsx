@@ -30,6 +30,10 @@ interface VersionSidePanelProps {
   onUploadVersion: (file: File, onProgress: (pct: number) => void) => Promise<void>;
   onRenameVersion: (versionId: string, label: string) => Promise<void>;
   onArchiveVersion: (versionId: string) => Promise<void>;
+  /** Edit version date (PATCH created_at) */
+  onUpdateDate?: (versionId: string, isoDate: string) => Promise<void>;
+  /** Move a version up or down in the user-controlled sort order */
+  onMoveVersion?: (versionId: string, direction: "up" | "down") => Promise<void>;
   /** Available statuses for the tenant */
   statuses?: DrawingStatus[];
   /** Called when the user changes a version's status */
@@ -47,6 +51,8 @@ export function VersionSidePanel({
   onUploadVersion,
   onRenameVersion,
   onArchiveVersion,
+  onUpdateDate,
+  onMoveVersion,
   statuses: availableStatuses,
   onStatusChange,
 }: VersionSidePanelProps) {
@@ -56,20 +62,28 @@ export function VersionSidePanel({
   const activeVersions = versions.filter((v) => !v.is_archived);
   const archivedVersions = versions.filter((v) => v.is_archived);
 
-  // Latest non-archived version (highest version_number among active)
-  const latestVersion = activeVersions.sort(
+  // "Latest" for badge/default stays keyed to version_number — that's the
+  // temporal newest, independent of user-controlled sort_order.
+  const latestVersion = [...activeVersions].sort(
     (a, b) => b.version_number - a.version_number
   )[0];
 
   // Can archive = more than 1 non-archived version
   const canArchive = activeVersions.length > 1;
 
-  // Displayed versions: active sorted newest first, optionally archived appended
+  // Display order: user-controlled sort_order (desc) with version_number as
+  // a deterministic tie-breaker. Archived versions always appended at the
+  // bottom and follow the same rule among themselves.
+  function bySort(a: DrawingVersion, b: DrawingVersion) {
+    if (b.sort_order !== a.sort_order) return b.sort_order - a.sort_order;
+    return b.version_number - a.version_number;
+  }
+
+  const sortedActive = [...activeVersions].sort(bySort);
+
   const displayedVersions = [
-    ...activeVersions.sort((a, b) => b.version_number - a.version_number),
-    ...(showArchived
-      ? archivedVersions.sort((a, b) => b.version_number - a.version_number)
-      : []),
+    ...sortedActive,
+    ...(showArchived ? [...archivedVersions].sort(bySort) : []),
   ];
 
   return (
@@ -111,21 +125,35 @@ export function VersionSidePanel({
           ) : (
             <ScrollArea className="flex-1">
               <div className="px-3 py-2 space-y-1">
-                {displayedVersions.map((version) => (
-                  <VersionItem
-                    key={version.id}
-                    version={version}
-                    isActive={version.id === activeVersionId}
-                    isLatest={latestVersion?.id === version.id}
-                    canArchive={canArchive}
-                    onSelect={onSelectVersion}
-                    onRename={onRenameVersion}
-                    onArchive={onArchiveVersion}
-                    statusId={version.status_id}
-                    statuses={availableStatuses}
-                    onStatusChange={onStatusChange ? (statusId) => onStatusChange(version.id, statusId) : undefined}
-                  />
-                ))}
+                {displayedVersions.map((version) => {
+                  const activeIdx = sortedActive.findIndex((v) => v.id === version.id);
+                  const canMoveUp = activeIdx > 0;
+                  const canMoveDown =
+                    activeIdx !== -1 && activeIdx < sortedActive.length - 1;
+                  return (
+                    <VersionItem
+                      key={version.id}
+                      version={version}
+                      isActive={version.id === activeVersionId}
+                      isLatest={latestVersion?.id === version.id}
+                      canArchive={canArchive}
+                      canMoveUp={canMoveUp}
+                      canMoveDown={canMoveDown}
+                      onSelect={onSelectVersion}
+                      onRename={onRenameVersion}
+                      onArchive={onArchiveVersion}
+                      onUpdateDate={onUpdateDate}
+                      onMove={onMoveVersion}
+                      statusId={version.status_id}
+                      statuses={availableStatuses}
+                      onStatusChange={
+                        onStatusChange
+                          ? (statusId) => onStatusChange(version.id, statusId)
+                          : undefined
+                      }
+                    />
+                  );
+                })}
               </div>
             </ScrollArea>
           )}

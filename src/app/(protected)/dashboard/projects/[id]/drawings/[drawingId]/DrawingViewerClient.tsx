@@ -110,6 +110,8 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
     latestActiveVersion,
     uploadVersion,
     renameVersion,
+    updateVersion,
+    moveVersion,
     archiveVersion,
     getVersionSignedUrl,
     updateVersionStatus,
@@ -1153,6 +1155,12 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
         onUploadVersion={handleUploadVersion}
         onRenameVersion={handleRenameVersion}
         onArchiveVersion={handleArchiveVersion}
+        onUpdateDate={async (id, isoDate) => {
+          await updateVersion(id, { created_at: isoDate });
+        }}
+        onMoveVersion={async (id, direction) => {
+          await moveVersion(id, direction);
+        }}
         statuses={statuses}
         onStatusChange={handleStatusChange}
       />

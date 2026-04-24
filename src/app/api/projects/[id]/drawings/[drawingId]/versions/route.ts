@@ -35,11 +35,12 @@ export async function GET(request: Request, { params }: RouteParams) {
   const { searchParams } = new URL(request.url);
   const includeArchived = searchParams.get("includeArchived") === "true";
 
-  // Fetch versions
+  // Fetch versions — user-controlled sort_order first, version_number as tie-breaker
   let query = supabase
     .from("drawing_versions")
     .select("*, status:drawing_statuses(id, name, color)")
     .eq("drawing_id", drawingId)
+    .order("sort_order", { ascending: false })
     .order("version_number", { ascending: false });
 
   if (!includeArchived) {
@@ -135,10 +136,12 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Ungültiger Speicherpfad" }, { status: 400 });
   }
 
-  // Determine next version number
+  // Determine next version number + sort_order.
+  // New versions go on top by default (highest sort_order across all versions,
+  // archived or not), keeping version_number stable as an identifier.
   const { data: latestVersion, error: latestError } = await supabase
     .from("drawing_versions")
-    .select("id, version_number")
+    .select("id, version_number, sort_order")
     .eq("drawing_id", drawingId)
     .order("version_number", { ascending: false })
     .limit(1)
@@ -149,6 +152,16 @@ export async function POST(request: Request, { params }: RouteParams) {
   }
 
   const nextVersionNumber = (latestVersion?.version_number ?? 0) + 1;
+
+  const { data: topSort } = await supabase
+    .from("drawing_versions")
+    .select("sort_order")
+    .eq("drawing_id", drawingId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const nextSortOrder = (topSort?.sort_order ?? 0) + 1;
 
   // Find the current active version (latest non-archived) for marker copying + status inheritance
   const { data: currentActiveVersion } = await supabase
@@ -170,6 +183,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     .insert({
       drawing_id: drawingId,
       version_number: nextVersionNumber,
+      sort_order: nextSortOrder,
       label: label ?? defaultLabel,
       storage_path,
       thumbnail_path: thumbnail_path ?? null,

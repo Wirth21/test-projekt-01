@@ -143,6 +143,72 @@ export function useVersions(projectId: string, drawingId: string) {
     [baseUrl, projectId, drawingId, queryClient]
   );
 
+  /**
+   * Generic partial update: label, created_at, sort_order, rotation.
+   * Used by the VersionSidePanel (edit date, reorder) and the viewer (rotate).
+   */
+  const updateVersion = useCallback(
+    async (
+      versionId: string,
+      patch: { label?: string; created_at?: string; sort_order?: number; rotation?: number }
+    ) => {
+      const res = await fetch(`${baseUrl}/${versionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error ?? "Aktualisierung fehlgeschlagen");
+      }
+      await queryClient.invalidateQueries({ queryKey: ["versions", projectId, drawingId] });
+      return json.version as DrawingVersion;
+    },
+    [baseUrl, projectId, drawingId, queryClient]
+  );
+
+  /**
+   * Move a version up (towards newer) or down (towards older) in the list by
+   * swapping its sort_order with the adjacent visible (non-archived) version.
+   * Operates on the active-versions list only — archived are frozen at the bottom.
+   */
+  const moveVersion = useCallback(
+    async (versionId: string, direction: "up" | "down") => {
+      const activeVersions = [...versions]
+        .filter((v) => !v.is_archived)
+        .sort((a, b) => {
+          if (b.sort_order !== a.sort_order) return b.sort_order - a.sort_order;
+          return b.version_number - a.version_number;
+        });
+
+      const currentIndex = activeVersions.findIndex((v) => v.id === versionId);
+      if (currentIndex === -1) return;
+
+      const neighborIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+      if (neighborIndex < 0 || neighborIndex >= activeVersions.length) return;
+
+      const current = activeVersions[currentIndex];
+      const neighbor = activeVersions[neighborIndex];
+
+      // Swap sort_order — two PATCH calls in parallel.
+      await Promise.all([
+        fetch(`${baseUrl}/${current.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sort_order: neighbor.sort_order }),
+        }),
+        fetch(`${baseUrl}/${neighbor.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sort_order: current.sort_order }),
+        }),
+      ]);
+
+      await queryClient.invalidateQueries({ queryKey: ["versions", projectId, drawingId] });
+    },
+    [baseUrl, projectId, drawingId, versions, queryClient]
+  );
+
   const archiveVersion = useCallback(
     async (versionId: string) => {
       const res = await fetch(`${baseUrl}/${versionId}/archive`, {
@@ -203,6 +269,8 @@ export function useVersions(projectId: string, drawingId: string) {
     latestActiveVersion,
     uploadVersion,
     renameVersion,
+    updateVersion,
+    moveVersion,
     archiveVersion,
     getVersionSignedUrl,
     updateVersionStatus,

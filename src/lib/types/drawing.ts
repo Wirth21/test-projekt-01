@@ -19,6 +19,8 @@ export interface DrawingVersion {
   id: string;
   drawing_id: string;
   version_number: number;
+  /** User-controlled display order; defaults to version_number on creation. */
+  sort_order: number;
   label: string;
   storage_path: string;
   /** Storage path of the pre-generated JPEG thumbnail (null for legacy versions) */
@@ -30,6 +32,8 @@ export interface DrawingVersion {
   created_at: string;
   updated_at: string;
   status_id: string | null;
+  /** Rotation in degrees (0, 90, 180, 270). Applied persistently in the viewer. */
+  rotation?: number;
   /** Joined status data (populated by API) */
   status?: DrawingStatus | null;
 }

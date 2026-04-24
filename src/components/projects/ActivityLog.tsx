@@ -324,9 +324,10 @@ export function ActivityLog({ projectId, members }: ActivityLogProps) {
           </div>
         ) : (
           <>
-            {/* ~10 rows visible; scroll for the rest. Each row is ~60px
-                (py-3 + avatar + two lines of text). */}
-            <ScrollArea className="max-h-[600px]">
+            {/* Scroll window sized to the viewport with a sensible cap so
+                the log never eats more than ~2/3 of the screen on desktop
+                and always fits on mobile. */}
+            <ScrollArea style={{ height: "min(70vh, 680px)" }}>
               <div className="divide-y" role="list" aria-label={t("title")}>
                 {filteredEntries.map((entry) => (
                   <ActivityLogEntryComponent key={entry.id} entry={entry} />

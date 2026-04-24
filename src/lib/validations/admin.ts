@@ -49,6 +49,12 @@ export const createDrawingStatusSchema = z.object({
 });
 export type CreateDrawingStatusInput = z.infer<typeof createDrawingStatusSchema>;
 
+// Schema for the URL param of the admin project hard-delete endpoint
+export const adminProjectIdParamSchema = z.object({
+  projectId: z.string().uuid("Ungueltige Projekt-ID"),
+});
+export type AdminProjectIdParamInput = z.infer<typeof adminProjectIdParamSchema>;
+
 // Schema for updating a drawing status
 export const updateDrawingStatusSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich").max(50, "Name darf maximal 50 Zeichen lang sein").trim().optional(),

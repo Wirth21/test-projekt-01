@@ -41,7 +41,8 @@
 | PROJ-22 | Sentry Error Tracking | QA Passed | — | 2026-04-02 | 22 |
 | PROJ-23 | Branding (Logo, Favicon, Impressum) | QA Passed | — | 2026-04-01 | 23 |
 | PROJ-24 | Offline-First Caching & Synchronisation | QA Passed | [PROJ-24-offline-caching.md](PROJ-24-offline-caching.md) | 2026-04-09 | 24 |
+| PROJ-25 | Admin Projekt-Hard-Delete | QA Passed | [PROJ-25-admin-project-hard-delete.md](PROJ-25-admin-project-hard-delete.md) | 2026-04-24 | 25 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-25
+## Next Available ID: PROJ-26

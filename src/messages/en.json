@@ -490,6 +490,57 @@
       "deleteConfirm": "Delete status?",
       "deleteDescription": "Drawings with this status will be reset to \"No status\".",
       "hint": "Changes to name or color apply retroactively to all previously assigned statuses."
+    },
+    "nav": {
+      "users": "Users",
+      "pending": "Approvals",
+      "statuses": "Statuses",
+      "projects": "Projects"
+    },
+    "projects": {
+      "title": "Projects",
+      "subtitle": "Manage all projects in your team and permanently delete them when needed.",
+      "showArchived": "Show archived",
+      "showArchivedAria": "Show archived projects in the list",
+      "archivedBadge": "Archived",
+      "deleteButton": "Delete",
+      "deleteAria": "Permanently delete project {name}",
+      "listAria": "Team projects",
+      "empty": {
+        "title": "No projects",
+        "description": "Your team currently has no active projects.",
+        "descriptionWithArchived": "Your team currently has no projects."
+      },
+      "meta": {
+        "createdAt": "Created {date}",
+        "drawings": "{count, plural, =0 {No drawings} one {# drawing} other {# drawings}}",
+        "versions": "{count, plural, =0 {No versions} one {# version} other {# versions}}",
+        "members": "{count, plural, =0 {No members} one {# member} other {# members}}",
+        "groups": "{count, plural, =0 {No groups} one {# group} other {# groups}}",
+        "storage": "{size} storage"
+      },
+      "delete": {
+        "title": "Permanently delete project?",
+        "srDescription": "Confirm the deletion by typing the project name.",
+        "projectLabel": "Project",
+        "whatHeading": "The following will be removed:",
+        "irreversible": "This action cannot be undone. All data will be permanently lost.",
+        "confirmLabel": "Type the project name to confirm",
+        "confirmHint": "Capitalization must match exactly.",
+        "submit": "Delete permanently",
+        "submitting": "Deleting...",
+        "errorFallback": "Delete failed. Please try again.",
+        "counts": {
+          "drawings": "{count, plural, =0 {No drawings} one {# drawing} other {# drawings}}",
+          "versions": "{count, plural, =0 {No versions} one {# version} other {# versions}}",
+          "members": "{count, plural, =0 {No memberships} one {# membership} other {# memberships}}",
+          "groups": "{count, plural, =0 {No groups} one {# group} other {# groups}}",
+          "storage": "{size} in storage bucket"
+        }
+      },
+      "toasts": {
+        "deleted": "Project “{name}” was deleted"
+      }
     }
   },
   "limits": {

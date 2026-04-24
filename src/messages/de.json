@@ -490,6 +490,57 @@
       "deleteConfirm": "Status l\u00F6schen?",
       "deleteDescription": "Zeichnungen mit diesem Status werden auf \"Kein Status\" zur\u00FCckgesetzt.",
       "hint": "\u00C4nderungen an Name oder Farbe wirken sich r\u00FCckwirkend auf alle bereits vergebenen Status aus."
+    },
+    "nav": {
+      "users": "Nutzerverwaltung",
+      "pending": "Freigaben",
+      "statuses": "Status",
+      "projects": "Projekte"
+    },
+    "projects": {
+      "title": "Projekte",
+      "subtitle": "Alle Projekte deines Teams verwalten und bei Bedarf endgültig löschen.",
+      "showArchived": "Archivierte anzeigen",
+      "showArchivedAria": "Archivierte Projekte in der Liste anzeigen",
+      "archivedBadge": "Archiviert",
+      "deleteButton": "Löschen",
+      "deleteAria": "Projekt {name} endgültig löschen",
+      "listAria": "Projekte des Teams",
+      "empty": {
+        "title": "Keine Projekte",
+        "description": "In deinem Team gibt es aktuell keine aktiven Projekte.",
+        "descriptionWithArchived": "In deinem Team gibt es aktuell keine Projekte."
+      },
+      "meta": {
+        "createdAt": "Erstellt {date}",
+        "drawings": "{count, plural, =0 {Keine Zeichnungen} one {# Zeichnung} other {# Zeichnungen}}",
+        "versions": "{count, plural, =0 {Keine Versionen} one {# Version} other {# Versionen}}",
+        "members": "{count, plural, =0 {Keine Mitglieder} one {# Mitglied} other {# Mitglieder}}",
+        "groups": "{count, plural, =0 {Keine Gruppen} one {# Gruppe} other {# Gruppen}}",
+        "storage": "{size} Speicher"
+      },
+      "delete": {
+        "title": "Projekt endgültig löschen?",
+        "srDescription": "Bestätige die Löschung, indem du den Projektnamen eintippst.",
+        "projectLabel": "Projekt",
+        "whatHeading": "Dabei werden entfernt:",
+        "irreversible": "Diese Aktion ist nicht rückgängig zu machen. Alle Daten gehen unwiderruflich verloren.",
+        "confirmLabel": "Tippe den Projektnamen zum Bestätigen",
+        "confirmHint": "Groß-/Kleinschreibung muss exakt übereinstimmen.",
+        "submit": "Endgültig löschen",
+        "submitting": "Wird gelöscht...",
+        "errorFallback": "Löschen fehlgeschlagen. Bitte erneut versuchen.",
+        "counts": {
+          "drawings": "{count, plural, =0 {Keine Zeichnungen} one {# Zeichnung} other {# Zeichnungen}}",
+          "versions": "{count, plural, =0 {Keine Versionen} one {# Version} other {# Versionen}}",
+          "members": "{count, plural, =0 {Keine Mitgliedschaften} one {# Mitgliedschaft} other {# Mitgliedschaften}}",
+          "groups": "{count, plural, =0 {Keine Gruppen} one {# Gruppe} other {# Gruppen}}",
+          "storage": "{size} Speicher im Bucket"
+        }
+      },
+      "toasts": {
+        "deleted": "Projekt „{name}“ wurde gelöscht"
+      }
     }
   },
   "limits": {

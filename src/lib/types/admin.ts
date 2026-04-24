@@ -32,3 +32,29 @@ export interface PendingUser {
   email: string;
   created_at: string;
 }
+
+/**
+ * Admin "Projects" tab — one entry per tenant project.
+ * Used in /admin/projects list and the delete confirm dialog.
+ */
+export interface AdminTenantProject {
+  id: string;
+  name: string;
+  is_archived: boolean;
+  created_at: string;
+  drawings_count: number;
+  versions_count: number;
+  members_count: number;
+  groups_count: number;
+  storage_bytes: number;
+}
+
+export interface AdminProjectDeleteResult {
+  deleted: {
+    project_id: string;
+    project_name: string;
+    drawings: number;
+    members: number;
+    storage_bytes: number;
+  };
+}

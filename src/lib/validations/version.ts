@@ -61,12 +61,18 @@ export const updateVersionSchema = z
       .int()
       .refine((v) => [0, 90, 180, 270].includes(v), "Rotation muss 0, 90, 180 oder 270 sein")
       .optional(),
+    page_count: z
+      .number()
+      .int()
+      .positive()
+      .optional(),
   })
   .refine(
     (data) =>
       data.label !== undefined ||
       data.created_at !== undefined ||
-      data.rotation !== undefined,
+      data.rotation !== undefined ||
+      data.page_count !== undefined,
     { message: "Kein Feld zum Aktualisieren angegeben" }
   );
 

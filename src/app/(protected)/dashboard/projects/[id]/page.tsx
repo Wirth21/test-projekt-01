@@ -30,6 +30,7 @@ import { GroupedDrawingList } from "@/components/drawings/GroupedDrawingList";
 import { Logo } from "@/components/Logo";
 import { CreateGroupDialog } from "@/components/drawings/CreateGroupDialog";
 import { SplitPdfDialog, type SplitChoice } from "@/components/drawings/SplitPdfDialog";
+import { MultiPageBatchDialog, type BatchChoice } from "@/components/drawings/MultiPageBatchDialog";
 import { getPdfPageCount, splitPdfToPages } from "@/lib/pdf/split";
 import dynamic from "next/dynamic";
 const ProjectSyncButton = dynamic(
@@ -96,6 +97,14 @@ export default function ProjectDetailPage({ params }: PageProps) {
     pageCount: number;
     groupId: string | null;
     resolve: (choice: SplitChoice | null) => void;
+  } | null>(null);
+
+  // Same pattern for the batch warning when several files are dropped at once
+  // and at least one of them has multiple pages.
+  const [batchPrompt, setBatchPrompt] = useState<{
+    multiPageFiles: { name: string; pageCount: number }[];
+    totalFiles: number;
+    resolve: (choice: BatchChoice | null) => void;
   } | null>(null);
   const [drawingTab, setDrawingTab] = useState("active");
   const [restoringDrawing, setRestoringDrawing] = useState<string | null>(null);
@@ -218,29 +227,73 @@ export default function ProjectDetailPage({ params }: PageProps) {
     }
   }
 
-  // Multi-file drop: upload each as-is without split prompts. Users who want
-  // per-page splitting drop files one at a time.
+  // Multi-file drop. Before touching Storage, peek page counts on every file
+  // so we can warn when the batch contains multi-page PDFs — otherwise users
+  // who expected the per-page split silently lose N-1 pages of information
+  // per file. After the user picks (or declines), apply the choice uniformly.
   async function handleUploadMultipleToGroup(groupId: string | null, files: File[]) {
     setUploading(true);
-    let uploaded = 0;
-    for (const file of files) {
-      setUploadProgress(Math.round((uploaded / files.length) * 100));
-      try {
-        await uploadDrawing(file, () => {}, {
-          status_id: defaultStatus?.id ?? null,
-          group_id: groupId,
-        });
-        uploaded++;
-      } catch (err) {
-        toast.error(
-          `${file.name}: ${err instanceof Error ? err.message : t("toasts.uploadFailed")}`
-        );
-      }
-    }
-    setUploading(false);
     setUploadProgress(0);
-    if (uploaded > 0) {
-      toast.success(t("toasts.uploaded") + ` (${uploaded}/${files.length})`);
+    try {
+      const scanned: { file: File; pageCount: number }[] = [];
+      for (const file of files) {
+        let pc = 1;
+        try {
+          pc = await getPdfPageCount(file);
+        } catch {
+          pc = 1;
+        }
+        scanned.push({ file, pageCount: pc });
+      }
+
+      const multiPage = scanned.filter((s) => s.pageCount > 1);
+
+      let batchChoice: BatchChoice = "keep";
+      if (multiPage.length > 0) {
+        const choice = await new Promise<BatchChoice | null>((resolve) => {
+          setBatchPrompt({
+            multiPageFiles: multiPage.map((m) => ({ name: m.file.name, pageCount: m.pageCount })),
+            totalFiles: files.length,
+            resolve,
+          });
+        });
+        setBatchPrompt(null);
+        if (choice === null) return; // User cancelled.
+        batchChoice = choice;
+      }
+
+      let uploaded = 0;
+      let totalOutputs = 0;
+      for (const { file, pageCount } of scanned) {
+        totalOutputs += batchChoice === "split" && pageCount > 1 ? pageCount : 1;
+      }
+
+      for (const { file, pageCount } of scanned) {
+        if (batchChoice === "split" && pageCount > 1) {
+          const n = await uploadSplit(groupId, file);
+          uploaded += n;
+        } else {
+          try {
+            await uploadDrawing(file, () => {}, {
+              status_id: defaultStatus?.id ?? null,
+              group_id: groupId,
+            });
+            uploaded++;
+          } catch (err) {
+            toast.error(
+              `${file.name}: ${err instanceof Error ? err.message : t("toasts.uploadFailed")}`
+            );
+          }
+        }
+        setUploadProgress(Math.round((uploaded / Math.max(totalOutputs, 1)) * 100));
+      }
+
+      if (uploaded > 0) {
+        toast.success(`${uploaded} Zeichnungen hochgeladen`);
+      }
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
     }
   }
 
@@ -781,6 +834,18 @@ export default function ProjectDetailPage({ params }: PageProps) {
         fileName={splitPrompt?.file.name ?? ""}
         pageCount={splitPrompt?.pageCount ?? 0}
         onChoice={(choice) => splitPrompt?.resolve(choice)}
+      />
+
+      <MultiPageBatchDialog
+        open={batchPrompt !== null}
+        onOpenChange={(open) => {
+          if (!open && batchPrompt) {
+            batchPrompt.resolve(null);
+          }
+        }}
+        multiPageFiles={batchPrompt?.multiPageFiles ?? []}
+        totalFiles={batchPrompt?.totalFiles ?? 0}
+        onChoice={(choice) => batchPrompt?.resolve(choice)}
       />
 
       {/* Leave project confirmation */}

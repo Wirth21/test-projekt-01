@@ -160,13 +160,14 @@ export function useVersions(projectId: string, drawingId: string) {
   );
 
   /**
-   * Generic partial update: label, created_at, rotation.
-   * Used by the VersionSidePanel (edit date) and the viewer (rotate).
+   * Generic partial update: label, created_at, rotation, page_count.
+   * Used by the VersionSidePanel (edit date), the viewer (rotate), and
+   * the lazy-repair path that backfills page_count on first open.
    */
   const updateVersion = useCallback(
     async (
       versionId: string,
-      patch: { label?: string; created_at?: string; rotation?: number }
+      patch: { label?: string; created_at?: string; rotation?: number; page_count?: number }
     ) => {
       const res = await fetch(`${baseUrl}/${versionId}`, {
         method: "PATCH",

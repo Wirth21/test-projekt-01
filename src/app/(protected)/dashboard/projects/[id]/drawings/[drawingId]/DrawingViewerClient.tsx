@@ -362,6 +362,15 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
     setNumPages(pdf.numPages);
     setPdfLoading(false);
 
+    // Lazy-repair: backfill page_count for versions uploaded before the
+    // client started sending it. Fire-and-forget; failures are silent.
+    if (
+      activeVersion &&
+      (activeVersion.page_count == null || activeVersion.page_count !== pdf.numPages)
+    ) {
+      updateVersion(activeVersion.id, { page_count: pdf.numPages }).catch(() => {});
+    }
+
     // Calculate fit-to-screen width once
     const container = viewerContainerRef.current;
     if (!container) return;

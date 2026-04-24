@@ -29,6 +29,15 @@ export async function uploadThumbnail(
       upsert: true,
     });
 
-  if (error) return null;
+  if (error) {
+    console.warn("[uploadThumbnail] failed", {
+      path,
+      blobType: jpeg.type,
+      blobSize: jpeg.size,
+      message: error.message,
+      name: error.name,
+    });
+    return null;
+  }
   return path;
 }

@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { MoreVertical, Pencil, Archive, FolderOpen, CircleDot } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -115,23 +116,11 @@ export function DrawingCard({
               pdfStoragePath={drawing.latest_version?.storage_path ?? null}
             />
           ) : (
-            <div className="flex items-center justify-center w-full h-full">
-              <div className="h-10 w-10 text-muted-foreground/40">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-full w-full"
-                >
-                  <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-                  <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-                </svg>
-              </div>
-            </div>
+            // Transient loading state: drawing has no server-side thumbnail
+            // yet and the signed PDF URL for the client-render fallback is
+            // still being fetched. Show a skeleton so the card doesn't
+            // flash "broken/empty" before PdfThumbnail takes over.
+            <Skeleton className="w-full h-full" />
           )}
           {versionCount != null && versionCount > 1 && (
             <Badge

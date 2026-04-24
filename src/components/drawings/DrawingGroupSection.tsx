@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DrawingGrid } from "@/components/drawings/DrawingGrid";
+import { PdfUploadZone } from "@/components/drawings/PdfUploadZone";
 import { RenameGroupDialog } from "@/components/drawings/RenameGroupDialog";
 import { ArchiveGroupDialog } from "@/components/drawings/ArchiveGroupDialog";
 import type { Drawing, DrawingGroup, DrawingStatus } from "@/lib/types/drawing";
@@ -36,6 +37,11 @@ interface DrawingGroupSectionProps {
   versionCounts?: Map<string, number>;
   statuses?: DrawingStatus[];
   onStatusChange?: (drawingId: string, versionId: string, statusId: string | null) => Promise<void>;
+  /** Upload a single PDF into this group. null groupId = "Ohne Gruppe". */
+  onUpload?: (groupId: string | null, file: File) => Promise<void> | void;
+  onUploadMultiple?: (groupId: string | null, files: File[]) => Promise<void> | void;
+  uploading?: boolean;
+  uploadProgress?: number;
 }
 
 export function DrawingGroupSection({
@@ -54,6 +60,10 @@ export function DrawingGroupSection({
   versionCounts,
   statuses,
   onStatusChange,
+  onUpload,
+  onUploadMultiple,
+  uploading = false,
+  uploadProgress = 0,
 }: DrawingGroupSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [renameOpen, setRenameOpen] = useState(false);
@@ -115,19 +125,34 @@ export function DrawingGroupSection({
         </div>
 
         <CollapsibleContent>
-          <div className="pl-2 sm:pl-6 pt-2 pb-4">
-            <DrawingGrid
-              drawings={drawings}
-              projectId={projectId}
-              legacyPdfUrls={legacyPdfUrls}
-              onRename={onRenameDrawing}
-              onArchive={onArchiveDrawing}
-              groups={allGroups}
-              onAssignGroup={onAssignGroup}
-              versionCounts={versionCounts}
-              statuses={statuses}
-              onStatusChange={onStatusChange}
-            />
+          <div className="pl-2 sm:pl-6 pt-2 pb-4 space-y-3">
+            {drawings.length > 0 && (
+              <DrawingGrid
+                drawings={drawings}
+                projectId={projectId}
+                legacyPdfUrls={legacyPdfUrls}
+                onRename={onRenameDrawing}
+                onArchive={onArchiveDrawing}
+                groups={allGroups}
+                onAssignGroup={onAssignGroup}
+                versionCounts={versionCounts}
+                statuses={statuses}
+                onStatusChange={onStatusChange}
+              />
+            )}
+            {onUpload && (
+              <PdfUploadZone
+                onUpload={(file) => onUpload(group?.id ?? null, file)}
+                onUploadMultiple={
+                  onUploadMultiple
+                    ? (files) => onUploadMultiple(group?.id ?? null, files)
+                    : undefined
+                }
+                uploading={uploading}
+                progress={uploadProgress}
+                compact
+              />
+            )}
           </div>
         </CollapsibleContent>
       </Collapsible>

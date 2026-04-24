@@ -24,6 +24,11 @@ export const createDrawingSchema = z.object({
     .uuid("Ungültige Status-ID")
     .nullable()
     .optional(),
+  group_id: z
+    .string()
+    .uuid("Ungültige Gruppen-ID")
+    .nullable()
+    .optional(),
   thumbnail_path: z
     .string()
     .min(1)

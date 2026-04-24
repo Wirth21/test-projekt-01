@@ -19,6 +19,11 @@ interface GroupedDrawingListProps {
   versionCounts?: Map<string, number>;
   statuses?: DrawingStatus[];
   onStatusChange?: (drawingId: string, versionId: string, statusId: string | null) => Promise<void>;
+  /** Per-group upload handlers. groupId = null means the "Ohne Gruppe" drop target. */
+  onUploadToGroup?: (groupId: string | null, file: File) => Promise<void> | void;
+  onUploadMultipleToGroup?: (groupId: string | null, files: File[]) => Promise<void> | void;
+  uploading?: boolean;
+  uploadProgress?: number;
 }
 
 export function GroupedDrawingList({
@@ -34,6 +39,10 @@ export function GroupedDrawingList({
   versionCounts,
   statuses,
   onStatusChange,
+  onUploadToGroup,
+  onUploadMultipleToGroup,
+  uploading,
+  uploadProgress,
 }: GroupedDrawingListProps) {
   // Active (non-archived) groups sorted by creation date (oldest first)
   const activeGroups = useMemo(
@@ -80,20 +89,24 @@ export function GroupedDrawingList({
   const ungroupedDrawings = groupedDrawings.get(null) ?? [];
   const existingGroupNames = activeGroups.map((g) => g.name);
 
-  // If there are no groups and no drawings, show empty state
+  // Completely empty project with no groups and no drawings: show the
+  // "Ohne Gruppe" section so the user has an explicit drop target. Removed
+  // the standalone empty state — the dropzone alone covers it.
   if (activeGroups.length === 0 && drawings.length === 0) {
-    return (
-      <div className="rounded-lg border border-dashed bg-muted/30 flex flex-col items-center justify-center py-16 text-center">
-        <FileText className="h-10 w-10 text-muted-foreground/40 mb-3" />
-        <p className="text-sm font-medium">Noch keine Zeichnungen</p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Lade eine PDF hoch, um zu beginnen
-        </p>
-      </div>
-    );
+    if (!onUploadToGroup) {
+      return (
+        <div className="rounded-lg border border-dashed bg-muted/30 flex flex-col items-center justify-center py-16 text-center">
+          <FileText className="h-10 w-10 text-muted-foreground/40 mb-3" />
+          <p className="text-sm font-medium">Noch keine Zeichnungen</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Lade eine PDF hoch, um zu beginnen
+          </p>
+        </div>
+      );
+    }
   }
 
-  // If no groups exist, just show ungrouped drawings without the "Ohne Gruppe" header
+  // If no groups exist, just show the single "Ohne Gruppe" section.
   if (activeGroups.length === 0) {
     return (
       <DrawingGroupSection
@@ -109,6 +122,10 @@ export function GroupedDrawingList({
         versionCounts={versionCounts}
         statuses={statuses}
         onStatusChange={onStatusChange}
+        onUpload={onUploadToGroup}
+        onUploadMultiple={onUploadMultipleToGroup}
+        uploading={uploading}
+        uploadProgress={uploadProgress}
       />
     );
   }
@@ -133,26 +150,33 @@ export function GroupedDrawingList({
           versionCounts={versionCounts}
           statuses={statuses}
           onStatusChange={onStatusChange}
+          onUpload={onUploadToGroup}
+          onUploadMultiple={onUploadMultipleToGroup}
+          uploading={uploading}
+          uploadProgress={uploadProgress}
         />
       ))}
 
-      {/* "Ohne Gruppe" section — only if ungrouped drawings exist */}
-      {ungroupedDrawings.length > 0 && (
-        <DrawingGroupSection
-          group={null}
-          drawings={ungroupedDrawings}
-          allGroups={activeGroups}
-          projectId={projectId}
-          legacyPdfUrls={legacyPdfUrls}
-          onRenameDrawing={onRenameDrawing}
-          onArchiveDrawing={onArchiveDrawing}
-          onAssignGroup={onAssignGroup}
-          existingGroupNames={existingGroupNames}
-          versionCounts={versionCounts}
-          statuses={statuses}
-          onStatusChange={onStatusChange}
-        />
-      )}
+      {/* "Ohne Gruppe" section — always visible when groups exist so the
+          user can still drop ungrouped PDFs somewhere, even if empty. */}
+      <DrawingGroupSection
+        group={null}
+        drawings={ungroupedDrawings}
+        allGroups={activeGroups}
+        projectId={projectId}
+        legacyPdfUrls={legacyPdfUrls}
+        onRenameDrawing={onRenameDrawing}
+        onArchiveDrawing={onArchiveDrawing}
+        onAssignGroup={onAssignGroup}
+        existingGroupNames={existingGroupNames}
+        versionCounts={versionCounts}
+        statuses={statuses}
+        onStatusChange={onStatusChange}
+        onUpload={onUploadToGroup}
+        onUploadMultiple={onUploadMultipleToGroup}
+        uploading={uploading}
+        uploadProgress={uploadProgress}
+      />
     </div>
   );
 }

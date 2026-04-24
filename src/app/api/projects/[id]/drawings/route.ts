@@ -142,6 +142,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     file_size,
     page_count,
     status_id: initialStatusId,
+    group_id: initialGroupId,
     thumbnail_path,
   } = result.data;
 
@@ -183,6 +184,21 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Ungültiger Speicherpfad" }, { status: 400 });
   }
 
+  // If a group was requested, verify it belongs to the same project and is
+  // not archived. Silently drop the assignment if the check fails so the
+  // upload still succeeds (drawing just ends up ungrouped).
+  let effectiveGroupId: string | null = null;
+  if (initialGroupId) {
+    const { data: group } = await supabase
+      .from("drawing_groups")
+      .select("id, project_id, is_archived")
+      .eq("id", initialGroupId)
+      .maybeSingle();
+    if (group && group.project_id === projectId && !group.is_archived) {
+      effectiveGroupId = group.id;
+    }
+  }
+
   // Insert drawing metadata (without storage_path/file_size/page_count — those go in drawing_versions)
   const { data: drawing, error: insertError } = await supabase
     .from("drawings")
@@ -190,6 +206,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       project_id: projectId,
       display_name,
       uploaded_by: user.id,
+      group_id: effectiveGroupId,
     })
     .select()
     .single();

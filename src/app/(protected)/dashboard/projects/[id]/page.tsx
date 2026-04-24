@@ -26,7 +26,6 @@ import { useDrawingGroups } from "@/hooks/use-drawing-groups";
 import { useDrawingStatuses } from "@/hooks/use-drawing-statuses";
 import { InviteMemberDialog } from "@/components/projects/InviteMemberDialog";
 import { ActivityLog } from "@/components/projects/ActivityLog";
-import { PdfUploadZone } from "@/components/drawings/PdfUploadZone";
 import { GroupedDrawingList } from "@/components/drawings/GroupedDrawingList";
 import { Logo } from "@/components/Logo";
 import { CreateGroupDialog } from "@/components/drawings/CreateGroupDialog";
@@ -132,12 +131,13 @@ export default function ProjectDetailPage({ params }: PageProps) {
   // legacyPdfUrls feeds the PDF fallback for drawings without a server-side
   // thumbnail yet.
 
-  async function handleUpload(file: File) {
+  async function handleUploadToGroup(groupId: string | null, file: File) {
     setUploading(true);
     setUploadProgress(0);
     try {
       await uploadDrawing(file, (pct) => setUploadProgress(pct), {
         status_id: defaultStatus?.id ?? null,
+        group_id: groupId,
       });
       toast.success(t("toasts.uploaded"));
     } catch (err) {
@@ -150,7 +150,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
     }
   }
 
-  async function handleUploadMultiple(files: File[]) {
+  async function handleUploadMultipleToGroup(groupId: string | null, files: File[]) {
     setUploading(true);
     let uploaded = 0;
     for (const file of files) {
@@ -158,6 +158,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
       try {
         await uploadDrawing(file, () => {}, {
           status_id: defaultStatus?.id ?? null,
+          group_id: groupId,
         });
         uploaded++;
       } catch (err) {
@@ -473,25 +474,16 @@ export default function ProjectDetailPage({ params }: PageProps) {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <h3 className="text-base font-semibold">{t("title")}</h3>
             {!isViewer && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCreateGroupOpen(true)}
-                  className="shrink-0"
-                >
-                  <Plus className="mr-1.5 h-4 w-4" />
-                  <span className="hidden min-[480px]:inline">{t("addGroup")}</span>
-                  <span className="min-[480px]:hidden">Gruppe</span>
-                </Button>
-                <PdfUploadZone
-                  onUpload={handleUpload}
-                  onUploadMultiple={handleUploadMultiple}
-                  uploading={uploading}
-                  progress={uploadProgress}
-                  compact
-                />
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCreateGroupOpen(true)}
+                className="shrink-0"
+              >
+                <Plus className="mr-1.5 h-4 w-4" />
+                <span className="hidden min-[480px]:inline">{t("addGroup")}</span>
+                <span className="min-[480px]:hidden">Gruppe</span>
+              </Button>
             )}
           </div>
           <Tabs value={drawingTab} onValueChange={setDrawingTab}>
@@ -539,6 +531,10 @@ export default function ProjectDetailPage({ params }: PageProps) {
                     versionCounts={versionCounts}
                     statuses={statuses}
                     onStatusChange={handleStatusChange}
+                    onUploadToGroup={isViewer ? undefined : handleUploadToGroup}
+                    onUploadMultipleToGroup={isViewer ? undefined : handleUploadMultipleToGroup}
+                    uploading={uploading}
+                    uploadProgress={uploadProgress}
                   />
                 )}
               </div>

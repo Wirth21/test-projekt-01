@@ -100,9 +100,26 @@ export function PdfThumbnail({
   const [showPdfRenderer, setShowPdfRenderer] = useState(!cacheKey);
   const pageRef = useRef<HTMLDivElement>(null);
 
-  // Try to load cached thumbnail
+  // If we got here the server-side thumbnail is missing (DrawingCard picks the
+  // <img> path whenever thumbnail_url is present). That means we MUST render
+  // the PDF at least once per version to bake a JPEG back to Storage — the
+  // IndexedDB cache alone won't help the next device. So: when the repair
+  // context is fully present and we haven't baked this version yet in this
+  // session, skip the IDB cache shortcut and force the PDF renderer.
+  const needsServerBake =
+    !!projectId &&
+    !!drawingId &&
+    !!versionId &&
+    !!pdfStoragePath &&
+    !repairedVersions.has(versionId);
+
+  // Try to load cached thumbnail (only if we don't need to bake).
   useEffect(() => {
     if (!cacheKey) return;
+    if (needsServerBake) {
+      setShowPdfRenderer(true);
+      return;
+    }
 
     let cancelled = false;
 
@@ -117,7 +134,7 @@ export function PdfThumbnail({
     });
 
     return () => { cancelled = true; };
-  }, [cacheKey]);
+  }, [cacheKey, needsServerBake]);
 
   function handleRenderSuccess() {
     setLoaded(true);

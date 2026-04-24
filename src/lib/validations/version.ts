@@ -56,10 +56,6 @@ export const updateVersionSchema = z
       .string()
       .datetime({ offset: true, message: "Ungültiges Datum (ISO 8601 erwartet)" })
       .optional(),
-    sort_order: z
-      .number()
-      .int("Reihenfolge muss eine ganze Zahl sein")
-      .optional(),
     rotation: z
       .number()
       .int()
@@ -70,7 +66,6 @@ export const updateVersionSchema = z
     (data) =>
       data.label !== undefined ||
       data.created_at !== undefined ||
-      data.sort_order !== undefined ||
       data.rotation !== undefined,
     { message: "Kein Feld zum Aktualisieren angegeben" }
   );

@@ -18,9 +18,10 @@ export interface Drawing {
 export interface DrawingVersion {
   id: string;
   drawing_id: string;
+  /** Monotonic within a drawing, and also the visible stack order:
+   *  highest = top of the stack = current. Moving a version up/down swaps
+   *  this number with the adjacent version. */
   version_number: number;
-  /** User-controlled display order; defaults to version_number on creation. */
-  sort_order: number;
   label: string;
   storage_path: string;
   /** Storage path of the pre-generated JPEG thumbnail (null for legacy versions) */

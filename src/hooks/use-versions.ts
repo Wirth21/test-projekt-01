@@ -51,6 +51,13 @@ export function useVersions(projectId: string, drawingId: string) {
 
       const storagePath = `${projectId}/${drawingId}/${nextVersionNumber}.pdf`;
 
+      // Default label: PDF filename without extension, capped at DB limit (100).
+      const fallbackLabel = file.name
+        .replace(/\.pdf$/i, "")
+        .trim()
+        .slice(0, 100) || undefined;
+      const effectiveLabel = label ?? fallbackLabel;
+
       // Upload the file directly to Supabase Storage with progress
       const {
         data: { session },
@@ -104,7 +111,7 @@ export function useVersions(projectId: string, drawingId: string) {
         body: JSON.stringify({
           storage_path: storagePath,
           file_size: file.size,
-          ...(label ? { label } : {}),
+          ...(effectiveLabel ? { label: effectiveLabel } : {}),
           ...(thumbnailPath ? { thumbnail_path: thumbnailPath } : {}),
         }),
       });
@@ -144,13 +151,13 @@ export function useVersions(projectId: string, drawingId: string) {
   );
 
   /**
-   * Generic partial update: label, created_at, sort_order, rotation.
-   * Used by the VersionSidePanel (edit date, reorder) and the viewer (rotate).
+   * Generic partial update: label, created_at, rotation.
+   * Used by the VersionSidePanel (edit date) and the viewer (rotate).
    */
   const updateVersion = useCallback(
     async (
       versionId: string,
-      patch: { label?: string; created_at?: string; sort_order?: number; rotation?: number }
+      patch: { label?: string; created_at?: string; rotation?: number }
     ) => {
       const res = await fetch(`${baseUrl}/${versionId}`, {
         method: "PATCH",
@@ -168,45 +175,25 @@ export function useVersions(projectId: string, drawingId: string) {
   );
 
   /**
-   * Move a version up (towards newer) or down (towards older) in the list by
-   * swapping its sort_order with the adjacent visible (non-archived) version.
-   * Operates on the active-versions list only — archived are frozen at the bottom.
+   * Move a version up (towards a higher version_number / towards the top)
+   * or down. Hits the server /move endpoint, which calls the transactional
+   * swap_version_numbers RPC. Active versions only — archived are frozen
+   * at the bottom.
    */
   const moveVersion = useCallback(
     async (versionId: string, direction: "up" | "down") => {
-      const activeVersions = [...versions]
-        .filter((v) => !v.is_archived)
-        .sort((a, b) => {
-          if (b.sort_order !== a.sort_order) return b.sort_order - a.sort_order;
-          return b.version_number - a.version_number;
-        });
-
-      const currentIndex = activeVersions.findIndex((v) => v.id === versionId);
-      if (currentIndex === -1) return;
-
-      const neighborIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-      if (neighborIndex < 0 || neighborIndex >= activeVersions.length) return;
-
-      const current = activeVersions[currentIndex];
-      const neighbor = activeVersions[neighborIndex];
-
-      // Swap sort_order — two PATCH calls in parallel.
-      await Promise.all([
-        fetch(`${baseUrl}/${current.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sort_order: neighbor.sort_order }),
-        }),
-        fetch(`${baseUrl}/${neighbor.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sort_order: current.sort_order }),
-        }),
-      ]);
-
+      const res = await fetch(`${baseUrl}/${versionId}/move`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ direction }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json.error ?? "Versionen konnten nicht getauscht werden");
+      }
       await queryClient.invalidateQueries({ queryKey: ["versions", projectId, drawingId] });
     },
-    [baseUrl, projectId, drawingId, versions, queryClient]
+    [baseUrl, projectId, drawingId, queryClient]
   );
 
   const archiveVersion = useCallback(

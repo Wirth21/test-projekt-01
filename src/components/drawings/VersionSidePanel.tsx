@@ -32,7 +32,7 @@ interface VersionSidePanelProps {
   onArchiveVersion: (versionId: string) => Promise<void>;
   /** Edit version date (PATCH created_at) */
   onUpdateDate?: (versionId: string, isoDate: string) => Promise<void>;
-  /** Move a version up or down in the user-controlled sort order */
+  /** Move a version up (higher version_number) or down in the stack */
   onMoveVersion?: (versionId: string, direction: "up" | "down") => Promise<void>;
   /** Available statuses for the tenant */
   statuses?: DrawingStatus[];
@@ -62,8 +62,7 @@ export function VersionSidePanel({
   const activeVersions = versions.filter((v) => !v.is_archived);
   const archivedVersions = versions.filter((v) => v.is_archived);
 
-  // "Latest" for badge/default stays keyed to version_number — that's the
-  // temporal newest, independent of user-controlled sort_order.
+  // The top of the stack (highest version_number) is always "the current".
   const latestVersion = [...activeVersions].sort(
     (a, b) => b.version_number - a.version_number
   )[0];
@@ -71,19 +70,16 @@ export function VersionSidePanel({
   // Can archive = more than 1 non-archived version
   const canArchive = activeVersions.length > 1;
 
-  // Display order: user-controlled sort_order (desc) with version_number as
-  // a deterministic tie-breaker. Archived versions always appended at the
-  // bottom and follow the same rule among themselves.
-  function bySort(a: DrawingVersion, b: DrawingVersion) {
-    if (b.sort_order !== a.sort_order) return b.sort_order - a.sort_order;
+  // Stack order: highest version_number at the top. Archived appended below.
+  function byVersion(a: DrawingVersion, b: DrawingVersion) {
     return b.version_number - a.version_number;
   }
 
-  const sortedActive = [...activeVersions].sort(bySort);
+  const sortedActive = [...activeVersions].sort(byVersion);
 
   const displayedVersions = [
     ...sortedActive,
-    ...(showArchived ? [...archivedVersions].sort(bySort) : []),
+    ...(showArchived ? [...archivedVersions].sort(byVersion) : []),
   ];
 
   return (

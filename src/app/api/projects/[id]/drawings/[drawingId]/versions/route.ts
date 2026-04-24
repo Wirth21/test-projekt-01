@@ -35,12 +35,11 @@ export async function GET(request: Request, { params }: RouteParams) {
   const { searchParams } = new URL(request.url);
   const includeArchived = searchParams.get("includeArchived") === "true";
 
-  // Fetch versions — user-controlled sort_order first, version_number as tie-breaker
+  // Fetch versions — version_number is the visible stack order (top = highest).
   let query = supabase
     .from("drawing_versions")
     .select("*, status:drawing_statuses(id, name, color)")
     .eq("drawing_id", drawingId)
-    .order("sort_order", { ascending: false })
     .order("version_number", { ascending: false });
 
   if (!includeArchived) {
@@ -136,12 +135,11 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Ungültiger Speicherpfad" }, { status: 400 });
   }
 
-  // Determine next version number + sort_order.
-  // New versions go on top by default (highest sort_order across all versions,
-  // archived or not), keeping version_number stable as an identifier.
+  // Next version_number = current max + 1 (global across active + archived,
+  // so numbers are never reused).
   const { data: latestVersion, error: latestError } = await supabase
     .from("drawing_versions")
-    .select("id, version_number, sort_order")
+    .select("id, version_number")
     .eq("drawing_id", drawingId)
     .order("version_number", { ascending: false })
     .limit(1)
@@ -153,16 +151,6 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   const nextVersionNumber = (latestVersion?.version_number ?? 0) + 1;
 
-  const { data: topSort } = await supabase
-    .from("drawing_versions")
-    .select("sort_order")
-    .eq("drawing_id", drawingId)
-    .order("sort_order", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const nextSortOrder = (topSort?.sort_order ?? 0) + 1;
-
   // Find the current active version (latest non-archived) for marker copying + status inheritance
   const { data: currentActiveVersion } = await supabase
     .from("drawing_versions")
@@ -173,7 +161,8 @@ export async function POST(request: Request, { params }: RouteParams) {
     .limit(1)
     .maybeSingle();
 
-  // Generate default label: current date in DD.MM.YYYY format
+  // Fallback label if the client didn't send one (default is the PDF
+  // filename, computed client-side). Keep date as last resort.
   const now = new Date();
   const defaultLabel = `${String(now.getDate()).padStart(2, "0")}.${String(now.getMonth() + 1).padStart(2, "0")}.${now.getFullYear()}`;
 
@@ -183,7 +172,6 @@ export async function POST(request: Request, { params }: RouteParams) {
     .insert({
       drawing_id: drawingId,
       version_number: nextVersionNumber,
-      sort_order: nextSortOrder,
       label: label ?? defaultLabel,
       storage_path,
       thumbnail_path: thumbnail_path ?? null,

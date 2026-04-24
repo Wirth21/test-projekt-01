@@ -7,7 +7,7 @@ interface RouteParams {
 }
 
 // PATCH /api/projects/[id]/drawings/[drawingId]/versions/[versionId]
-// Partial update: label, created_at, sort_order, rotation.
+// Partial update: label, created_at, rotation.
 export async function PATCH(request: Request, { params }: RouteParams) {
   const { id: projectId, drawingId, versionId } = await params;
 
@@ -54,7 +54,6 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   const updates: Record<string, string | number> = {};
   if (result.data.label !== undefined) updates.label = result.data.label;
   if (result.data.created_at !== undefined) updates.created_at = result.data.created_at;
-  if (result.data.sort_order !== undefined) updates.sort_order = result.data.sort_order;
   if (result.data.rotation !== undefined) updates.rotation = result.data.rotation;
 
   const { data: updatedVersion, error: updateError } = await supabase

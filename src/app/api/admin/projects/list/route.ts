@@ -85,7 +85,7 @@ export async function GET() {
   const [drawingsRes, versionsRes, membersRes, groupsRes] = await Promise.all([
     admin
       .from("drawings")
-      .select("id, project_id, file_size")
+      .select("id, project_id")
       .in("project_id", projectIds),
     admin
       .from("drawing_versions")

@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase";
 import { renderPdfThumbnail } from "@/lib/thumbnails/render";
 import { uploadThumbnail } from "@/lib/thumbnails/upload";
+import { getPdfPageCount } from "@/lib/pdf/split";
 import type { Drawing, DrawingStatus } from "@/lib/types/drawing";
 
 export function useDrawings(projectId: string) {
@@ -94,6 +95,14 @@ export function useDrawings(projectId: string) {
         thumbnailPath = null;
       }
 
+      // Best-effort page count so the card badge can surface multi-page PDFs.
+      let pageCount: number | null = null;
+      try {
+        pageCount = await getPdfPageCount(file);
+      } catch {
+        pageCount = null;
+      }
+
       // Record metadata via API (creates drawing + v1 version)
       const payload: Record<string, unknown> = {
         display_name: file.name.replace(/\.pdf$/i, ""),
@@ -101,6 +110,9 @@ export function useDrawings(projectId: string) {
         file_size: file.size,
       };
 
+      if (pageCount && pageCount > 0) {
+        payload.page_count = pageCount;
+      }
       if (options?.status_id) {
         payload.status_id = options.status_id;
       }

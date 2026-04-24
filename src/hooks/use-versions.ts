@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase";
 import { renderPdfThumbnail } from "@/lib/thumbnails/render";
 import { uploadThumbnail } from "@/lib/thumbnails/upload";
+import { getPdfPageCount } from "@/lib/pdf/split";
 import type { DrawingVersion, DrawingStatus } from "@/lib/types/drawing";
 
 export function useVersions(projectId: string, drawingId: string) {
@@ -104,6 +105,13 @@ export function useVersions(projectId: string, drawingId: string) {
         thumbnailPath = null;
       }
 
+      let pageCount: number | null = null;
+      try {
+        pageCount = await getPdfPageCount(file);
+      } catch {
+        pageCount = null;
+      }
+
       // Record metadata via API (server also copies markers)
       const res = await fetch(baseUrl, {
         method: "POST",
@@ -113,6 +121,7 @@ export function useVersions(projectId: string, drawingId: string) {
           file_size: file.size,
           ...(effectiveLabel ? { label: effectiveLabel } : {}),
           ...(thumbnailPath ? { thumbnail_path: thumbnailPath } : {}),
+          ...(pageCount && pageCount > 0 ? { page_count: pageCount } : {}),
         }),
       });
 

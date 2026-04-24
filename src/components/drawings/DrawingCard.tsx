@@ -141,6 +141,16 @@ export function DrawingCard({
               v{versionCount}
             </Badge>
           )}
+          {drawing.latest_version?.page_count != null &&
+            drawing.latest_version.page_count > 1 && (
+              <Badge
+                variant="secondary"
+                className="absolute top-2 left-2 text-[10px] h-5 px-1.5 font-mono"
+                title={`${drawing.latest_version.page_count} Seiten`}
+              >
+                {drawing.latest_version.page_count} S.
+              </Badge>
+            )}
         </div>
 
         {/* Info */}

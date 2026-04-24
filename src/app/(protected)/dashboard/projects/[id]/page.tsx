@@ -29,6 +29,8 @@ import { ActivityLog } from "@/components/projects/ActivityLog";
 import { GroupedDrawingList } from "@/components/drawings/GroupedDrawingList";
 import { Logo } from "@/components/Logo";
 import { CreateGroupDialog } from "@/components/drawings/CreateGroupDialog";
+import { SplitPdfDialog, type SplitChoice } from "@/components/drawings/SplitPdfDialog";
+import { getPdfPageCount, splitPdfToPages } from "@/lib/pdf/split";
 import dynamic from "next/dynamic";
 const ProjectSyncButton = dynamic(
   () => import("@/components/sync/ProjectSyncButton").then((m) => m.ProjectSyncButton),
@@ -86,6 +88,15 @@ export default function ProjectDetailPage({ params }: PageProps) {
   const [removeMemberTarget, setRemoveMemberTarget] = useState<{ id: string; name: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  // Pending split prompt: set when a single multi-page PDF is dropped.
+  // The promise resolver is stored so the dialog buttons can complete the
+  // waiting upload flow with a user choice.
+  const [splitPrompt, setSplitPrompt] = useState<{
+    file: File;
+    pageCount: number;
+    groupId: string | null;
+    resolve: (choice: SplitChoice | null) => void;
+  } | null>(null);
   const [drawingTab, setDrawingTab] = useState("active");
   const [restoringDrawing, setRestoringDrawing] = useState<string | null>(null);
   // Pre-signed thumbnail JPEG URLs for modern uploads come straight from
@@ -131,14 +142,71 @@ export default function ProjectDetailPage({ params }: PageProps) {
   // legacyPdfUrls feeds the PDF fallback for drawings without a server-side
   // thumbnail yet.
 
+  // Upload one PDF as a single drawing.
+  async function uploadSingle(groupId: string | null, file: File) {
+    await uploadDrawing(file, (pct) => setUploadProgress(pct), {
+      status_id: defaultStatus?.id ?? null,
+      group_id: groupId,
+    });
+  }
+
+  // Split a multi-page PDF locally (pdf-lib) and upload each page as its
+  // own drawing. Runs sequentially — keeps progress feedback intuitive and
+  // avoids slamming Storage with N parallel XHRs.
+  async function uploadSplit(groupId: string | null, file: File) {
+    const pages = await splitPdfToPages(file);
+    let uploaded = 0;
+    for (const { blob, suggestedName } of pages) {
+      setUploadProgress(Math.round((uploaded / pages.length) * 100));
+      try {
+        const pageFile = new File([blob], suggestedName, { type: "application/pdf" });
+        await uploadDrawing(pageFile, () => {}, {
+          status_id: defaultStatus?.id ?? null,
+          group_id: groupId,
+        });
+        uploaded++;
+      } catch (err) {
+        toast.error(
+          `${suggestedName}: ${err instanceof Error ? err.message : t("toasts.uploadFailed")}`
+        );
+      }
+    }
+    return uploaded;
+  }
+
   async function handleUploadToGroup(groupId: string | null, file: File) {
     setUploading(true);
     setUploadProgress(0);
     try {
-      await uploadDrawing(file, (pct) => setUploadProgress(pct), {
-        status_id: defaultStatus?.id ?? null,
-        group_id: groupId,
-      });
+      // Peek page count before touching Storage. If > 1, ask the user first.
+      let pageCount = 1;
+      try {
+        pageCount = await getPdfPageCount(file);
+      } catch {
+        // If pdf-lib can't parse the file (encrypted, corrupt), fall through
+        // and treat it as single-page — the server will still accept it and
+        // show the proper error on upload if the PDF is broken.
+        pageCount = 1;
+      }
+
+      if (pageCount > 1) {
+        const choice = await new Promise<SplitChoice | null>((resolve) => {
+          setSplitPrompt({ file, pageCount, groupId, resolve });
+        });
+        setSplitPrompt(null);
+        if (choice === null) {
+          // Dialog dismissed — abort this upload.
+          return;
+        }
+        if (choice === "split") {
+          const n = await uploadSplit(groupId, file);
+          if (n > 0) toast.success(`${n} Zeichnungen erstellt`);
+          return;
+        }
+        // "keep" falls through to the single-upload path below.
+      }
+
+      await uploadSingle(groupId, file);
       toast.success(t("toasts.uploaded"));
     } catch (err) {
       toast.error(
@@ -150,6 +218,8 @@ export default function ProjectDetailPage({ params }: PageProps) {
     }
   }
 
+  // Multi-file drop: upload each as-is without split prompts. Users who want
+  // per-page splitting drop files one at a time.
   async function handleUploadMultipleToGroup(groupId: string | null, files: File[]) {
     setUploading(true);
     let uploaded = 0;
@@ -699,6 +769,18 @@ export default function ProjectDetailPage({ params }: PageProps) {
         onOpenChange={setCreateGroupOpen}
         onSubmit={handleCreateGroup}
         existingNames={groups.filter((g) => !g.is_archived).map((g) => g.name)}
+      />
+
+      <SplitPdfDialog
+        open={splitPrompt !== null}
+        onOpenChange={(open) => {
+          if (!open && splitPrompt) {
+            splitPrompt.resolve(null);
+          }
+        }}
+        fileName={splitPrompt?.file.name ?? ""}
+        pageCount={splitPrompt?.pageCount ?? 0}
+        onChoice={(choice) => splitPrompt?.resolve(choice)}
       />
 
       {/* Leave project confirmation */}

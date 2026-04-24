@@ -192,6 +192,13 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
   // Version panel state
   const [versionPanelOpen, setVersionPanelOpen] = useState(false);
 
+  // Persistent rotation: stored per-version. Clicking the rotate button
+  // advances in 90-degree steps and immediately PATCHes the version so
+  // the angle sticks for all future viewers. Optimistic UI via
+  // pendingRotation keeps the canvas stable until React Query refetches.
+  // MUST stay above any early returns so the hook order is stable.
+  const [pendingRotation, setPendingRotation] = useState<number | null>(null);
+
   // Marker state
   const [editMode, setEditMode] = useState(false);
   const [creationPos, setCreationPos] = useState<{
@@ -690,14 +697,9 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
   // Archived version hint
   const isArchivedVersion = activeVersion?.is_archived === true;
 
-  // Persistent rotation: stored per-version. Clicking the rotate button
-  // advances in 90-degree steps and immediately PATCHes the version so
-  // the angle sticks for all future viewers. Use optimistic UI — we keep
-  // a local-pending value while the PATCH is in flight so the canvas
-  // doesn't flicker back to the old orientation.
-  const [pendingRotation, setPendingRotation] = useState<number | null>(null);
   const effectiveRotation =
     pendingRotation ?? (activeVersion?.rotation ?? 0);
+
   async function handleRotate() {
     if (!activeVersion) return;
     const next = ((activeVersion.rotation ?? 0) + 90) % 360;

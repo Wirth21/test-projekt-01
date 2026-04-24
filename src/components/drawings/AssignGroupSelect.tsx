@@ -70,7 +70,7 @@ export function AssignGroupSelect({
         <DialogHeader>
           <DialogTitle>Gruppe zuweisen</DialogTitle>
           <DialogDescription>
-            Wähle eine Gruppe für diese Zeichnung und bestätige mit „Speichern".
+            Wähle eine Gruppe für diese Zeichnung und bestätige mit &bdquo;Speichern&ldquo;.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-1 py-2">

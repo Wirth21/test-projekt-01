@@ -148,7 +148,7 @@ export function DrawingCard({
                 className="absolute top-2 left-2 text-[10px] h-5 px-1.5 font-mono"
                 title={`${drawing.latest_version.page_count} Seiten`}
               >
-                {drawing.latest_version.page_count} S.
+                {drawing.latest_version.page_count} Seiten
               </Badge>
             )}
         </div>

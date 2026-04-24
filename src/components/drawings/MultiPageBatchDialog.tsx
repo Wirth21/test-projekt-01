@@ -56,7 +56,7 @@ export function MultiPageBatchDialog({
                 <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <span className="flex-1 truncate">{f.name}</span>
                 <span className="text-muted-foreground shrink-0">
-                  {f.pageCount} S.
+                  {f.pageCount} Seiten
                 </span>
               </li>
             ))}

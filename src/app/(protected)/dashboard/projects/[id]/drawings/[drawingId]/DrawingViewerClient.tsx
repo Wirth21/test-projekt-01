@@ -16,6 +16,7 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
+  RotateCw,
   Loader2,
   FileWarning,
   Pencil,
@@ -659,6 +660,29 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
   // Archived version hint
   const isArchivedVersion = activeVersion?.is_archived === true;
 
+  // Persistent rotation: stored per-version. Clicking the rotate button
+  // advances in 90-degree steps and immediately PATCHes the version so
+  // the angle sticks for all future viewers. Use optimistic UI — we keep
+  // a local-pending value while the PATCH is in flight so the canvas
+  // doesn't flicker back to the old orientation.
+  const [pendingRotation, setPendingRotation] = useState<number | null>(null);
+  const effectiveRotation =
+    pendingRotation ?? (activeVersion?.rotation ?? 0);
+  async function handleRotate() {
+    if (!activeVersion) return;
+    const next = ((activeVersion.rotation ?? 0) + 90) % 360;
+    setPendingRotation(next);
+    try {
+      await updateVersion(activeVersion.id, { rotation: next });
+    } catch (err) {
+      setPendingRotation(null);
+      toast.error(err instanceof Error ? err.message : "Drehung fehlgeschlagen");
+    } finally {
+      // React Query has refetched by now; clear the local override.
+      setPendingRotation(null);
+    }
+  }
+
   // "Old version" watermark: shown whenever the visible version is not the
   // latest active one for this drawing. Includes archived versions (which
   // are non-current by definition). Deliberately a viewport-fixed overlay
@@ -820,6 +844,23 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
               </div>
             )}
 
+            {!isReadOnly && activeVersion && (
+              <>
+                <Separator orientation="vertical" className="h-5" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRotate}
+                  className="gap-1.5"
+                  aria-label="90 Grad drehen"
+                  title="Version um 90° drehen (wird gespeichert)"
+                >
+                  <RotateCw className="h-3.5 w-3.5" />
+                  <span>Drehen</span>
+                </Button>
+              </>
+            )}
+
             {fullscreenSupported && (
               <>
                 <Separator orientation="vertical" className="h-5" />
@@ -868,6 +909,18 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
               ) : (
                 <Eye className="h-3.5 w-3.5" />
               )}
+            </Button>
+          )}
+
+          {!isReadOnly && activeVersion && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRotate}
+              className="shrink-0 h-8 w-8 p-0"
+              aria-label="90 Grad drehen"
+            >
+              <RotateCw className="h-3.5 w-3.5" />
             </Button>
           )}
 
@@ -1076,6 +1129,7 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                         {!hiResReady && (
                           <Page
                             pageNumber={currentPage}
+                            rotate={effectiveRotation}
                             renderTextLayer={false}
                             renderAnnotationLayer={false}
                             className="shadow-lg"
@@ -1093,6 +1147,7 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                           <div className={hiResReady ? "" : "absolute inset-0 opacity-0 pointer-events-none"}>
                             <Page
                               pageNumber={currentPage}
+                              rotate={effectiveRotation}
                               renderTextLayer={false}
                               renderAnnotationLayer={false}
                               className="shadow-lg"

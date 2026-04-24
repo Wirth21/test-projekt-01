@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldCheck, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
@@ -29,6 +29,51 @@ export default function ProfilePage() {
 
   const [displayName, setDisplayName] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Password change state (#9 — user self-service)
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+
+  async function handleChangePassword() {
+    setPwError(null);
+
+    if (newPassword.length < 8) {
+      setPwError(t("passwordTooShort"));
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError(t("passwordMismatch"));
+      return;
+    }
+    if (newPassword === currentPassword) {
+      setPwError(t("passwordSame"));
+      return;
+    }
+
+    setPwSaving(true);
+    try {
+      const res = await fetch("/api/profile/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json?.error ?? t("passwordChangeFailed"));
+      }
+      toast.success(t("passwordChanged"));
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      setPwError(err instanceof Error ? err.message : t("passwordChangeFailed"));
+    } finally {
+      setPwSaving(false);
+    }
+  }
 
   useEffect(() => {
     async function fetchProfile() {
@@ -148,6 +193,94 @@ export default function ProfilePage() {
             >
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("save")}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Separator />
+
+        {/* Password change (#9) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5" />
+              {t("passwordTitle")}
+            </CardTitle>
+            <CardDescription>{t("passwordDescription")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label
+                htmlFor="current-password"
+                className="text-sm font-medium"
+              >
+                {t("currentPassword")}
+              </label>
+              <Input
+                id="current-password"
+                type="password"
+                autoComplete="current-password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                disabled={pwSaving}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="new-password" className="text-sm font-medium">
+                {t("newPassword")}
+              </label>
+              <Input
+                id="new-password"
+                type="password"
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                disabled={pwSaving}
+                aria-describedby="new-password-hint"
+              />
+              <p
+                id="new-password-hint"
+                className="text-xs text-muted-foreground"
+              >
+                {t("passwordRules")}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="confirm-password"
+                className="text-sm font-medium"
+              >
+                {t("confirmPassword")}
+              </label>
+              <Input
+                id="confirm-password"
+                type="password"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={pwSaving}
+              />
+            </div>
+
+            {pwError && (
+              <p className="text-sm text-destructive" role="alert">
+                {pwError}
+              </p>
+            )}
+
+            <Button
+              onClick={handleChangePassword}
+              disabled={
+                pwSaving ||
+                !currentPassword ||
+                !newPassword ||
+                !confirmPassword
+              }
+            >
+              {pwSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("passwordChangeButton")}
             </Button>
           </CardContent>
         </Card>

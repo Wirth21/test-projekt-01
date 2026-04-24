@@ -404,6 +404,7 @@
       "actions": "Actions",
       "disable": "Disable",
       "reactivate": "Reactivate",
+      "setPassword": "Set password",
       "deleteUser": "Delete",
       "editProfile": "Edit profile",
       "editProfileDescription": "Change the user's name and email address.",
@@ -827,7 +828,19 @@
     "dataSectionDescription": "Information about your rights under GDPR",
     "dataAdminHint": "For data export (Art. 20 GDPR), account deletion (Art. 17 GDPR), or access requests (Art. 15 GDPR), please contact your administrator.",
     "dataPrivacyLink": "For more information, see our",
-    "dataPrivacyLinkText": "Privacy Policy"
+    "dataPrivacyLinkText": "Privacy Policy",
+    "passwordTitle": "Change password",
+    "passwordDescription": "Choose a strong new password for your account.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "passwordRules": "At least 8 characters with at least one letter and one digit.",
+    "passwordChangeButton": "Change password",
+    "passwordChanged": "Password changed",
+    "passwordChangeFailed": "Password could not be changed",
+    "passwordTooShort": "New password must be at least 8 characters long.",
+    "passwordMismatch": "The two new passwords do not match.",
+    "passwordSame": "The new password must differ from the current one."
   },
   "sync": {
     "synced": "Up to date",

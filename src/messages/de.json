@@ -404,6 +404,7 @@
       "actions": "Aktionen",
       "disable": "Deaktivieren",
       "reactivate": "Reaktivieren",
+      "setPassword": "Passwort setzen",
       "deleteUser": "Löschen",
       "editProfile": "Profil bearbeiten",
       "editProfileDescription": "Name und E-Mail-Adresse des Nutzers ändern.",
@@ -807,7 +808,19 @@
     "dataSectionDescription": "Informationen zu deinen Rechten gem\u00e4\u00df DSGVO",
     "dataAdminHint": "F\u00fcr Datenexport (Art. 20 DSGVO), Kontol\u00f6schung (Art. 17 DSGVO) oder Auskunft (Art. 15 DSGVO) wende dich bitte an deinen Administrator.",
     "dataPrivacyLink": "Weitere Informationen findest du in unserer",
-    "dataPrivacyLinkText": "Datenschutzerklärung"
+    "dataPrivacyLinkText": "Datenschutzerklärung",
+    "passwordTitle": "Passwort ändern",
+    "passwordDescription": "Wähle ein starkes neues Passwort für dein Konto.",
+    "currentPassword": "Aktuelles Passwort",
+    "newPassword": "Neues Passwort",
+    "confirmPassword": "Neues Passwort bestätigen",
+    "passwordRules": "Mindestens 8 Zeichen, davon mindestens ein Buchstabe und eine Ziffer.",
+    "passwordChangeButton": "Passwort ändern",
+    "passwordChanged": "Passwort geändert",
+    "passwordChangeFailed": "Passwort konnte nicht geändert werden",
+    "passwordTooShort": "Neues Passwort muss mindestens 8 Zeichen lang sein.",
+    "passwordMismatch": "Die beiden neuen Passwörter stimmen nicht überein.",
+    "passwordSame": "Das neue Passwort muss sich vom aktuellen unterscheiden."
   },
   "sync": {
     "synced": "Aktualisiert",

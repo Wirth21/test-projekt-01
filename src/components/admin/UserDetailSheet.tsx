@@ -43,7 +43,9 @@ import {
   Check,
   X,
   Download,
+  KeyRound,
 } from "lucide-react";
+import { SetUserPasswordDialog } from "@/components/admin/SetUserPasswordDialog";
 import { toast } from "sonner";
 import { useUserProjects, useAdminProjects } from "@/hooks/use-admin";
 import type { AdminProfile, UserStatus } from "@/lib/types/admin";
@@ -94,6 +96,7 @@ export function UserDetailSheet({
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [setPasswordOpen, setSetPasswordOpen] = useState(false);
 
   if (!user) return null;
 
@@ -378,6 +381,16 @@ export function UserDetailSheet({
                       >
                         <UserCheck className="mr-1.5 h-4 w-4" />
                         {t("detail.reactivate")}
+                      </Button>
+                    )}
+                    {user.status !== "deleted" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSetPasswordOpen(true)}
+                      >
+                        <KeyRound className="mr-1.5 h-4 w-4" />
+                        {t("detail.setPassword")}
                       </Button>
                     )}
                     {(user.status === "active" || user.status === "disabled") && (
@@ -772,6 +785,15 @@ export function UserDetailSheet({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Admin: set user's password (#10) */}
+      <SetUserPasswordDialog
+        open={setPasswordOpen}
+        onOpenChange={setSetPasswordOpen}
+        userId={user.id}
+        userDisplayName={user.display_name ?? ""}
+        userEmail={user.email}
+      />
     </>
   );
 }

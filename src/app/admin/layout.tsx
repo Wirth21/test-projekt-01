@@ -5,12 +5,21 @@ import { ArrowLeft } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  return (
+    <QueryProvider>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </QueryProvider>
+  );
+}
+
+function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations("admin.nav");

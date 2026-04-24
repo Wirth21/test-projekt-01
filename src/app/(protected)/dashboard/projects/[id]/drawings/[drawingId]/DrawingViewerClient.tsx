@@ -550,32 +550,55 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
 
   /**
    * Duplicate a marker within the same drawing + version.
-   * The copy sits 3% x/y below-right of the original so it is visible
-   * and doesn't overlap, and keeps colour + target + page. The name is
-   * suffixed with " (Kopie)" (or a numbered suffix if that already exists).
+   * The copy sits ~3% diagonally from the original so it is visible
+   * and doesn't overlap. If the source is near the right/bottom edge
+   * we offset in the opposite direction so the copy doesn't clamp onto
+   * the source (which would make duplicate-of-duplicate look like it
+   * failed silently). Keeps colour + target + page; suffixes the name
+   * with " (Kopie)" (or numbered suffix if already taken). The DB name
+   * limit is 50 chars — truncate before appending so deep copy chains
+   * don't hit a CHECK-constraint violation.
    */
   async function handleMarkerDuplicate(marker: MarkerWithTarget) {
-    const base = `${marker.name} (Kopie)`;
+    const MAX_NAME = 50;
+    const suffix = " (Kopie)";
+    const truncatedBase = marker.name.length + suffix.length > MAX_NAME
+      ? marker.name.slice(0, MAX_NAME - suffix.length).trimEnd()
+      : marker.name;
+    const base = `${truncatedBase}${suffix}`;
     const existingNames = new Set(markers.map((m) => m.name));
     let name = base;
     let counter = 2;
-    while (existingNames.has(name)) {
-      name = `${marker.name} (Kopie ${counter})`;
+    while (existingNames.has(name) && counter < 100) {
+      const numbered = ` (Kopie ${counter})`;
+      const headroom = MAX_NAME - numbered.length;
+      const trimmedHead = marker.name.length > headroom
+        ? marker.name.slice(0, headroom).trimEnd()
+        : marker.name;
+      name = `${trimmedHead}${numbered}`;
       counter++;
     }
 
-    const offsetX = Math.min(100, Math.max(0, marker.x_percent + 3));
-    const offsetY = Math.min(100, Math.max(0, marker.y_percent + 3));
+    const dx = marker.x_percent > 97 ? -3 : 3;
+    const dy = marker.y_percent > 97 ? -3 : 3;
+    const offsetX = Math.min(100, Math.max(0, marker.x_percent + dx));
+    const offsetY = Math.min(100, Math.max(0, marker.y_percent + dy));
 
-    await createMarker({
-      name,
-      color: marker.color,
-      target_drawing_id: marker.target_drawing_id,
-      page_number: marker.page_number,
-      x_percent: Math.round(offsetX * 100) / 100,
-      y_percent: Math.round(offsetY * 100) / 100,
-    });
-    toast.success(tm("duplicated"));
+    try {
+      await createMarker({
+        name,
+        color: marker.color,
+        target_drawing_id: marker.target_drawing_id,
+        page_number: marker.page_number,
+        x_percent: Math.round(offsetX * 100) / 100,
+        y_percent: Math.round(offsetY * 100) / 100,
+      });
+      toast.success(tm("duplicated"));
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Marker konnte nicht kopiert werden"
+      );
+    }
   }
 
   async function handleMarkerDrag(

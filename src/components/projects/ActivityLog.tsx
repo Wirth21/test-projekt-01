@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ClipboardList, Loader2, AlertCircle, Filter } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ClipboardList, Loader2, AlertCircle, Filter, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -37,6 +38,7 @@ export function ActivityLog({ projectId, members }: ActivityLogProps) {
 
   const [filterGroup, setFilterGroup] = useState<ActivityFilterGroup>("all");
   const [filterUserId, setFilterUserId] = useState<string>("all");
+  const [searchText, setSearchText] = useState("");
 
   // Initial load
   useEffect(() => {
@@ -64,6 +66,24 @@ export function ActivityLog({ projectId, members }: ActivityLogProps) {
     fetchActivity(filters);
   }
 
+  // Client-side full-text filter. We match against user_name + action_type +
+  // every string value in metadata (display_name, drawing_name, old_status,
+  // new_status, marker_name, ...). Case-insensitive. Runs on the already-
+  // loaded page; users click "Load more" to pull additional entries into the
+  // filter scope.
+  const filteredEntries = useMemo(() => {
+    const needle = searchText.trim().toLowerCase();
+    if (!needle) return entries;
+    return entries.filter((entry) => {
+      const meta = entry.metadata as Record<string, unknown>;
+      const haystack: string[] = [entry.action_type];
+      for (const value of Object.values(meta)) {
+        if (typeof value === "string") haystack.push(value);
+      }
+      return haystack.some((s) => s.toLowerCase().includes(needle));
+    });
+  }, [entries, searchText]);
+
   return (
     <section aria-label={t("title")}>
       {/* Header */}
@@ -89,6 +109,7 @@ export function ActivityLog({ projectId, members }: ActivityLogProps) {
             <SelectItem value="all">{t("filterGroups.all")}</SelectItem>
             <SelectItem value="drawings">{t("filterGroups.drawings")}</SelectItem>
             <SelectItem value="versions">{t("filterGroups.versions")}</SelectItem>
+            <SelectItem value="status">{t("filterGroups.status")}</SelectItem>
             <SelectItem value="members">{t("filterGroups.members")}</SelectItem>
             <SelectItem value="markers">{t("filterGroups.markers")}</SelectItem>
             <SelectItem value="project">{t("filterGroups.project")}</SelectItem>
@@ -114,6 +135,27 @@ export function ActivityLog({ projectId, members }: ActivityLogProps) {
             })}
           </SelectContent>
         </Select>
+
+        <div className="relative w-full min-[480px]:w-[220px]">
+          <Search className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder={t("searchPlaceholder")}
+            className="h-8 pl-7 pr-7 text-xs"
+            aria-label={t("searchPlaceholder")}
+          />
+          {searchText && (
+            <button
+              type="button"
+              aria-label={t("clearSearch")}
+              onClick={() => setSearchText("")}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-5 w-5 inline-flex items-center justify-center rounded hover:bg-muted text-muted-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Content */}
@@ -149,10 +191,17 @@ export function ActivityLog({ projectId, members }: ActivityLogProps) {
               {t("empty")}
             </p>
           </div>
+        ) : filteredEntries.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+            <Search className="h-8 w-8 text-muted-foreground/40 mb-3" />
+            <p className="text-sm text-muted-foreground">
+              {t("noMatch")}
+            </p>
+          </div>
         ) : (
           <>
             <div className="divide-y" role="list" aria-label={t("title")}>
-              {entries.map((entry) => (
+              {filteredEntries.map((entry) => (
                 <ActivityLogEntryComponent key={entry.id} entry={entry} />
               ))}
             </div>

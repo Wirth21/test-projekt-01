@@ -780,6 +780,9 @@
   "activity": {
     "title": "Activity Log",
     "filter": "Filter",
+    "searchPlaceholder": "Search...",
+    "clearSearch": "Clear search",
+    "noMatch": "No entries match your search.",
     "allUsers": "All users",
     "unknownUser": "Unknown user",
     "empty": "No activity in this project yet.",
@@ -791,6 +794,7 @@
       "all": "All actions",
       "drawings": "Drawings",
       "versions": "Versions",
+      "status": "Status",
       "members": "Members",
       "markers": "Markers",
       "project": "Project"

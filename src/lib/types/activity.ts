@@ -38,6 +38,7 @@ export type ActivityFilterGroup =
   | "all"
   | "drawings"
   | "versions"
+  | "status"
   | "members"
   | "markers"
   | "project";
@@ -45,8 +46,9 @@ export type ActivityFilterGroup =
 /** Maps filter groups to action types */
 export const ACTIVITY_FILTER_MAP: Record<ActivityFilterGroup, ActivityActionType[] | null> = {
   all: null,
-  drawings: ["drawing.uploaded", "drawing.renamed", "drawing.archived", "drawing.restored", "drawing.status_changed"],
+  drawings: ["drawing.uploaded", "drawing.renamed", "drawing.archived", "drawing.restored"],
   versions: ["version.uploaded", "version.archived"],
+  status: ["drawing.status_changed"],
   members: ["member.invited", "member.removed"],
   markers: ["marker.created", "marker.deleted"],
   project: ["project.created", "project.updated", "project.archived", "project.restored"],

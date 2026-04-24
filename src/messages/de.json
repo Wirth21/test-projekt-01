@@ -760,6 +760,9 @@
   "activity": {
     "title": "Aenderungsprotokoll",
     "filter": "Filter",
+    "searchPlaceholder": "Suchen...",
+    "clearSearch": "Suche loeschen",
+    "noMatch": "Keine Eintraege passen zur Suche.",
     "allUsers": "Alle Nutzer",
     "unknownUser": "Unbekannter Nutzer",
     "empty": "Noch keine Aktivitaeten in diesem Projekt.",
@@ -771,6 +774,7 @@
       "all": "Alle Aktionen",
       "drawings": "Zeichnungen",
       "versions": "Versionen",
+      "status": "Status",
       "members": "Mitglieder",
       "markers": "Marker",
       "project": "Projekt"

@@ -22,20 +22,37 @@ export async function uploadThumbnail(
   const path = thumbnailPathFor(pdfStoragePath);
   const supabase = createClient();
 
-  const { error } = await supabase.storage
+  // Try create (POST + x-upsert). Supabase JS SDK versions occasionally
+  // surface 400 on upsert even when Storage did write the object. If the
+  // first call returns an error, fall back to .update() which is a PUT and
+  // always overwrites — between the two we cover "file does not exist" and
+  // "file already exists" without giving up on the repair.
+  const { error: uploadErr } = await supabase.storage
     .from("drawings")
     .upload(path, jpeg, {
       contentType: "image/jpeg",
       upsert: true,
     });
 
-  if (error) {
-    console.warn("[uploadThumbnail] failed", {
+  if (!uploadErr) return path;
+
+  console.warn("[uploadThumbnail] upload error, falling back to update()", {
+    path,
+    blobType: jpeg.type,
+    blobSize: jpeg.size,
+    message: uploadErr.message,
+    name: uploadErr.name,
+  });
+
+  const { error: updateErr } = await supabase.storage
+    .from("drawings")
+    .update(path, jpeg, { contentType: "image/jpeg" });
+
+  if (updateErr) {
+    console.warn("[uploadThumbnail] update also failed", {
       path,
-      blobType: jpeg.type,
-      blobSize: jpeg.size,
-      message: error.message,
-      name: error.name,
+      message: updateErr.message,
+      name: updateErr.name,
     });
     return null;
   }

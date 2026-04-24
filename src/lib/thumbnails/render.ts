@@ -13,17 +13,19 @@ export const THUMBNAIL_JPEG_QUALITY = 0.8;
  * Render page 1 of a PDF file to a JPEG blob suitable for use as a thumbnail.
  * Runs entirely in the browser — no server round trip.
  *
- * Returns null if the PDF can't be parsed (corrupt, encrypted, …); callers
- * should treat that as a soft failure and continue without a thumbnail.
+ * The `rotation` option is the user's delta on top of the PDF's intrinsic
+ * /Rotate metadata (same semantic as the viewer). Omit or pass 0 to respect
+ * intrinsic rotation only. Returns null if the PDF can't be parsed.
  */
 export async function renderPdfThumbnail(
   file: Blob | ArrayBuffer,
-  opts: { width?: number; quality?: number } = {}
+  opts: { width?: number; quality?: number; rotation?: number } = {}
 ): Promise<Blob | null> {
   if (typeof window === "undefined") return null;
 
   const width = opts.width ?? THUMBNAIL_WIDTH_PX;
   const quality = opts.quality ?? THUMBNAIL_JPEG_QUALITY;
+  const delta = ((opts.rotation ?? 0) % 360 + 360) % 360;
 
   try {
     const { pdfjs } = await import("react-pdf");
@@ -38,9 +40,14 @@ export async function renderPdfThumbnail(
     const pdf = await pdfjs.getDocument({ data }).promise;
     const page = await pdf.getPage(1);
 
-    const unscaledViewport = page.getViewport({ scale: 1 });
+    // Combine intrinsic rotation with user delta so the thumbnail matches
+    // what the viewer shows on screen.
+    const intrinsic = ((page.rotate ?? 0) % 360 + 360) % 360;
+    const absoluteRotation = (intrinsic + delta) % 360;
+
+    const unscaledViewport = page.getViewport({ scale: 1, rotation: absoluteRotation });
     const scale = width / unscaledViewport.width;
-    const viewport = page.getViewport({ scale });
+    const viewport = page.getViewport({ scale, rotation: absoluteRotation });
 
     const canvas = document.createElement("canvas");
     canvas.width = Math.ceil(viewport.width);

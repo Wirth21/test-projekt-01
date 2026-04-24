@@ -179,6 +179,10 @@ export function useVersions(projectId: string, drawingId: string) {
    * or down. Hits the server /move endpoint, which calls the transactional
    * swap_version_numbers RPC. Active versions only — archived are frozen
    * at the bottom.
+   *
+   * After the swap we invalidate the drawings query too: the card thumbnail
+   * shows the topmost version's thumbnail, so the swap changes which
+   * baked JPEG is visible on the project page.
    */
   const moveVersion = useCallback(
     async (versionId: string, direction: "up" | "down") => {
@@ -191,7 +195,47 @@ export function useVersions(projectId: string, drawingId: string) {
       if (!res.ok) {
         throw new Error(json.error ?? "Versionen konnten nicht getauscht werden");
       }
-      await queryClient.invalidateQueries({ queryKey: ["versions", projectId, drawingId] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["versions", projectId, drawingId] }),
+        queryClient.invalidateQueries({ queryKey: ["drawings", projectId] }),
+      ]);
+    },
+    [baseUrl, projectId, drawingId, queryClient]
+  );
+
+  /**
+   * Re-render the version's thumbnail JPEG with the given rotation delta and
+   * overwrite the existing Storage object. Best-effort: failures are
+   * silent (caller keeps the old thumbnail on screen until next refresh).
+   */
+  const regenerateThumbnail = useCallback(
+    async (version: DrawingVersion, rotation: number) => {
+      try {
+        const urlRes = await fetch(`${baseUrl}/${version.id}/url`);
+        if (!urlRes.ok) return;
+        const { url } = await urlRes.json();
+        if (!url) return;
+
+        const pdfRes = await fetch(url);
+        if (!pdfRes.ok) return;
+        const blob = await pdfRes.blob();
+
+        const jpeg = await renderPdfThumbnail(blob, { rotation });
+        if (!jpeg) return;
+
+        // Upload overwrites the existing thumbnail path (upsert:true inside
+        // uploadThumbnail), so no DB change is needed — only a signed-URL
+        // refresh via query invalidation.
+        await uploadThumbnail(version.storage_path, jpeg);
+
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["versions", projectId, drawingId] }),
+          queryClient.invalidateQueries({ queryKey: ["drawings", projectId] }),
+        ]);
+      } catch {
+        // Soft failure — no toast, the user has already seen the rotation
+        // in the viewer.
+      }
     },
     [baseUrl, projectId, drawingId, queryClient]
   );
@@ -258,6 +302,7 @@ export function useVersions(projectId: string, drawingId: string) {
     renameVersion,
     updateVersion,
     moveVersion,
+    regenerateThumbnail,
     archiveVersion,
     getVersionSignedUrl,
     updateVersionStatus,

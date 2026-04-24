@@ -113,6 +113,7 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
     renameVersion,
     updateVersion,
     moveVersion,
+    regenerateThumbnail,
     archiveVersion,
     getVersionSignedUrl,
     updateVersionStatus,
@@ -742,6 +743,10 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
     setPendingRotation(next);
     try {
       await updateVersion(activeVersion.id, { rotation: next });
+      // Re-bake the thumbnail JPEG so the card + viewer placeholder reflect
+      // the new orientation. Fire-and-forget — the viewer canvas has
+      // already rotated optimistically via pendingRotation.
+      regenerateThumbnail(activeVersion, next).catch(() => {});
     } catch (err) {
       setPendingRotation(null);
       toast.error(err instanceof Error ? err.message : "Drehung fehlgeschlagen");

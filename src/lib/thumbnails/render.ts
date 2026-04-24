@@ -1,15 +1,10 @@
 "use client";
 
-import { pdfjs } from "react-pdf";
-
-// react-pdf needs its worker configured; keep this single source of truth so
-// every consumer (PdfThumbnail, upload helpers) shares the same URL.
-if (typeof window !== "undefined" && !pdfjs.GlobalWorkerOptions.workerSrc) {
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url
-  ).toString();
-}
+// pdfjs-dist references DOMMatrix at module-eval. Importing it eagerly from
+// a module that ends up in the server bundle (via any "use client" page that
+// transitively imports this file) crashes SSR with "DOMMatrix is not
+// defined". We therefore load pdfjs *inside* the async render function, so
+// the module is only ever evaluated in the browser.
 
 export const THUMBNAIL_WIDTH_PX = 800;
 export const THUMBNAIL_JPEG_QUALITY = 0.8;
@@ -25,10 +20,20 @@ export async function renderPdfThumbnail(
   file: Blob | ArrayBuffer,
   opts: { width?: number; quality?: number } = {}
 ): Promise<Blob | null> {
+  if (typeof window === "undefined") return null;
+
   const width = opts.width ?? THUMBNAIL_WIDTH_PX;
   const quality = opts.quality ?? THUMBNAIL_JPEG_QUALITY;
 
   try {
+    const { pdfjs } = await import("react-pdf");
+    if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+      pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+        "pdfjs-dist/build/pdf.worker.min.mjs",
+        import.meta.url
+      ).toString();
+    }
+
     const data = file instanceof Blob ? await file.arrayBuffer() : file;
     const pdf = await pdfjs.getDocument({ data }).promise;
     const page = await pdf.getPage(1);

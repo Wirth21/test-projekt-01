@@ -171,6 +171,9 @@
   },
   "drawings": {
     "title": "Zeichnungen",
+    "watermark": {
+      "oldVersion": "Alte Version"
+    },
     "upload": "PDF hochladen",
     "uploadDragDrop": "PDF hierher ziehen oder klicken",
     "uploadMaxSize": "Maximal 50 MB, nur PDF-Dateien",

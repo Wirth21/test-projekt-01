@@ -171,6 +171,9 @@
   },
   "drawings": {
     "title": "Drawings",
+    "watermark": {
+      "oldVersion": "Old version"
+    },
     "upload": "Upload PDF",
     "uploadDragDrop": "Drag PDF here or click",
     "uploadMaxSize": "Maximum 50 MB, PDF files only",

@@ -657,6 +657,16 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
   // Archived version hint
   const isArchivedVersion = activeVersion?.is_archived === true;
 
+  // "Old version" watermark: shown whenever the visible version is not the
+  // latest active one for this drawing. Includes archived versions (which
+  // are non-current by definition). Deliberately a viewport-fixed overlay
+  // so it stays visible and un-zoomable as the user pans the PDF.
+  const isOldVersion = Boolean(
+    activeVersion &&
+      latestActiveVersion &&
+      activeVersion.id !== latestActiveVersion.id
+  );
+
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
@@ -927,6 +937,22 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
 
       {/* PDF Viewer */}
       <div ref={viewerContainerRef} className={`flex-1 overflow-hidden relative ${isFullscreen ? "bg-neutral-900" : ""}`}>
+        {/* Old-version watermark: viewport-fixed, non-interactive, above the
+            PDF but below toolbars. Only shown when viewing a non-current
+            version of this drawing. */}
+        {isOldVersion && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center select-none"
+          >
+            <span
+              className="text-[18vw] sm:text-[14vw] md:text-[10vw] font-black uppercase tracking-widest text-destructive/20 whitespace-nowrap"
+              style={{ transform: "rotate(-25deg)" }}
+            >
+              {t("watermark.oldVersion")}
+            </span>
+          </div>
+        )}
         {pdfError ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <FileWarning className="h-12 w-12 text-muted-foreground/40 mb-4" />

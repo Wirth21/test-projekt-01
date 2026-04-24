@@ -28,8 +28,16 @@ export async function GET(request: Request, { params }: RouteParams) {
     .order("created_at", { ascending: false })
     .range(from, to);
 
+  // Client may send a comma-separated list (e.g. "drawing.uploaded,drawing.renamed")
+  // to filter by a group of related action types. Use `.in()` for multi-value
+  // filters and fall back to `.eq()` for single values.
   if (actionType) {
-    query = query.eq("action_type", actionType);
+    const types = actionType.split(",").map((t) => t.trim()).filter(Boolean);
+    if (types.length === 1) {
+      query = query.eq("action_type", types[0]);
+    } else if (types.length > 1) {
+      query = query.in("action_type", types);
+    }
   }
 
   if (userId) {

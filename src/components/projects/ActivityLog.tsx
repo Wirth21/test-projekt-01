@@ -107,7 +107,7 @@ export function ActivityLog({ projectId, members }: ActivityLogProps) {
                 member.profile?.email ||
                 t("unknownUser");
               return (
-                <SelectItem key={member.id} value={member.id}>
+                <SelectItem key={member.id} value={member.user_id}>
                   {displayName}
                 </SelectItem>
               );

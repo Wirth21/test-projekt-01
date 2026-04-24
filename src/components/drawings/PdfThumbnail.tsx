@@ -32,18 +32,31 @@ async function repairServerThumbnail(
     pdfStoragePath: string;
   }
 ) {
-  if (repairedVersions.has(ctx.versionId)) return;
+  if (repairedVersions.has(ctx.versionId)) {
+    console.log("[thumb-repair] skipped (already attempted this session)", ctx.versionId);
+    return;
+  }
   repairedVersions.add(ctx.versionId);
+
+  console.log("[thumb-repair] starting for version", ctx.versionId, "drawing", ctx.drawingId);
 
   const jpeg = await new Promise<Blob | null>((resolve) => {
     canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.8);
   });
-  if (!jpeg) return;
+  if (!jpeg) {
+    console.warn("[thumb-repair] canvas.toBlob returned null");
+    return;
+  }
+  console.log("[thumb-repair] jpeg blob size", jpeg.size);
 
   const path = await uploadThumbnail(ctx.pdfStoragePath, jpeg);
-  if (!path) return;
+  if (!path) {
+    console.warn("[thumb-repair] uploadThumbnail returned null — Storage write failed");
+    return;
+  }
+  console.log("[thumb-repair] uploaded to Storage at", path);
 
-  await fetch(
+  const res = await fetch(
     `/api/projects/${ctx.projectId}/drawings/${ctx.drawingId}/versions/${ctx.versionId}/thumbnail`,
     {
       method: "POST",
@@ -51,6 +64,12 @@ async function repairServerThumbnail(
       body: JSON.stringify({ thumbnail_path: path }),
     }
   );
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    console.warn("[thumb-repair] PATCH failed", res.status, body);
+    return;
+  }
+  console.log("[thumb-repair] DB updated", body);
 }
 
 interface PdfThumbnailProps {
@@ -119,14 +138,23 @@ export function PdfThumbnail({
 
     // Lazy-repair: if this drawing has no server-side thumbnail yet, bake
     // the rendered canvas into a JPEG and upload it so the next viewer
-    // skips the slow PDF re-render path. Best-effort; failures are silent.
+    // skips the slow PDF re-render path. Best-effort; failures log only.
     if (projectId && drawingId && versionId && pdfStoragePath) {
       repairServerThumbnail(canvas, {
         projectId,
         drawingId,
         versionId,
         pdfStoragePath,
-      }).catch(() => {});
+      }).catch((err) => {
+        console.warn("[thumb-repair] uncaught error", err);
+      });
+    } else {
+      console.warn("[thumb-repair] missing context, skipping", {
+        projectId,
+        drawingId,
+        versionId,
+        pdfStoragePath,
+      });
     }
   }
 

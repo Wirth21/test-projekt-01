@@ -24,7 +24,8 @@ interface UseActivityReturn {
 
 export interface ActivityFilters {
   actionTypes?: ActivityActionType[] | null;
-  userId?: string | null;
+  /** Single ID or list of IDs; both serialize to the `user_id` query param. */
+  userId?: string | string[] | null;
 }
 
 const DEFAULT_LIMIT = 50;
@@ -62,7 +63,10 @@ export function useActivity({
         }
 
         if (appliedFilters.userId) {
-          params.set("user_id", appliedFilters.userId);
+          const userIds = Array.isArray(appliedFilters.userId)
+            ? appliedFilters.userId
+            : [appliedFilters.userId];
+          if (userIds.length > 0) params.set("user_id", userIds.join(","));
         }
 
         const {
@@ -120,7 +124,10 @@ export function useActivity({
       }
 
       if (currentFilters.userId) {
-        params.set("user_id", currentFilters.userId);
+        const userIds = Array.isArray(currentFilters.userId)
+          ? currentFilters.userId
+          : [currentFilters.userId];
+        if (userIds.length > 0) params.set("user_id", userIds.join(","));
       }
 
       const {

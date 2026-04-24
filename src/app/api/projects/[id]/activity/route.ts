@@ -40,8 +40,14 @@ export async function GET(request: Request, { params }: RouteParams) {
     }
   }
 
+  // Users filter: accept comma-separated to allow multi-select in the UI.
   if (userId) {
-    query = query.eq("user_id", userId);
+    const ids = userId.split(",").map((s) => s.trim()).filter(Boolean);
+    if (ids.length === 1) {
+      query = query.eq("user_id", ids[0]);
+    } else if (ids.length > 1) {
+      query = query.in("user_id", ids);
+    }
   }
 
   const { data: entries, error: fetchError, count } = await query;

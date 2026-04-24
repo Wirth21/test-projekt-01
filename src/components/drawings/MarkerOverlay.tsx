@@ -21,6 +21,7 @@ interface MarkerOverlayProps {
   onMarkerRetarget: (markerId: string, targetId: string) => Promise<void>;
   onMarkerColorChange: (markerId: string, color: string) => Promise<void>;
   onMarkerDelete: (markerId: string) => Promise<void>;
+  onMarkerDuplicate?: (marker: MarkerWithTarget) => Promise<void>;
   onMarkerDrag: (
     markerId: string,
     xPercent: number,
@@ -49,6 +50,7 @@ export function MarkerOverlay({
   onMarkerRetarget,
   onMarkerColorChange,
   onMarkerDelete,
+  onMarkerDuplicate,
   onMarkerDrag,
   onPageClick,
 }: MarkerOverlayProps) {
@@ -259,6 +261,7 @@ export function MarkerOverlay({
             onChangeTarget={onMarkerRetarget}
             onChangeColor={onMarkerColorChange}
             onDelete={onMarkerDelete}
+            onDuplicate={onMarkerDuplicate}
             onClose={() => setContextMenu(null)}
           />,
           document.body

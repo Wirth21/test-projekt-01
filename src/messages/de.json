@@ -308,6 +308,7 @@
     "renamed": "Marker umbenannt",
     "targetChanged": "Ziel geändert",
     "deleted": "Marker gelöscht",
+    "duplicated": "Marker kopiert",
     "targetDeletedNavError": "Zieldokument wurde gelöscht. Bitte Marker neu verknüpfen.",
     "targetArchivedNavError": "Diese Zeichnung ist archiviert.",
     "create": {
@@ -325,7 +326,8 @@
     "context": {
       "rename": "Umbenennen",
       "changeTarget": "Ziel ändern",
-      "changeColor": "Farbe ändern"
+      "changeColor": "Farbe ändern",
+      "duplicate": "Kopieren"
     },
     "tooltip": {
       "targetDeleted": "Zieldokument gelöscht",

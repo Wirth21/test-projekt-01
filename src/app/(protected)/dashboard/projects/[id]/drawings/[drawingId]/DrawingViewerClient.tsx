@@ -533,6 +533,36 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
     toast.success(tm("deleted"));
   }
 
+  /**
+   * Duplicate a marker within the same drawing + version.
+   * The copy sits 3% x/y below-right of the original so it is visible
+   * and doesn't overlap, and keeps colour + target + page. The name is
+   * suffixed with " (Kopie)" (or a numbered suffix if that already exists).
+   */
+  async function handleMarkerDuplicate(marker: MarkerWithTarget) {
+    const base = `${marker.name} (Kopie)`;
+    const existingNames = new Set(markers.map((m) => m.name));
+    let name = base;
+    let counter = 2;
+    while (existingNames.has(name)) {
+      name = `${marker.name} (Kopie ${counter})`;
+      counter++;
+    }
+
+    const offsetX = Math.min(100, Math.max(0, marker.x_percent + 3));
+    const offsetY = Math.min(100, Math.max(0, marker.y_percent + 3));
+
+    await createMarker({
+      name,
+      color: marker.color,
+      target_drawing_id: marker.target_drawing_id,
+      page_number: marker.page_number,
+      x_percent: Math.round(offsetX * 100) / 100,
+      y_percent: Math.round(offsetY * 100) / 100,
+    });
+    toast.success(tm("duplicated"));
+  }
+
   async function handleMarkerDrag(
     markerId: string,
     xPercent: number,
@@ -1175,6 +1205,7 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                         onMarkerRetarget={handleMarkerRetarget}
                         onMarkerColorChange={handleMarkerColorChange}
                         onMarkerDelete={handleMarkerDelete}
+                        onMarkerDuplicate={handleMarkerDuplicate}
                         onMarkerDrag={handleMarkerDrag}
                         onPageClick={handlePageClick}
                       />

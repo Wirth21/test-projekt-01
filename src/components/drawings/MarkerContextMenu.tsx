@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Pencil, Link2, Trash2, Loader2, Palette } from "lucide-react";
+import { Pencil, Link2, Trash2, Loader2, Palette, Copy } from "lucide-react";
 import type { MarkerWithTarget } from "@/lib/types/marker";
 import { MARKER_COLORS, MARKER_COLOR_MAP, type MarkerColor } from "@/lib/types/marker";
 import type { Drawing } from "@/lib/types/drawing";
@@ -25,6 +25,7 @@ interface MarkerContextMenuProps {
   onChangeTarget: (markerId: string, targetId: string) => Promise<void>;
   onChangeColor: (markerId: string, color: string) => Promise<void>;
   onDelete: (markerId: string) => Promise<void>;
+  onDuplicate?: (marker: MarkerWithTarget) => Promise<void>;
   onClose: () => void;
 }
 
@@ -37,6 +38,7 @@ export function MarkerContextMenu({
   onChangeTarget,
   onChangeColor,
   onDelete,
+  onDuplicate,
   onClose,
 }: MarkerContextMenuProps) {
   const t = useTranslations("markers");
@@ -141,6 +143,28 @@ export function MarkerContextMenu({
             <Palette className="h-3.5 w-3.5" />
             {t("context.changeColor")}
           </button>
+          {onDuplicate && (
+            <button
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-accent transition-colors text-left"
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  await onDuplicate(marker);
+                  onClose();
+                } catch {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+              {t("context.duplicate")}
+            </button>
+          )}
           <div className="my-1 border-t" />
           <button
             className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-destructive/10 text-destructive transition-colors text-left"

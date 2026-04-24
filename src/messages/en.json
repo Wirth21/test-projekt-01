@@ -308,6 +308,7 @@
     "renamed": "Marker renamed",
     "targetChanged": "Target changed",
     "deleted": "Marker deleted",
+    "duplicated": "Marker duplicated",
     "targetDeletedNavError": "Target document was deleted. Please relink the marker.",
     "targetArchivedNavError": "This drawing is archived.",
     "create": {
@@ -325,7 +326,8 @@
     "context": {
       "rename": "Rename",
       "changeTarget": "Change target",
-      "changeColor": "Change color"
+      "changeColor": "Change color",
+      "duplicate": "Duplicate"
     },
     "tooltip": {
       "targetDeleted": "Target document deleted",

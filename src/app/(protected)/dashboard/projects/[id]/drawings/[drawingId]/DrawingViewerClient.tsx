@@ -192,12 +192,14 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
   // Version panel state
   const [versionPanelOpen, setVersionPanelOpen] = useState(false);
 
-  // Persistent rotation: stored per-version. Clicking the rotate button
-  // advances in 90-degree steps and immediately PATCHes the version so
-  // the angle sticks for all future viewers. Optimistic UI via
-  // pendingRotation keeps the canvas stable until React Query refetches.
-  // MUST stay above any early returns so the hook order is stable.
+  // Persistent rotation: stored per-version as a DELTA on top of the PDF's
+  // intrinsic /Rotate metadata. Display angle = (intrinsic + delta) % 360.
+  // Clicking rotate advances delta in 90-degree steps and PATCHes the
+  // version so the angle sticks. Optimistic UI via pendingRotation keeps
+  // the canvas stable until React Query refetches. MUST stay above any
+  // early returns so the hook order is stable.
   const [pendingRotation, setPendingRotation] = useState<number | null>(null);
+  const [intrinsicRotation, setIntrinsicRotation] = useState(0);
 
   // Marker state
   const [editMode, setEditMode] = useState(false);
@@ -351,7 +353,10 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
 
   async function handleDocumentLoadSuccess(pdf: {
     numPages: number;
-    getPage: (n: number) => Promise<{ getViewport: (opts: { scale: number }) => { width: number; height: number } }>;
+    getPage: (n: number) => Promise<{
+      rotate?: number;
+      getViewport: (opts: { scale: number }) => { width: number; height: number };
+    }>;
   }) {
     setNumPages(pdf.numPages);
     setPdfLoading(false);
@@ -361,6 +366,9 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
     if (!container) return;
     try {
       const page = await pdf.getPage(1);
+      // Capture the PDF's intrinsic page rotation so we can combine it with
+      // the user's stored delta and keep parity with the server thumbnail.
+      setIntrinsicRotation(((page.rotate ?? 0) % 360 + 360) % 360);
       const vp = page.getViewport({ scale: 1 });
       const pad = 48;
       const availW = container.clientWidth - pad;
@@ -697,8 +705,13 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
   // Archived version hint
   const isArchivedVersion = activeVersion?.is_archived === true;
 
-  const effectiveRotation =
-    pendingRotation ?? (activeVersion?.rotation ?? 0);
+  // User's rotation delta (0/90/180/270). null → no user rotation yet.
+  const rotationDelta = pendingRotation ?? activeVersion?.rotation ?? 0;
+  // react-pdf: null → respect intrinsic; number → absolute override.
+  // Pass null when the user delta is 0 so the PDF's own /Rotate wins and
+  // the viewer matches the thumbnail.
+  const effectiveRotation: number | null =
+    rotationDelta === 0 ? null : (intrinsicRotation + rotationDelta) % 360;
 
   async function handleRotate() {
     if (!activeVersion) return;
@@ -1033,7 +1046,7 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
             className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center select-none"
           >
             <span
-              className="text-[18vw] sm:text-[14vw] md:text-[10vw] font-black uppercase tracking-widest text-destructive/20 whitespace-nowrap"
+              className="text-[9vw] sm:text-[7vw] md:text-[5vw] font-black uppercase tracking-widest text-destructive/20 whitespace-nowrap"
               style={{ transform: "rotate(-25deg)" }}
             >
               {t("watermark.oldVersion")}

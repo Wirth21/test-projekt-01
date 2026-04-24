@@ -11,11 +11,47 @@ import {
   cacheThumbnail,
   canvasToThumbnail,
 } from "@/lib/offline/thumbnail-cache";
+import { uploadThumbnail } from "@/lib/thumbnails/upload";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url
 ).toString();
+
+// Per-session guard so we only attempt the repair upload once per version
+// across the whole card grid — otherwise every card that lazily renders the
+// same drawing hits Storage + the repair endpoint repeatedly.
+const repairedVersions = new Set<string>();
+
+async function repairServerThumbnail(
+  canvas: HTMLCanvasElement,
+  ctx: {
+    projectId: string;
+    drawingId: string;
+    versionId: string;
+    pdfStoragePath: string;
+  }
+) {
+  if (repairedVersions.has(ctx.versionId)) return;
+  repairedVersions.add(ctx.versionId);
+
+  const jpeg = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.8);
+  });
+  if (!jpeg) return;
+
+  const path = await uploadThumbnail(ctx.pdfStoragePath, jpeg);
+  if (!path) return;
+
+  await fetch(
+    `/api/projects/${ctx.projectId}/drawings/${ctx.drawingId}/versions/${ctx.versionId}/thumbnail`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ thumbnail_path: path }),
+    }
+  );
+}
 
 interface PdfThumbnailProps {
   url: string;
@@ -34,14 +70,10 @@ export function PdfThumbnail({
   url,
   width = 200,
   cacheKey,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept in API for future lazy-repair
-  drawingId: _drawingId,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  versionId: _versionId,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  projectId: _projectId,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  pdfStoragePath: _pdfStoragePath,
+  drawingId,
+  versionId,
+  projectId,
+  pdfStoragePath,
 }: PdfThumbnailProps) {
   const [loaded, setLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -71,16 +103,30 @@ export function PdfThumbnail({
   function handleRenderSuccess() {
     setLoaded(true);
 
-    if (!cacheKey || !pageRef.current) return;
+    if (!pageRef.current) return;
     const canvas = pageRef.current.querySelector("canvas");
     if (!canvas) return;
 
     // Cache in IndexedDB for fast client-side reloads.
-    try {
-      const dataUrl = canvasToThumbnail(canvas, width);
-      cacheThumbnail(cacheKey, dataUrl);
-    } catch {
-      // Canvas tainted or other error — ignore
+    if (cacheKey) {
+      try {
+        const dataUrl = canvasToThumbnail(canvas, width);
+        cacheThumbnail(cacheKey, dataUrl);
+      } catch {
+        // Canvas tainted or other error — ignore
+      }
+    }
+
+    // Lazy-repair: if this drawing has no server-side thumbnail yet, bake
+    // the rendered canvas into a JPEG and upload it so the next viewer
+    // skips the slow PDF re-render path. Best-effort; failures are silent.
+    if (projectId && drawingId && versionId && pdfStoragePath) {
+      repairServerThumbnail(canvas, {
+        projectId,
+        drawingId,
+        versionId,
+        pdfStoragePath,
+      }).catch(() => {});
     }
   }
 

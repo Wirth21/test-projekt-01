@@ -86,12 +86,21 @@ export function useDrawings(projectId: string) {
       // Best-effort: render page 1 to a small JPEG and upload it as a
       // thumbnail. If this fails (corrupt PDF, storage error, …) the PDF
       // upload has already succeeded — viewers will fall back to client-side
-      // PDF rendering for the preview.
+      // PDF rendering for the preview, and PdfThumbnail self-heals the
+      // baked copy on first render.
       let thumbnailPath: string | null = null;
       try {
         const jpeg = await renderPdfThumbnail(file);
-        if (jpeg) thumbnailPath = await uploadThumbnail(storagePath, jpeg);
-      } catch {
+        if (!jpeg) {
+          console.warn("[uploadDrawing] thumbnail render produced no blob for", file.name);
+        } else {
+          thumbnailPath = await uploadThumbnail(storagePath, jpeg);
+          if (!thumbnailPath) {
+            console.warn("[uploadDrawing] thumbnail upload failed for", file.name);
+          }
+        }
+      } catch (err) {
+        console.warn("[uploadDrawing] thumbnail step threw:", err);
         thumbnailPath = null;
       }
 

@@ -32,13 +32,8 @@ async function repairServerThumbnail(
     pdfStoragePath: string;
   }
 ) {
-  if (repairedVersions.has(ctx.versionId)) {
-    console.log("[thumb-repair] skipped (already attempted this session)", ctx.versionId);
-    return;
-  }
+  if (repairedVersions.has(ctx.versionId)) return;
   repairedVersions.add(ctx.versionId);
-
-  console.log("[thumb-repair] starting for version", ctx.versionId, "drawing", ctx.drawingId);
 
   const jpeg = await new Promise<Blob | null>((resolve) => {
     canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.8);
@@ -47,14 +42,12 @@ async function repairServerThumbnail(
     console.warn("[thumb-repair] canvas.toBlob returned null");
     return;
   }
-  console.log("[thumb-repair] jpeg blob size", jpeg.size);
 
   const path = await uploadThumbnail(ctx.pdfStoragePath, jpeg);
   if (!path) {
     console.warn("[thumb-repair] uploadThumbnail returned null — Storage write failed");
     return;
   }
-  console.log("[thumb-repair] uploaded to Storage at", path);
 
   const res = await fetch(
     `/api/projects/${ctx.projectId}/drawings/${ctx.drawingId}/versions/${ctx.versionId}/thumbnail`,
@@ -64,12 +57,10 @@ async function repairServerThumbnail(
       body: JSON.stringify({ thumbnail_path: path }),
     }
   );
-  const body = await res.json().catch(() => ({}));
   if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
     console.warn("[thumb-repair] PATCH failed", res.status, body);
-    return;
   }
-  console.log("[thumb-repair] DB updated", body);
 }
 
 interface PdfThumbnailProps {
@@ -164,13 +155,6 @@ export function PdfThumbnail({
         pdfStoragePath,
       }).catch((err) => {
         console.warn("[thumb-repair] uncaught error", err);
-      });
-    } else {
-      console.warn("[thumb-repair] missing context, skipping", {
-        projectId,
-        drawingId,
-        versionId,
-        pdfStoragePath,
       });
     }
   }

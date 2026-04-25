@@ -8,6 +8,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 import {
   TransformWrapper,
   TransformComponent,
+  type ReactZoomPanPinchRef,
 } from "react-zoom-pan-pinch";
 import {
   ArrowLeft,
@@ -212,6 +213,10 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
 
   const pageContainerRef = useRef<HTMLDivElement>(null);
   const viewerContainerRef = useRef<HTMLDivElement>(null);
+  // Ref to react-zoom-pan-pinch so we can reset zoom/pan when the user
+  // navigates to a different drawing, version, or page — otherwise the old
+  // pan offset can park the new (differently-sized) PDF off-screen.
+  const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
 
   // Computed PDF width to fit container — stored as ref to avoid re-render loops
   const [fittedWidth, setFittedWidth] = useState<number | undefined>(undefined);
@@ -263,6 +268,14 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
       }
     }
   }, [versionsLoading, versions, selectedVersionId, latestActiveVersion]);
+
+  // Reset zoom + pan whenever we land on a new drawing, switch versions, or
+  // page through a multi-page PDF. Without this, the previous drawing's pan
+  // offset can park a differently-sized successor off-screen. The ref might
+  // not be ready on the very first render — guard with optional chaining.
+  useEffect(() => {
+    transformRef.current?.resetTransform();
+  }, [activeDrawingId, selectedVersionId, currentPage]);
 
   // Fetch signed URL for the active version
   const prevVersionRef = useRef<string | null>(null);
@@ -1103,10 +1116,13 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
           </div>
         ) : (
           <TransformWrapper
+            ref={transformRef}
             initialScale={1}
             minScale={0.3}
             maxScale={10}
             limitToBounds={false}
+            centerOnInit
+            centerZoomedOut
             wheel={{ step: 0.1 }}
             panning={{ disabled: editMode }}
           >

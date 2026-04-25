@@ -26,7 +26,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
   const tabs = [
     { label: t("users"), href: "/admin/users" },
-    { label: t("pending"), href: "/admin" },
+    { label: t("pending"), href: "/admin/pending" },
     { label: t("statuses"), href: "/admin/statuses" },
     { label: t("projects"), href: "/admin/projects" },
   ] as const;
@@ -53,10 +53,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         <nav className="max-w-6xl mx-auto px-4" aria-label="Admin-Navigation">
           <div className="flex gap-1 -mb-px overflow-x-auto">
             {tabs.map((tab) => {
-              const isActive =
-                tab.href === "/admin"
-                  ? pathname === "/admin"
-                  : pathname.startsWith(tab.href);
+              const isActive = pathname.startsWith(tab.href);
               return (
                 <button
                   key={tab.href}

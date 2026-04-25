@@ -271,10 +271,17 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
 
   // Reset zoom + pan whenever we land on a new drawing, switch versions, or
   // page through a multi-page PDF. Without this, the previous drawing's pan
-  // offset can park a differently-sized successor off-screen. The ref might
-  // not be ready on the very first render — guard with optional chaining.
+  // offset can park a differently-sized successor off-screen.
+  // resetTransform alone restores scale=1 but pan stays at the old offset
+  // when the content size has changed; centerView re-runs the centering
+  // math against the now-current content, which is what we actually want.
+  // We chain a microtask delay so the new Page has time to mount.
   useEffect(() => {
-    transformRef.current?.resetTransform();
+    const id = window.requestAnimationFrame(() => {
+      transformRef.current?.resetTransform(0);
+      transformRef.current?.centerView(1, 0);
+    });
+    return () => window.cancelAnimationFrame(id);
   }, [activeDrawingId, selectedVersionId, currentPage]);
 
   // Fetch signed URL for the active version
@@ -1122,7 +1129,6 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
             maxScale={10}
             limitToBounds={false}
             centerOnInit
-            centerZoomedOut
             wheel={{ step: 0.1 }}
             panning={{ disabled: editMode }}
           >
@@ -1180,17 +1186,11 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
 
                 <TransformComponent
                   wrapperClass="!w-full !h-full"
+                  contentClass="!w-full !h-full !flex !items-center !justify-center"
                 >
                   <div
                     ref={pageContainerRef}
                     className="relative inline-block"
-                    style={{
-                      minWidth: "100%",
-                      minHeight: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
                   >
                     {/* Thumbnail placeholder. Covers the whole rendering area
                         from the moment we navigate until the low-res PDF

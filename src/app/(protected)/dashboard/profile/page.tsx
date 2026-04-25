@@ -6,9 +6,20 @@ import { useTranslations } from "next-intl";
 import { ArrowLeft, Loader2, ShieldCheck, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 interface Profile {
@@ -36,10 +47,12 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pwSaving, setPwSaving] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
+  const [pwConfirmOpen, setPwConfirmOpen] = useState(false);
 
-  async function handleChangePassword() {
+  // Validate first; only open the confirmation if the inputs are sane.
+  // Avoids a confirm flow that blocks on validation errors after click.
+  function handleSubmitPasswordChange() {
     setPwError(null);
-
     if (newPassword.length < 8) {
       setPwError(t("passwordTooShort"));
       return;
@@ -52,7 +65,11 @@ export default function ProfilePage() {
       setPwError(t("passwordSame"));
       return;
     }
+    setPwConfirmOpen(true);
+  }
 
+  async function handleConfirmPasswordChange() {
+    setPwConfirmOpen(false);
     setPwSaving(true);
     try {
       const res = await fetch("/api/profile/password", {
@@ -216,9 +233,8 @@ export default function ProfilePage() {
               >
                 {t("currentPassword")}
               </label>
-              <Input
+              <PasswordInput
                 id="current-password"
-                type="password"
                 autoComplete="current-password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
@@ -230,9 +246,8 @@ export default function ProfilePage() {
               <label htmlFor="new-password" className="text-sm font-medium">
                 {t("newPassword")}
               </label>
-              <Input
+              <PasswordInput
                 id="new-password"
-                type="password"
                 autoComplete="new-password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -254,9 +269,8 @@ export default function ProfilePage() {
               >
                 {t("confirmPassword")}
               </label>
-              <Input
+              <PasswordInput
                 id="confirm-password"
-                type="password"
                 autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -271,7 +285,7 @@ export default function ProfilePage() {
             )}
 
             <Button
-              onClick={handleChangePassword}
+              onClick={handleSubmitPasswordChange}
               disabled={
                 pwSaving ||
                 !currentPassword ||
@@ -284,6 +298,23 @@ export default function ProfilePage() {
             </Button>
           </CardContent>
         </Card>
+
+        <AlertDialog open={pwConfirmOpen} onOpenChange={setPwConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("passwordConfirmTitle")}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t("passwordConfirmDescription")}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{tc("cancel")}</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmPasswordChange}>
+                {t("passwordConfirmAction")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <Separator />
 

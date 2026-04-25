@@ -847,7 +847,10 @@
     "passwordChangeFailed": "Password could not be changed",
     "passwordTooShort": "New password must be at least 8 characters long.",
     "passwordMismatch": "The two new passwords do not match.",
-    "passwordSame": "The new password must differ from the current one."
+    "passwordSame": "The new password must differ from the current one.",
+    "passwordConfirmTitle": "Change password?",
+    "passwordConfirmDescription": "You will stay signed in. Existing sessions on other devices remain active until they expire or you sign out there.",
+    "passwordConfirmAction": "Yes, change"
   },
   "sync": {
     "synced": "Up to date",

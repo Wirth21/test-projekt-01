@@ -39,23 +39,30 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   const { thumbnail_path } = parsed.data;
 
-  // IDOR guard: the thumbnail path MUST live under this project's + drawing's
-  // storage prefix so clients can't overwrite versions they don't own.
-  const expectedPrefix = `${projectId}/${drawingId}/`;
-  if (!thumbnail_path.startsWith(expectedPrefix)) {
-    return NextResponse.json({ error: "Ungültiger Thumbnail-Pfad" }, { status: 400 });
-  }
-
   // Verify the version belongs to this drawing/project before updating.
+  // We need the version's storage_path to validate the thumbnail path is the
+  // canonical sibling — drawings.id and the storage subfolder UUID don't
+  // match, since storage paths use a client-generated random UUID.
   const { data: version, error: versionError } = await supabase
     .from("drawing_versions")
-    .select("id, drawing_id, thumbnail_path, drawings!inner(project_id)")
+    .select("id, drawing_id, thumbnail_path, storage_path, drawings!inner(project_id)")
     .eq("id", versionId)
     .eq("drawing_id", drawingId)
     .maybeSingle();
 
   if (versionError || !version) {
     return NextResponse.json({ error: "Version nicht gefunden" }, { status: 404 });
+  }
+
+  // IDOR guard: the only thumbnail path we accept is the canonical sibling
+  // of the version's storage_path. Prevents a tenant from pointing the
+  // thumbnail at someone else's storage object.
+  const canonicalThumbPath = version.storage_path.replace(/\.pdf$/i, ".thumb.jpg");
+  if (thumbnail_path !== canonicalThumbPath) {
+    return NextResponse.json(
+      { error: "Ungültiger Thumbnail-Pfad" },
+      { status: 400 }
+    );
   }
 
   // No-op if already set — avoids redundant writes and race-condition

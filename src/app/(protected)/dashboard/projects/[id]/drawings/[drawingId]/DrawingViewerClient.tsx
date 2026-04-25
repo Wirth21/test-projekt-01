@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -218,8 +218,18 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
   // pan offset can park the new (differently-sized) PDF off-screen.
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
 
-  // Computed PDF width to fit container — stored as ref to avoid re-render loops
+  // Container width minus padding, set as soon as the wrapper mounts so the
+  // first <Page> render already uses the right dimensions instead of falling
+  // back to the PDF's intrinsic CSS width (which is usually much smaller and
+  // causes the "klein → groß"-jump). Refreshed by a ResizeObserver below so
+  // the viewer adapts to window resizes and fullscreen-toggle.
   const [fittedWidth, setFittedWidth] = useState<number | undefined>(undefined);
+
+  // Aspect ratio (width / height) used for the placeholder/sized container,
+  // so the layout box stays the right shape even before the first Page paints.
+  // Default is rough A-series landscape (≈ √2). After Document parses we
+  // refine it with the actual PDF page-1 viewport.
+  const [pdfAspect, setPdfAspect] = useState(1.414);
 
   // Progressive rendering: a fast low-res canvas appears immediately, then
   // a hi-res one renders in the background and replaces it on success.
@@ -250,11 +260,36 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
     : 10;
   const highDpr = Math.max(4, Math.min(canvasDprCap, baseHighDpr));
 
-  // Reset both progressive tiers when the visible page/drawing changes
+  // Reset both progressive tiers when the visible page/drawing/version
+  // changes. Both <Page>s stay mounted across the change — react-pdf
+  // repaints their canvases internally for the new pageNumber. The
+  // placeholder fades back in until lowRes reports onRenderSuccess.
   useEffect(() => {
     setLowResReady(false);
     setHiResReady(false);
-  }, [currentPage, activeDrawingId]);
+  }, [currentPage, activeDrawingId, activeVersion?.id]);
+
+  // Keep fittedWidth in sync with the viewer container, BEFORE the PDF
+  // parses. The previous logic delayed this until handleDocumentLoadSuccess,
+  // which forced the first <Page> render to use the PDF's intrinsic width
+  // (usually 612 px) and grow visibly when fittedWidth was finally set.
+  // useLayoutEffect ensures we measure as soon as the DOM is ready; the
+  // ResizeObserver keeps it accurate across window/fullscreen changes.
+  useLayoutEffect(() => {
+    const container = viewerContainerRef.current;
+    if (!container) return;
+    const VIEWER_PADDING = 48;
+
+    const measure = () => {
+      const w = container.clientWidth - VIEWER_PADDING;
+      if (w > 0) setFittedWidth(w);
+    };
+
+    measure();
+    const obs = new ResizeObserver(measure);
+    obs.observe(container);
+    return () => obs.disconnect();
+  }, []);
 
   const { isFullscreen, isSupported: fullscreenSupported, toggleFullscreen, exitFullscreen: exitFs } = useFullscreen(viewerContainerRef);
 
@@ -269,20 +304,16 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
     }
   }, [versionsLoading, versions, selectedVersionId, latestActiveVersion]);
 
-  // Reset zoom + pan whenever we land on a new drawing, switch versions, or
-  // page through a multi-page PDF. Without this, the previous drawing's pan
-  // offset can park a differently-sized successor off-screen.
-  // resetTransform alone restores scale=1 but pan stays at the old offset
-  // when the content size has changed; centerView re-runs the centering
-  // math against the now-current content, which is what we actually want.
-  // We chain a microtask delay so the new Page has time to mount.
+  // Reset zoom + pan as soon as the new low-res canvas has painted. Doing
+  // this only after onRenderSuccess (which flips lowResReady to true)
+  // guarantees the content is in the DOM at the moment we measure for
+  // centerView — otherwise the old content's bounding box is used and the
+  // new (differently-sized) Page lands off-screen.
   useEffect(() => {
-    const id = window.requestAnimationFrame(() => {
-      transformRef.current?.resetTransform(0);
-      transformRef.current?.centerView(1, 0);
-    });
-    return () => window.cancelAnimationFrame(id);
-  }, [activeDrawingId, selectedVersionId, currentPage]);
+    if (!lowResReady) return;
+    transformRef.current?.resetTransform(0);
+    transformRef.current?.centerView(1, 0);
+  }, [lowResReady, activeDrawingId, activeVersion?.id, currentPage]);
 
   // Fetch signed URL for the active version
   const prevVersionRef = useRef<string | null>(null);
@@ -358,7 +389,8 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
       fetchUrl();
       setCurrentPage(1);
       setNumPages(null);
-      setFittedWidth(undefined);
+      // fittedWidth is NOT reset — it depends on the container, not the PDF.
+      // Keeping it lets the new <Page> render immediately at the right size.
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- only refetch when version ID changes, not the full object
   }, [activeVersion?.id, fetchUrl]);
@@ -391,22 +423,19 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
       updateVersion(activeVersion.id, { page_count: pdf.numPages }).catch(() => {});
     }
 
-    // Calculate fit-to-screen width once
-    const container = viewerContainerRef.current;
-    if (!container) return;
+    // Pull page-1 metadata: intrinsic rotation (for thumb/viewer parity) and
+    // aspect ratio (sizes our placeholder so the layout box matches the PDF
+    // before the first paint). fittedWidth is already managed by the
+    // ResizeObserver — we don't touch it here.
     try {
       const page = await pdf.getPage(1);
-      // Capture the PDF's intrinsic page rotation so we can combine it with
-      // the user's stored delta and keep parity with the server thumbnail.
       setIntrinsicRotation(((page.rotate ?? 0) % 360 + 360) % 360);
       const vp = page.getViewport({ scale: 1 });
-      const pad = 48;
-      const availW = container.clientWidth - pad;
-      const availH = container.clientHeight - pad;
-      const scale = Math.min(availW / vp.width, availH / vp.height);
-      setFittedWidth(Math.floor(vp.width * scale));
+      if (vp.width > 0 && vp.height > 0) {
+        setPdfAspect(vp.width / vp.height);
+      }
     } catch {
-      // fallback: no fit constraint
+      // Default aspect stays in place.
     }
   }
 
@@ -1188,97 +1217,109 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                   wrapperClass="!w-full !h-full"
                   contentClass="!w-full !h-full !flex !items-center !justify-center"
                 >
-                  <div
-                    ref={pageContainerRef}
-                    className="relative inline-block"
-                  >
-                    {/* Thumbnail placeholder. Covers the whole rendering area
-                        from the moment we navigate until the low-res PDF
-                        canvas paints. Must live outside Document so it also
-                        bridges the gap between onLoadSuccess and the first
-                        Page.onRenderSuccess — Document only shows its
-                        `loading` slot during parse, not during rasterization. */}
-                    {!lowResReady && drawing?.thumbnail_url && currentPage === 1 && (
-                      <img
-                        src={drawing.thumbnail_url}
-                        alt=""
-                        className="absolute inset-0 m-auto shadow-lg max-w-full max-h-full object-contain z-10 pointer-events-none"
-                        style={{ maxHeight: "85vh" }}
-                        aria-hidden="true"
-                      />
-                    )}
-                    <Document
-                      file={pdfUrl}
-                      onLoadSuccess={handleDocumentLoadSuccess}
-                      onLoadError={handleDocumentLoadError}
-                      loading={
-                        <div className="flex items-center justify-center h-full">
-                          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                        </div>
-                      }
+                  {/* The render box. Two layout strategies:
+                      - The `min-w/min-h` style guarantees the container has
+                        dimensions BEFORE the first canvas paints, so the
+                        placeholder shows at roughly the right size and the
+                        layout doesn't collapse to 0 mid-transition.
+                      - Once <Page> mounts the canvas, the canvas itself
+                        contributes its real dimensions; the container grows
+                        if needed.
+                      We only attempt to mount the Document after fittedWidth
+                      is known so the first render is at the final size. */}
+                  {fittedWidth ? (
+                    <div
+                      ref={pageContainerRef}
+                      className="relative inline-block shadow-lg bg-white"
+                      style={{
+                        minWidth: fittedWidth,
+                        minHeight: Math.round(fittedWidth / pdfAspect),
+                      }}
                     >
-                      {pdfLoading && !fittedWidth && (
-                        <div className="flex items-center justify-center">
-                          <Skeleton className="w-[600px] h-[800px]" />
-                        </div>
+                      {/* Placeholder layered on top of (or in lieu of) the
+                          PDF page until the low-res canvas of the current
+                          page has painted. Server thumbnail for page 1,
+                          plain skeleton otherwise. */}
+                      {!lowResReady && (
+                        drawing?.thumbnail_url && currentPage === 1 ? (
+                          <img
+                            src={drawing.thumbnail_url}
+                            alt=""
+                            className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <Skeleton className="absolute inset-0 z-10" />
+                        )
                       )}
-                      <div className="relative">
-                        {/* Low-res: renders fast, shown immediately. */}
-                        {!hiResReady && (
+
+                      <Document
+                        file={pdfUrl}
+                        onLoadSuccess={handleDocumentLoadSuccess}
+                        onLoadError={handleDocumentLoadError}
+                        loading={null}
+                      >
+                        {/* Low-res Page is in normal flow; its canvas gives
+                            the container its true natural size as soon as
+                            it paints. */}
+                        <Page
+                          pageNumber={currentPage}
+                          rotate={effectiveRotation}
+                          renderTextLayer={false}
+                          renderAnnotationLayer={false}
+                          width={fittedWidth}
+                          devicePixelRatio={lowDpr}
+                          canvasBackground="white"
+                          onRenderSuccess={() => setLowResReady(true)}
+                        />
+                        {/* Hi-res sits on top of low-res; fades in when its
+                            render for the current page finishes. Both stay
+                            mounted across page changes — react-pdf repaints
+                            their canvases without unmount/remount, so the
+                            container never collapses. */}
+                        <div
+                          className={`absolute inset-0 transition-opacity duration-150 ${
+                            hiResReady ? "opacity-100" : "opacity-0 pointer-events-none"
+                          }`}
+                        >
                           <Page
                             pageNumber={currentPage}
                             rotate={effectiveRotation}
                             renderTextLayer={false}
                             renderAnnotationLayer={false}
-                            className="shadow-lg"
                             width={fittedWidth}
-                            devicePixelRatio={lowDpr}
+                            devicePixelRatio={highDpr}
                             canvasBackground="white"
-                            onRenderSuccess={() => setLowResReady(true)}
+                            onRenderSuccess={() => setHiResReady(true)}
                           />
-                        )}
-                        {/* Hi-res: only starts rendering once low-res is on
-                            screen, so the user sees the PDF as early as
-                            possible without PDF.js splitting the main-thread
-                            budget between both renders. */}
-                        {lowResReady && (
-                          <div className={hiResReady ? "" : "absolute inset-0 opacity-0 pointer-events-none"}>
-                            <Page
-                              pageNumber={currentPage}
-                              rotate={effectiveRotation}
-                              renderTextLayer={false}
-                              renderAnnotationLayer={false}
-                              className="shadow-lg"
-                              width={fittedWidth}
-                              devicePixelRatio={highDpr}
-                              canvasBackground="white"
-                              onRenderSuccess={() => setHiResReady(true)}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </Document>
+                        </div>
+                      </Document>
 
-                    {/* Marker overlay -- positioned on top of the PDF page */}
-                    {!pdfLoading && !markersLoading && (
-                      <MarkerOverlay
-                        markers={markers}
-                        currentPage={currentPage}
-                        editMode={editMode}
-                        drawings={drawings}
-                        currentDrawingId={activeDrawingId}
-                        getSignedUrl={getSignedUrl}
-                        onMarkerClick={handleMarkerClick}
-                        onMarkerRename={handleMarkerRename}
-                        onMarkerRetarget={handleMarkerRetarget}
-                        onMarkerColorChange={handleMarkerColorChange}
-                        onMarkerDelete={handleMarkerDelete}
-                        onMarkerDuplicate={handleMarkerDuplicate}
-                        onMarkerDrag={handleMarkerDrag}
-                        onPageClick={handlePageClick}
-                      />
-                    )}
-                  </div>
+                      {/* Marker overlay -- positioned on top of the PDF page */}
+                      {!pdfLoading && !markersLoading && (
+                        <MarkerOverlay
+                          markers={markers}
+                          currentPage={currentPage}
+                          editMode={editMode}
+                          drawings={drawings}
+                          currentDrawingId={activeDrawingId}
+                          getSignedUrl={getSignedUrl}
+                          onMarkerClick={handleMarkerClick}
+                          onMarkerRename={handleMarkerRename}
+                          onMarkerRetarget={handleMarkerRetarget}
+                          onMarkerColorChange={handleMarkerColorChange}
+                          onMarkerDelete={handleMarkerDelete}
+                          onMarkerDuplicate={handleMarkerDuplicate}
+                          onMarkerDrag={handleMarkerDrag}
+                          onPageClick={handlePageClick}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
                 </TransformComponent>
               </>
             )}

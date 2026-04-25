@@ -11,7 +11,6 @@ import {
   cacheThumbnail,
   canvasToThumbnail,
 } from "@/lib/offline/thumbnail-cache";
-import { uploadThumbnail } from "@/lib/thumbnails/upload";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -29,7 +28,6 @@ async function repairServerThumbnail(
     projectId: string;
     drawingId: string;
     versionId: string;
-    pdfStoragePath: string;
   }
 ) {
   if (repairedVersions.has(ctx.versionId)) return;
@@ -43,23 +41,20 @@ async function repairServerThumbnail(
     return;
   }
 
-  const path = await uploadThumbnail(ctx.pdfStoragePath, jpeg);
-  if (!path) {
-    console.warn("[thumb-repair] uploadThumbnail returned null — Storage write failed");
-    return;
-  }
+  // Send the JPEG bytes to our API endpoint. The endpoint uploads to Storage
+  // with the service-role client (no RLS) and updates thumbnail_path. This
+  // avoids browser-side Storage auth issues that surfaced as "new row
+  // violates row-level security policy".
+  const form = new FormData();
+  form.append("file", jpeg, "thumb.jpg");
 
   const res = await fetch(
     `/api/projects/${ctx.projectId}/drawings/${ctx.drawingId}/versions/${ctx.versionId}/thumbnail`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ thumbnail_path: path }),
-    }
+    { method: "POST", body: form }
   );
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    console.warn("[thumb-repair] PATCH failed", res.status, body);
+    console.warn("[thumb-repair] server upload failed", res.status, body);
   }
 }
 
@@ -85,12 +80,6 @@ export function PdfThumbnail({
   projectId,
   pdfStoragePath,
 }: PdfThumbnailProps) {
-  const [loaded, setLoaded] = useState(false);
-  const [hasError, setHasError] = useState(false);
-  const [cachedDataUrl, setCachedDataUrl] = useState<string | null>(null);
-  const [showPdfRenderer, setShowPdfRenderer] = useState(!cacheKey);
-  const pageRef = useRef<HTMLDivElement>(null);
-
   // If we got here the server-side thumbnail is missing (DrawingCard picks the
   // <img> path whenever thumbnail_url is present). That means we MUST render
   // the PDF at least once per version to bake a JPEG back to Storage — the
@@ -101,16 +90,21 @@ export function PdfThumbnail({
     !!projectId &&
     !!drawingId &&
     !!versionId &&
-    !!pdfStoragePath &&
     !repairedVersions.has(versionId);
+
+  const [loaded, setLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [cachedDataUrl, setCachedDataUrl] = useState<string | null>(null);
+  // Initial value already accounts for needsServerBake so we don't have to
+  // setShowPdfRenderer inside an effect.
+  const [showPdfRenderer, setShowPdfRenderer] = useState(
+    !cacheKey || needsServerBake
+  );
+  const pageRef = useRef<HTMLDivElement>(null);
 
   // Try to load cached thumbnail (only if we don't need to bake).
   useEffect(() => {
-    if (!cacheKey) return;
-    if (needsServerBake) {
-      setShowPdfRenderer(true);
-      return;
-    }
+    if (!cacheKey || needsServerBake) return;
 
     let cancelled = false;
 
@@ -145,17 +139,13 @@ export function PdfThumbnail({
     }
 
     // Lazy-repair: if this drawing has no server-side thumbnail yet, bake
-    // the rendered canvas into a JPEG and upload it so the next viewer
-    // skips the slow PDF re-render path. Best-effort; failures log only.
-    if (projectId && drawingId && versionId && pdfStoragePath) {
-      repairServerThumbnail(canvas, {
-        projectId,
-        drawingId,
-        versionId,
-        pdfStoragePath,
-      }).catch((err) => {
-        console.warn("[thumb-repair] uncaught error", err);
-      });
+    // the rendered canvas into a JPEG and ship it to the API which uploads
+    // via service role. Best-effort; failures log only.
+    if (projectId && drawingId && versionId) {
+      repairServerThumbnail(canvas, { projectId, drawingId, versionId })
+        .catch((err) => {
+          console.warn("[thumb-repair] uncaught error", err);
+        });
     }
   }
 

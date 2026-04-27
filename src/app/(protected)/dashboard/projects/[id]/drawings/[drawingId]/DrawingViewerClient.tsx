@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -212,7 +212,14 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
   const [navHistory, setNavHistory] = useState<NavHistoryEntry[]>([]);
 
   const pageContainerRef = useRef<HTMLDivElement>(null);
-  const viewerContainerRef = useRef<HTMLDivElement>(null);
+  // Held in a ref so other effects (e.g. fullscreen) can read it, but also
+  // exposed via a callback ref below so we can wire up the ResizeObserver
+  // exactly when the node enters the DOM. The viewer mounts after multiple
+  // early-returns (loading, archive-guard, urlError) — a plain
+  // useLayoutEffect with [] runs while the ref is still null and never
+  // re-runs once the real container appears.
+  const viewerContainerRef = useRef<HTMLDivElement | null>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
   // Ref to react-zoom-pan-pinch so we can reset zoom/pan when the user
   // navigates to a different drawing, version, or page — otherwise the old
   // pan offset can park the new (differently-sized) PDF off-screen.
@@ -269,26 +276,36 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
     setHiResReady(false);
   }, [currentPage, activeDrawingId, activeVersion?.id]);
 
-  // Keep fittedWidth in sync with the viewer container, BEFORE the PDF
-  // parses. The previous logic delayed this until handleDocumentLoadSuccess,
-  // which forced the first <Page> render to use the PDF's intrinsic width
-  // (usually 612 px) and grow visibly when fittedWidth was finally set.
-  // useLayoutEffect ensures we measure as soon as the DOM is ready; the
-  // ResizeObserver keeps it accurate across window/fullscreen changes.
-  useLayoutEffect(() => {
-    const container = viewerContainerRef.current;
-    if (!container) return;
-    const VIEWER_PADDING = 48;
+  // Callback ref for the viewer container. Fires every time the node
+  // attaches/detaches — including when the early-return loading branch
+  // unmounts and the real viewer JSX mounts. We wire up the ResizeObserver
+  // here so fittedWidth is computed BEFORE the first <Page> render.
+  const setViewerContainerRef = useCallback((node: HTMLDivElement | null) => {
+    viewerContainerRef.current = node;
 
+    // Tear down any previous observer (component re-render with new node).
+    resizeObserverRef.current?.disconnect();
+    resizeObserverRef.current = null;
+
+    if (!node) return;
+
+    const VIEWER_PADDING = 48;
     const measure = () => {
-      const w = container.clientWidth - VIEWER_PADDING;
+      const w = node.clientWidth - VIEWER_PADDING;
       if (w > 0) setFittedWidth(w);
     };
 
-    measure();
+    // Initial measurement happens on next frame so layout is settled.
+    requestAnimationFrame(measure);
     const obs = new ResizeObserver(measure);
-    obs.observe(container);
-    return () => obs.disconnect();
+    obs.observe(node);
+    resizeObserverRef.current = obs;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      resizeObserverRef.current?.disconnect();
+    };
   }, []);
 
   const { isFullscreen, isSupported: fullscreenSupported, toggleFullscreen, exitFullscreen: exitFs } = useFullscreen(viewerContainerRef);
@@ -1122,7 +1139,7 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
       )}
 
       {/* PDF Viewer */}
-      <div ref={viewerContainerRef} className={`flex-1 overflow-hidden relative ${isFullscreen ? "bg-neutral-900" : ""}`}>
+      <div ref={setViewerContainerRef} className={`flex-1 overflow-hidden relative ${isFullscreen ? "bg-neutral-900" : ""}`}>
         {/* Old-version watermark: viewport-fixed, non-interactive, above the
             PDF but below toolbars. Only shown when viewing a non-current
             version of this drawing. */}

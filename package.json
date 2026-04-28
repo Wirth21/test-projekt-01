@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "postinstall": "node -e \"const fs=require('fs'),path=require('path');const src=require.resolve('pdfjs-dist/build/pdf.worker.min.mjs');const dst=path.join('public','pdfjs-worker.min.mjs');try{fs.copyFileSync(src,dst);console.log('[postinstall] copied pdfjs worker to',dst);}catch(e){console.warn('[postinstall] failed to copy pdfjs worker:',e.message);}\""
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -12,10 +12,7 @@ import {
   canvasToThumbnail,
 } from "@/lib/offline/thumbnail-cache";
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdfjs-worker.min.mjs";
 
 // Per-session guard so we only attempt the repair upload once per version
 // across the whole card grid — otherwise every card that lazily renders the

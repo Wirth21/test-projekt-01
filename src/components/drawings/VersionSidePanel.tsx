@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -91,6 +92,10 @@ export function VersionSidePanel({
               <History className="h-4 w-4" />
               Versionen
             </SheetTitle>
+            <SheetDescription className="sr-only">
+              Versionsliste der Zeichnung. Hier kannst du Versionen hochladen,
+              umbenennen, archivieren oder umsortieren.
+            </SheetDescription>
           </SheetHeader>
 
           <div className="px-4 pb-3 shrink-0">

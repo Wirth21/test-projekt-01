@@ -29,12 +29,10 @@ export async function renderPdfThumbnail(
 
   try {
     const { pdfjs } = await import("react-pdf");
-    if (!pdfjs.GlobalWorkerOptions.workerSrc) {
-      pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-        "pdfjs-dist/build/pdf.worker.min.mjs",
-        import.meta.url
-      ).toString();
-    }
+    // Always set — Turbopack creates a separate module instance for the
+    // dynamic import, so the static workerSrc set in the viewer doesn't
+    // carry over here. Same-origin /public path works in both.
+    pdfjs.GlobalWorkerOptions.workerSrc = "/pdfjs-worker.min.mjs";
 
     const data = file instanceof Blob ? await file.arrayBuffer() : file;
     const pdf = await pdfjs.getDocument({ data }).promise;

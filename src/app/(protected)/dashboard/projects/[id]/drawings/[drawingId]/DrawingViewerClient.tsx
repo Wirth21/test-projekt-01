@@ -55,10 +55,9 @@ const SyncStatusBadge = dynamic(
   { ssr: false }
 );
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
+// Worker liegt in public/ — gleicher Origin, kein Bundler-Magic, klappt
+// auch in dynamic-importierten Modulen (s. lib/thumbnails/render.ts).
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdfjs-worker.min.mjs";
 
 // Module-level cache for version signed URLs. Supabase signs URLs for 1 h, so
 // we hold on to them for slightly less (50 min) and reuse across remounts —

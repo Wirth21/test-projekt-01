@@ -75,7 +75,72 @@ export async function GET(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Marker konnten nicht geladen werden" }, { status: 500 });
   }
 
-  return NextResponse.json({ markers, version_id: targetVersionId });
+  // Attach target drawings' thumbnail URLs so the marker tooltip can show
+  // a preview without re-downloading + re-rendering the full PDF on each
+  // click. We pull the latest non-archived version per target drawing,
+  // batch-sign the JPEGs, and return signed URLs alongside the existing
+  // target_drawing metadata.
+  type RawMarker = {
+    target_drawing_id: string;
+    target_drawing: {
+      id: string;
+      display_name: string;
+      is_archived: boolean;
+    } | null;
+  };
+  const targetIds = Array.from(
+    new Set(
+      ((markers as RawMarker[] | null) ?? [])
+        .map((m) => m.target_drawing_id)
+        .filter(Boolean)
+    )
+  );
+  const thumbPathByDrawing = new Map<string, string>();
+  if (targetIds.length > 0) {
+    const { data: targetVersions } = await supabase
+      .from("drawing_versions")
+      .select("drawing_id, thumbnail_path, version_number")
+      .in("drawing_id", targetIds)
+      .eq("is_archived", false)
+      .order("version_number", { ascending: false });
+    for (const row of targetVersions ?? []) {
+      const r = row as { drawing_id: string; thumbnail_path: string | null };
+      if (!thumbPathByDrawing.has(r.drawing_id) && r.thumbnail_path) {
+        thumbPathByDrawing.set(r.drawing_id, r.thumbnail_path);
+      }
+    }
+  }
+
+  const thumbUrlByPath = new Map<string, string>();
+  if (thumbPathByDrawing.size > 0) {
+    const paths = Array.from(thumbPathByDrawing.values());
+    const { data: signed } = await supabase.storage
+      .from("drawings")
+      .createSignedUrls(paths, 3600);
+    for (const item of signed ?? []) {
+      if (item.path && item.signedUrl) thumbUrlByPath.set(item.path, item.signedUrl);
+    }
+  }
+
+  type Joined = RawMarker & {
+    target_drawing: {
+      id: string;
+      display_name: string;
+      is_archived: boolean;
+      thumbnail_url?: string | null;
+    } | null;
+  };
+  const enriched = ((markers as RawMarker[] | null) ?? []).map((m) => {
+    if (!m.target_drawing) return m as Joined;
+    const path = thumbPathByDrawing.get(m.target_drawing.id);
+    const url = path ? thumbUrlByPath.get(path) ?? null : null;
+    return {
+      ...m,
+      target_drawing: { ...m.target_drawing, thumbnail_url: url },
+    } as Joined;
+  });
+
+  return NextResponse.json({ markers: enriched, version_id: targetVersionId });
 }
 
 // POST /api/projects/[id]/drawings/[drawingId]/markers — create a new marker

@@ -31,5 +31,9 @@ export interface MarkerWithTarget extends Marker {
     id: string;
     display_name: string;
     is_archived: boolean;
+    /** Pre-signed URL of the target drawing's latest active thumbnail JPEG.
+     *  Populated by the markers GET endpoint so the tooltip can show a
+     *  preview without re-rendering the full PDF on every click. */
+    thumbnail_url?: string | null;
   } | null;
 }

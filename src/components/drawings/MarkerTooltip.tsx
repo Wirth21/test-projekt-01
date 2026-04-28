@@ -2,15 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Document, Page } from "react-pdf";
-import { Loader2, FileWarning, Archive, ExternalLink } from "lucide-react";
+import { FileWarning, Archive, ExternalLink, FileText } from "lucide-react";
 import type { MarkerWithTarget } from "@/lib/types/marker";
 import { useTranslations } from "next-intl";
 
 interface MarkerTooltipProps {
   marker: MarkerWithTarget;
   anchorEl: HTMLElement | null;
-  getSignedUrl: (drawingId: string) => Promise<string>;
+  /** Kept on the prop interface for back-compat with callers that already
+   *  pass it; no longer used internally — the tooltip displays the cached
+   *  JPEG thumbnail URL the markers API ships with each marker. */
+  getSignedUrl?: (drawingId: string) => Promise<string>;
   onNavigate: (marker: MarkerWithTarget) => void;
   onClose: () => void;
 }
@@ -18,7 +20,6 @@ interface MarkerTooltipProps {
 export function MarkerTooltip({
   marker,
   anchorEl,
-  getSignedUrl,
   onNavigate,
   onClose,
 }: MarkerTooltipProps) {
@@ -27,8 +28,6 @@ export function MarkerTooltip({
   const isDeleted = !target;
   const isArchived = target?.is_archived;
 
-  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(!!(target && !target.is_archived));
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const rafRef = useRef<number>(0);
@@ -49,26 +48,6 @@ export function MarkerTooltip({
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
   }, [anchorEl]);
-
-  // Load thumbnail
-  useEffect(() => {
-    if (!target || target.is_archived) return;
-
-    let cancelled = false;
-
-    getSignedUrl(target.id)
-      .then((url) => {
-        if (!cancelled) setThumbnailUrl(url);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [target, getSignedUrl]);
 
   // Close when clicking outside
   useEffect(() => {
@@ -129,22 +108,22 @@ export function MarkerTooltip({
               <ExternalLink className="h-3 w-3 shrink-0" />
               <span className="truncate">{target.display_name}</span>
             </div>
-            {loading ? (
-              <div className="w-full h-28 bg-muted rounded flex items-center justify-center">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              </div>
-            ) : thumbnailUrl ? (
+            {target.thumbnail_url ? (
               <div className="w-full h-28 bg-muted rounded overflow-hidden flex items-center justify-center">
-                <Document file={thumbnailUrl} loading={null} error={null}>
-                  <Page
-                    pageNumber={1}
-                    width={200}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                  />
-                </Document>
+                {/* eslint-disable-next-line @next/next/no-img-element -- signed Storage URL, not a static asset */}
+                <img
+                  src={target.thumbnail_url}
+                  alt=""
+                  className="max-w-full max-h-full object-contain"
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
-            ) : null}
+            ) : (
+              <div className="w-full h-28 bg-muted rounded flex items-center justify-center">
+                <FileText className="h-6 w-6 text-muted-foreground/40" />
+              </div>
+            )}
           </>
         )}
       </div>

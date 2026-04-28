@@ -225,18 +225,29 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
   // pan offset can park the new (differently-sized) PDF off-screen.
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
 
-  // Container width minus padding, set as soon as the wrapper mounts so the
-  // first <Page> render already uses the right dimensions instead of falling
-  // back to the PDF's intrinsic CSS width (which is usually much smaller and
-  // causes the "klein → groß"-jump). Refreshed by a ResizeObserver below so
-  // the viewer adapts to window resizes and fullscreen-toggle.
-  const [fittedWidth, setFittedWidth] = useState<number | undefined>(undefined);
+  // Container dimensions, kept in sync via ResizeObserver. Tracked
+  // separately so fittedWidth can be derived as a function of *both* the
+  // available width AND height — otherwise portrait PDFs overflow the
+  // viewport and landscape ones leave the bottom empty.
+  const [containerSize, setContainerSize] = useState<{ w: number; h: number } | null>(null);
 
   // Aspect ratio (width / height) used for the placeholder/sized container,
   // so the layout box stays the right shape even before the first Page paints.
   // Default is rough A-series landscape (≈ √2). After Document parses we
   // refine it with the actual PDF page-1 viewport.
   const [pdfAspect, setPdfAspect] = useState(1.414);
+
+  // Fit-to-container width: never exceed available width, never let height
+  // exceed available height. Padded by 48 px on each axis. Recomputed
+  // automatically when the container resizes or the PDF's aspect changes.
+  const fittedWidth = (() => {
+    if (!containerSize) return undefined;
+    const PAD = 48;
+    const availW = containerSize.w - PAD;
+    const availH = containerSize.h - PAD;
+    if (availW <= 0 || availH <= 0) return undefined;
+    return Math.floor(Math.min(availW, availH * pdfAspect));
+  })();
 
   // Progressive rendering: a fast low-res canvas appears immediately, then
   // a hi-res one renders in the background and replaces it on success.
@@ -289,10 +300,10 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
 
     if (!node) return;
 
-    const VIEWER_PADDING = 48;
     const measure = () => {
-      const w = node.clientWidth - VIEWER_PADDING;
-      if (w > 0) setFittedWidth(w);
+      const w = node.clientWidth;
+      const h = node.clientHeight;
+      if (w > 0 && h > 0) setContainerSize({ w, h });
     };
 
     // Initial measurement happens on next frame so layout is settled.
@@ -403,11 +414,18 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
 
   useEffect(() => {
     if (activeVersion) {
+      // Clear the previous URL the moment we switch drawings/versions so
+      // <Document key={pdfUrl}> tears down the old canvases right away.
+      // fetchUrl below restores it from cache or network. Without this,
+      // the previous PDF lingers on screen until fetchUrl resolves and
+      // the user briefly sees the old drawing "again" before the new one.
+      if (prevVersionRef.current !== activeVersion.id) {
+        setPdfUrl(null);
+      }
       fetchUrl();
       setCurrentPage(1);
       setNumPages(null);
       // fittedWidth is NOT reset — it depends on the container, not the PDF.
-      // Keeping it lets the new <Page> render immediately at the right size.
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- only refetch when version ID changes, not the full object
   }, [activeVersion?.id, fetchUrl]);
@@ -1271,6 +1289,14 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                       )}
 
                       <Document
+                        // key forces a full remount when pdfUrl changes —
+                        // i.e. on drawing or version switch. Without it,
+                        // react-pdf only swaps the file prop and the old
+                        // canvases stay on screen until the new PDF
+                        // finishes parsing, which looked like the previous
+                        // drawing was being "shown again" before the new
+                        // one arrived.
+                        key={pdfUrl ?? "no-pdf"}
                         file={pdfUrl}
                         onLoadSuccess={handleDocumentLoadSuccess}
                         onLoadError={handleDocumentLoadError}
@@ -1295,9 +1321,17 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                             their canvases without unmount/remount, so the
                             container never collapses. */}
                         <div
-                          className={`absolute inset-0 transition-opacity duration-150 ${
-                            hiResReady ? "opacity-100" : "opacity-0 pointer-events-none"
-                          }`}
+                          // Smooth fade-IN only. When hiResReady flips back
+                          // to false (page change, version switch), we
+                          // disappear instantly — otherwise the transition
+                          // would slowly fade out the old page while the
+                          // new one is rendering, making the old drawing
+                          // appear to "linger" on screen for ~150 ms.
+                          className={
+                            hiResReady
+                              ? "absolute inset-0 transition-opacity duration-150 opacity-100"
+                              : "absolute inset-0 opacity-0 pointer-events-none"
+                          }
                         >
                           <Page
                             pageNumber={currentPage}

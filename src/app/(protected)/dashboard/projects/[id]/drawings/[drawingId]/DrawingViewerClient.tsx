@@ -234,8 +234,20 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
   // Aspect ratio (width / height) used for the placeholder/sized container,
   // so the layout box stays the right shape even before the first Page paints.
   // Default is rough A-series landscape (≈ √2). After Document parses we
-  // refine it with the actual PDF page-1 viewport.
+  // refine it with the actual PDF page-1 viewport (with the PDF's intrinsic
+  // rotation already applied — getViewport without a rotation arg returns
+  // the dimensions react-pdf shows by default).
   const [pdfAspect, setPdfAspect] = useState(1.414);
+
+  // The user's rotation delta on top of the intrinsic angle. Same value
+  // that's later passed to <Page rotate={...}>. Computed up here so the
+  // aspect-ratio math (which has to flip when the page is shown sideways)
+  // can read it before fittedWidth is derived.
+  const currentRotationDelta = pendingRotation ?? activeVersion?.rotation ?? 0;
+  const isRotatedSideways =
+    currentRotationDelta === 90 || currentRotationDelta === 270;
+  // Aspect AFTER the user delta: if the page is sideways we swap.
+  const effectiveAspect = isRotatedSideways ? 1 / pdfAspect : pdfAspect;
 
   // Fit-to-container width: never exceed available width, never let height
   // exceed available height. Padded by 48 px on each axis. Recomputed
@@ -246,7 +258,7 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
     const availW = containerSize.w - PAD;
     const availH = containerSize.h - PAD;
     if (availW <= 0 || availH <= 0) return undefined;
-    return Math.floor(Math.min(availW, availH * pdfAspect));
+    return Math.floor(Math.min(availW, availH * effectiveAspect));
   })();
 
   // Progressive rendering: a fast low-res canvas appears immediately, then
@@ -822,8 +834,8 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
   // Archived version hint
   const isArchivedVersion = activeVersion?.is_archived === true;
 
-  // User's rotation delta (0/90/180/270). null → no user rotation yet.
-  const rotationDelta = pendingRotation ?? activeVersion?.rotation ?? 0;
+  // Re-use the rotation delta computed above for the aspect math.
+  const rotationDelta = currentRotationDelta;
   // react-pdf: null → respect intrinsic; number → absolute override.
   // Pass null when the user delta is 0 so the PDF's own /Rotate wins and
   // the viewer matches the thumbnail.
@@ -1268,7 +1280,9 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                       className="relative inline-block shadow-lg bg-white"
                       style={{
                         minWidth: fittedWidth,
-                        minHeight: Math.round(fittedWidth / pdfAspect),
+                        // Match the canvas' rotated-aware height so the
+                        // frame follows the user's 90°/270° rotation.
+                        minHeight: Math.round(fittedWidth / effectiveAspect),
                       }}
                     >
                       {/* Placeholder layered on top of (or in lieu of) the

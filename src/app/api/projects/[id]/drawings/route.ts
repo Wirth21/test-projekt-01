@@ -19,28 +19,16 @@ export async function GET(_request: Request, { params }: RouteParams) {
   if ("error" in accessResult) return accessResult.error;
   const { supabase } = accessResult.data;
 
-  // Fetch all drawings with their versions and status
+  // Two slim queries instead of one heavy 2-level join. The previous
+  // SELECT pulled every version of every drawing (and joined statuses
+  // for each) — fine for a handful of drawings, but on the Free-plan
+  // compute box it ate the disk-IO budget. Now we fetch the drawings
+  // base, then the latest non-archived version per drawing in a single
+  // batched query, and a separate per-drawing count.
+
   const { data: drawings, error: fetchError } = await supabase
     .from("drawings")
-    .select(`
-      *,
-      drawing_versions (
-        id,
-        drawing_id,
-        version_number,
-        label,
-        storage_path,
-        thumbnail_path,
-        file_size,
-        page_count,
-        is_archived,
-        created_by,
-        created_at,
-        updated_at,
-        status_id,
-        status:drawing_statuses(id, name, color)
-      )
-    `)
+    .select("id, project_id, display_name, is_archived, uploaded_by, created_at, updated_at, group_id")
     .eq("project_id", projectId)
     .order("created_at", { ascending: false })
     .limit(500);
@@ -49,41 +37,84 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Zeichnungen konnten nicht geladen werden" }, { status: 500 });
   }
 
-  // Enrich each drawing with version_count and latest_version
-  const enrichedDrawings = (drawings ?? []).map((drawing) => {
-    const versions = (drawing.drawing_versions ?? []) as Array<{
-      id: string;
-      drawing_id: string;
-      version_number: number;
-      label: string;
-      storage_path: string;
-      thumbnail_path: string | null;
-      file_size: number;
-      page_count: number | null;
-      is_archived: boolean;
-      created_by: string;
-      created_at: string;
-      updated_at: string;
-      status_id: string | null;
-      status: { id: string; name: string; color: string } | null;
-    }>;
+  const drawingIds = (drawings ?? []).map((d) => d.id);
 
-    const activeVersions = versions
-      .filter((v) => !v.is_archived)
-      .sort((a, b) => b.version_number - a.version_number);
+  // Per-drawing version counts (active + archived together — matches the
+  // previous semantics where version_count came from `versions.length`).
+  const versionCounts = new Map<string, number>();
+  if (drawingIds.length > 0) {
+    const { data: counts } = await supabase
+      .from("drawing_versions")
+      .select("drawing_id")
+      .in("drawing_id", drawingIds);
+    for (const row of counts ?? []) {
+      versionCounts.set(row.drawing_id, (versionCounts.get(row.drawing_id) ?? 0) + 1);
+    }
+  }
 
-    const latestVersion = activeVersions[0] ?? null;
+  // Latest *active* version per drawing. We pull all active versions and
+  // pick the highest version_number per drawing in JS — much cheaper than
+  // a per-drawing subquery and still one round trip.
+  const latestVersionByDrawing = new Map<string, {
+    id: string;
+    drawing_id: string;
+    version_number: number;
+    label: string;
+    storage_path: string;
+    thumbnail_path: string | null;
+    file_size: number;
+    page_count: number | null;
+    is_archived: boolean;
+    created_by: string;
+    created_at: string;
+    updated_at: string;
+    status_id: string | null;
+    rotation: number | null;
+    status: { id: string; name: string; color: string } | null;
+  }>();
+  if (drawingIds.length > 0) {
+    const { data: latestRows } = await supabase
+      .from("drawing_versions")
+      .select(`
+        id, drawing_id, version_number, label, storage_path, thumbnail_path,
+        file_size, page_count, is_archived, created_by, created_at, updated_at,
+        status_id, rotation,
+        status:drawing_statuses(id, name, color)
+      `)
+      .in("drawing_id", drawingIds)
+      .eq("is_archived", false)
+      .order("version_number", { ascending: false });
+    for (const row of latestRows ?? []) {
+      const r = row as unknown as {
+        id: string;
+        drawing_id: string;
+        version_number: number;
+        label: string;
+        storage_path: string;
+        thumbnail_path: string | null;
+        file_size: number;
+        page_count: number | null;
+        is_archived: boolean;
+        created_by: string;
+        created_at: string;
+        updated_at: string;
+        status_id: string | null;
+        rotation: number | null;
+        status: { id: string; name: string; color: string } | null;
+      };
+      // First row per drawing wins because we ordered DESC.
+      if (!latestVersionByDrawing.has(r.drawing_id)) {
+        latestVersionByDrawing.set(r.drawing_id, r);
+      }
+    }
+  }
 
-    // Remove the raw join data, return clean object
-    const { drawing_versions: _, ...drawingBase } = drawing;
-
-    return {
-      ...drawingBase,
-      version_count: versions.length,
-      latest_version: latestVersion,
-      thumbnail_url: null as string | null,
-    };
-  });
+  const enrichedDrawings = (drawings ?? []).map((drawing) => ({
+    ...drawing,
+    version_count: versionCounts.get(drawing.id) ?? 0,
+    latest_version: latestVersionByDrawing.get(drawing.id) ?? null,
+    thumbnail_url: null as string | null,
+  }));
 
   // Batch-sign thumbnail URLs (1 hour). Much cheaper than one request per
   // drawing: clients can render previews immediately without a second

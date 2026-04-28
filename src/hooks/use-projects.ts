@@ -105,12 +105,13 @@ export function useProjects() {
   const supabase = createClient();
   const { userId, isReadOnly } = useUser();
 
-  // Active projects
+  // Active projects — list rarely changes during a session; mutations
+  // invalidate explicitly. Disabled refetchOnWindowFocus is the global
+  // default; no per-query override needed.
   const { data: projects = [], isLoading: loading, error: queryError } = useQuery({
     queryKey: ["projects", userId],
     queryFn: () => fetchActiveProjects(supabase, userId, isReadOnly),
-    staleTime: 5_000,
-    refetchOnWindowFocus: true,
+    staleTime: 5 * 60_000,
   });
 
   const error = queryError?.message ?? null;

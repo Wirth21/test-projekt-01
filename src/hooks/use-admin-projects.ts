@@ -43,8 +43,9 @@ export function useAdminTenantProjects() {
   const query = useQuery({
     queryKey: LIST_QUERY_KEY,
     queryFn: fetchAdminTenantProjects,
-    staleTime: 15_000,
-    refetchOnWindowFocus: true,
+    // Admin list refreshes via explicit invalidation after the delete
+    // mutation. Two-minute freshness is plenty for admin browsing.
+    staleTime: 2 * 60_000,
   });
 
   const deleteMutation = useMutation({

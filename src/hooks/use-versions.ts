@@ -31,7 +31,7 @@ export function useVersions(projectId: string, drawingId: string) {
 
       return json.versions ?? [];
     },
-    staleTime: 30_000,
+    staleTime: 5 * 60_000,
     enabled: !!projectId && !!drawingId,
   });
 

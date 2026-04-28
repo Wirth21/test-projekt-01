@@ -29,7 +29,10 @@ export function useDrawings(projectId: string) {
 
       return json.drawings ?? [];
     },
-    staleTime: 30_000,
+    // Drawings change infrequently in a session; the heavy join behind this
+    // endpoint should not be re-issued every 30 s. Mutations
+    // (upload/rename/archive/group) invalidate explicitly.
+    staleTime: 5 * 60_000,
     enabled: !!projectId,
   });
 

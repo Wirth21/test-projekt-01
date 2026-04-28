@@ -19,7 +19,7 @@ export function useMarkers(projectId: string, drawingId: string, versionId?: str
       if (!res.ok) throw new Error(json.error ?? "Marker konnten nicht geladen werden");
       return json.markers ?? [];
     },
-    staleTime: 30_000,
+    staleTime: 5 * 60_000,
     enabled: !!projectId && !!drawingId,
   });
 

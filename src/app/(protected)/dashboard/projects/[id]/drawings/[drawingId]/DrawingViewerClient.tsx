@@ -343,15 +343,34 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
     }
   }, [versionsLoading, versions, selectedVersionId, latestActiveVersion]);
 
-  // Reset zoom + pan as soon as the new low-res canvas has painted. Doing
-  // this only after onRenderSuccess (which flips lowResReady to true)
-  // guarantees the content is in the DOM at the moment we measure for
-  // centerView — otherwise the old content's bounding box is used and the
-  // new (differently-sized) Page lands off-screen.
+  // Reset zoom + pan exactly once per source (drawing | version | page),
+  // and only if the user hasn't already grabbed the canvas with their own
+  // gesture. The original effect re-fired whenever lowResReady flipped
+  // false→true, so a slow first paint on mobile would let the user pinch
+  // immediately, then snap them back to scale=1 a few hundred ms later.
+  // lastCenteredKey records the last source we centered for so settling
+  // re-renders don't trigger a second reset.
+  const lastCenteredKey = useRef<string | null>(null);
+  const userInteractedRef = useRef(false);
+
+  // New source = forget previous user-gesture flag.
+  useEffect(() => {
+    userInteractedRef.current = false;
+  }, [activeDrawingId, activeVersion?.id, currentPage]);
+
   useEffect(() => {
     if (!lowResReady) return;
+    const key = `${activeDrawingId}::${activeVersion?.id ?? ""}::${currentPage}`;
+    if (lastCenteredKey.current === key) return;
+    if (userInteractedRef.current) {
+      // User already zoomed/panned this source. Honor their position;
+      // remember the key so we don't try to reset on the next settling.
+      lastCenteredKey.current = key;
+      return;
+    }
     transformRef.current?.resetTransform(0);
     transformRef.current?.centerView(1, 0);
+    lastCenteredKey.current = key;
   }, [lowResReady, activeDrawingId, activeVersion?.id, currentPage]);
 
   // Fetch signed URL for the active version
@@ -1206,6 +1225,10 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
             centerOnInit
             wheel={{ step: 0.1 }}
             panning={{ disabled: editMode }}
+            onPanningStart={() => { userInteractedRef.current = true; }}
+            onZoomStart={() => { userInteractedRef.current = true; }}
+            onPinchingStart={() => { userInteractedRef.current = true; }}
+            onWheelStart={() => { userInteractedRef.current = true; }}
           >
             {({ zoomIn, zoomOut, resetTransform }) => (
               <>

@@ -154,12 +154,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Tenant-Kontext nicht verfügbar" }, { status: 400 });
   }
 
-  // Create user in Supabase Auth (auto-confirms email)
+  // Create user in Supabase Auth (auto-confirms email).
+  // status="active" in user_metadata is read by the handle_new_user() trigger
+  // (see migration 010), so the profile is born active — no pending-tab detour.
   const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
-    user_metadata: { display_name, tenant_id: tenantId },
+    user_metadata: { display_name, tenant_id: tenantId, status: "active" },
   });
 
   if (authError) {

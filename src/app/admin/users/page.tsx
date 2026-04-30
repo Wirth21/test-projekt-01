@@ -293,6 +293,7 @@ export default function AdminUsersPage() {
         onSubmit={async (email, password, displayName) => {
           await createUser(email, password, displayName);
           toast.success(t("users.userCreated", { email }));
+          refetch();
         }}
       />
 

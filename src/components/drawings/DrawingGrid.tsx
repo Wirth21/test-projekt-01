@@ -16,6 +16,7 @@ interface DrawingGridProps {
   versionCounts?: Map<string, number>;
   statuses?: DrawingStatus[];
   onStatusChange?: (drawingId: string, versionId: string, statusId: string | null) => Promise<void>;
+  canEdit?: boolean;
 }
 
 export function DrawingGrid({
@@ -29,6 +30,7 @@ export function DrawingGrid({
   versionCounts,
   statuses,
   onStatusChange,
+  canEdit = true,
 }: DrawingGridProps) {
   if (drawings.length === 0) {
     return (
@@ -57,6 +59,7 @@ export function DrawingGrid({
           versionCount={versionCounts?.get(drawing.id)}
           statuses={statuses}
           onStatusChange={onStatusChange}
+          canEdit={canEdit}
         />
       ))}
     </div>

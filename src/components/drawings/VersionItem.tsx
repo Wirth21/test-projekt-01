@@ -42,6 +42,8 @@ interface VersionItemProps {
   statusId?: string | null;
   statuses?: DrawingStatus[];
   onStatusChange?: (statusId: string | null) => Promise<void>;
+  /** When false, all write controls (move/rename/archive/status/date) are hidden. */
+  canEdit?: boolean;
 }
 
 export function VersionItem({
@@ -59,6 +61,7 @@ export function VersionItem({
   statusId,
   statuses,
   onStatusChange,
+  canEdit = true,
 }: VersionItemProps) {
   const [renameOpen, setRenameOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -139,7 +142,7 @@ export function VersionItem({
           </div>
 
           <div className="flex items-center gap-0.5 shrink-0">
-            {onMove && !version.is_archived && (
+            {canEdit && onMove && !version.is_archived && (
               <>
                 <Button
                   variant="ghost"
@@ -169,6 +172,7 @@ export function VersionItem({
                 </Button>
               </>
             )}
+            {canEdit && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -261,6 +265,7 @@ export function VersionItem({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+            )}
         </div>
         </div>
       </div>

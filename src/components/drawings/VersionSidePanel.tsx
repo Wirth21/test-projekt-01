@@ -39,6 +39,8 @@ interface VersionSidePanelProps {
   statuses?: DrawingStatus[];
   /** Called when the user changes a version's status */
   onStatusChange?: (versionId: string, statusId: string | null) => Promise<void>;
+  /** When false, the panel is read-only: upload + per-version edit controls are hidden. */
+  canEdit?: boolean;
 }
 
 export function VersionSidePanel({
@@ -56,6 +58,7 @@ export function VersionSidePanel({
   onMoveVersion,
   statuses: availableStatuses,
   onStatusChange,
+  canEdit = true,
 }: VersionSidePanelProps) {
   const [showArchived, setShowArchived] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -98,17 +101,19 @@ export function VersionSidePanel({
             </SheetDescription>
           </SheetHeader>
 
-          <div className="px-4 pb-3 shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => setUploadDialogOpen(true)}
-            >
-              <Plus className="mr-1.5 h-4 w-4" />
-              Neue Version hochladen
-            </Button>
-          </div>
+          {canEdit && (
+            <div className="px-4 pb-3 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => setUploadDialogOpen(true)}
+              >
+                <Plus className="mr-1.5 h-4 w-4" />
+                Neue Version hochladen
+              </Button>
+            </div>
+          )}
 
           <Separator />
 
@@ -152,6 +157,7 @@ export function VersionSidePanel({
                           ? (statusId) => onStatusChange(version.id, statusId)
                           : undefined
                       }
+                      canEdit={canEdit}
                     />
                   );
                 })}

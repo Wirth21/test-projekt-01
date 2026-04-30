@@ -661,6 +661,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                     onUploadMultipleToGroup={isViewer ? undefined : handleUploadMultipleToGroup}
                     uploading={uploading}
                     uploadProgress={uploadProgress}
+                    canEdit={!isViewer}
                   />
                 )}
               </div>
@@ -695,20 +696,22 @@ export default function ProjectDetailPage({ params }: PageProps) {
                               {tp("archived")}
                             </Badge>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                            disabled={restoringDrawing === drawing.id}
-                            onClick={() => handleRestoreDrawing(drawing.id)}
-                          >
-                            {restoringDrawing === drawing.id ? (
-                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                            )}
-                            {tp("restore")}
-                          </Button>
+                          {!isViewer && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              disabled={restoringDrawing === drawing.id}
+                              onClick={() => handleRestoreDrawing(drawing.id)}
+                            >
+                              {restoringDrawing === drawing.id ? (
+                                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                              )}
+                              {tp("restore")}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}

@@ -1422,6 +1422,7 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
         }}
         statuses={statuses}
         onStatusChange={handleStatusChange}
+        canEdit={!isReadOnly}
       />
     </div>
   );

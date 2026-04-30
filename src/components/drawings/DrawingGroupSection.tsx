@@ -42,6 +42,7 @@ interface DrawingGroupSectionProps {
   onUploadMultiple?: (groupId: string | null, files: File[]) => Promise<void> | void;
   uploading?: boolean;
   uploadProgress?: number;
+  canEdit?: boolean;
 }
 
 export function DrawingGroupSection({
@@ -64,6 +65,7 @@ export function DrawingGroupSection({
   onUploadMultiple,
   uploading = false,
   uploadProgress = 0,
+  canEdit = true,
 }: DrawingGroupSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [renameOpen, setRenameOpen] = useState(false);
@@ -95,7 +97,7 @@ export function DrawingGroupSection({
             </button>
           </CollapsibleTrigger>
 
-          {!isUngrouped && onRenameGroup && onArchiveGroup && (
+          {!isUngrouped && canEdit && onRenameGroup && onArchiveGroup && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -138,6 +140,7 @@ export function DrawingGroupSection({
                 versionCounts={versionCounts}
                 statuses={statuses}
                 onStatusChange={onStatusChange}
+                canEdit={canEdit}
               />
             )}
             {onUpload && (

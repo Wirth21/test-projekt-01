@@ -41,6 +41,8 @@ interface DrawingCardProps {
   versionCount?: number;
   statuses?: DrawingStatus[];
   onStatusChange?: (drawingId: string, versionId: string, statusId: string | null) => Promise<void>;
+  /** When false, the action menu is hidden — read-only viewers see the card without write actions. */
+  canEdit?: boolean;
 }
 
 export function DrawingCard({
@@ -54,6 +56,7 @@ export function DrawingCard({
   versionCount,
   statuses,
   onStatusChange,
+  canEdit = true,
 }: DrawingCardProps) {
   const router = useRouter();
   const [renameOpen, setRenameOpen] = useState(false);
@@ -166,6 +169,7 @@ export function DrawingCard({
                 </span>
               )}
             </div>
+            {canEdit && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -262,6 +266,7 @@ export function DrawingCard({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            )}
           </div>
         </div>
       </div>

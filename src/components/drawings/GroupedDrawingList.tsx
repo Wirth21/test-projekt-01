@@ -24,6 +24,7 @@ interface GroupedDrawingListProps {
   onUploadMultipleToGroup?: (groupId: string | null, files: File[]) => Promise<void> | void;
   uploading?: boolean;
   uploadProgress?: number;
+  canEdit?: boolean;
 }
 
 export function GroupedDrawingList({
@@ -43,6 +44,7 @@ export function GroupedDrawingList({
   onUploadMultipleToGroup,
   uploading,
   uploadProgress,
+  canEdit = true,
 }: GroupedDrawingListProps) {
   // Active (non-archived) groups sorted by creation date (oldest first)
   const activeGroups = useMemo(
@@ -126,6 +128,7 @@ export function GroupedDrawingList({
         onUploadMultiple={onUploadMultipleToGroup}
         uploading={uploading}
         uploadProgress={uploadProgress}
+        canEdit={canEdit}
       />
     );
   }
@@ -154,6 +157,7 @@ export function GroupedDrawingList({
           onUploadMultiple={onUploadMultipleToGroup}
           uploading={uploading}
           uploadProgress={uploadProgress}
+          canEdit={canEdit}
         />
       ))}
 
@@ -176,6 +180,7 @@ export function GroupedDrawingList({
         onUploadMultiple={onUploadMultipleToGroup}
         uploading={uploading}
         uploadProgress={uploadProgress}
+        canEdit={canEdit}
       />
     </div>
   );

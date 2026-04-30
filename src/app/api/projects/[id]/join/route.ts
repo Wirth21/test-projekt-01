@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { getTenantContext } from "@/lib/tenant";
 import { createServiceRoleClient } from "@/lib/superadmin";
@@ -78,6 +79,11 @@ export async function POST(_request: Request, { params }: RouteParams) {
     );
   }
 
+  // Tenant-viewers/guests join as 'viewer' (read-only mirrors their tenant role);
+  // regular tenant users join as 'member'.
+  const tenantRole = (await headers()).get("x-tenant-role") ?? "user";
+  const memberRole = tenantRole === "viewer" || tenantRole === "guest" ? "viewer" : "member";
+
   // Insert membership using service role to bypass RLS
   // (Auth + tenant + project checks already done above)
   let insertError: { code?: string; message: string } | null = null;
@@ -88,7 +94,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
       .insert({
         project_id: projectId,
         user_id: user.id,
-        role: "member",
+        role: memberRole,
       });
     insertError = result.error;
   } catch {
@@ -97,7 +103,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
       .insert({
         project_id: projectId,
         user_id: user.id,
-        role: "member",
+        role: memberRole,
       });
     insertError = result.error;
   }

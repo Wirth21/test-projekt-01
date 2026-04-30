@@ -218,7 +218,7 @@ export default function DashboardPage() {
 
           <TabsContent value="active">
             {(() => {
-              const memberProjects = projects.filter((p) => p.role === "owner" || p.role === "member");
+              const memberProjects = projects.filter((p) => p.isMember);
               return (
                 <>
                   {loading && (
@@ -287,7 +287,7 @@ export default function DashboardPage() {
 
           <TabsContent value="inactive">
             {(() => {
-              const nonMemberProjects = projects.filter((p) => p.role === "viewer");
+              const nonMemberProjects = projects.filter((p) => !p.isMember);
               return (
                 <>
                   {!loading && nonMemberProjects.length === 0 && (
@@ -342,21 +342,19 @@ export default function DashboardPage() {
                                   {formattedDate}
                                 </span>
                               </div>
-                              {!isReadOnly && (
-                                <Button
-                                  className="w-full"
-                                  size="sm"
-                                  disabled={joining === project.id}
-                                  onClick={() => handleJoin(project)}
-                                >
-                                  {joining === project.id ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <LogIn className="mr-2 h-4 w-4" />
-                                  )}
-                                  {tp("join")}
-                                </Button>
-                              )}
+                              <Button
+                                className="w-full"
+                                size="sm"
+                                disabled={joining === project.id}
+                                onClick={() => handleJoin(project)}
+                              >
+                                {joining === project.id ? (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                  <LogIn className="mr-2 h-4 w-4" />
+                                )}
+                                {tp("join")}
+                              </Button>
                             </CardFooter>
                           </Card>
                         );

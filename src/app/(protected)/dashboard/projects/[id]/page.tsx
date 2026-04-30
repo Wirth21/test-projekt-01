@@ -427,6 +427,9 @@ export default function ProjectDetailPage({ params }: PageProps) {
   const isOwner = project?.role === "owner";
   const isMember = project?.role === "owner" || project?.role === "member";
   const isViewer = project?.role === "viewer";
+  // Anyone with a row in project_members — including tenant-viewers who self-joined.
+  // Used for the "Leave project" button (writers + read-only joiners alike).
+  const isProjectMember = project?.isMember ?? false;
 
   async function handleInvite(email: string) {
     await inviteMember(email);
@@ -722,21 +725,25 @@ export default function ProjectDetailPage({ params }: PageProps) {
               <Users className="h-4 w-4" />
               {t("members")}
             </h3>
-            {isMember && (
+            {(isMember || isProjectMember) && (
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={() => setInviteOpen(true)}>
-                  <UserPlus className="mr-1.5 h-4 w-4" />
-                  {t("invite")}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => setLeaveOpen(true)}
-                >
-                  <LogOut className="mr-1.5 h-4 w-4" />
-                  {tp("leave")}
-                </Button>
+                {isMember && (
+                  <Button size="sm" variant="outline" onClick={() => setInviteOpen(true)}>
+                    <UserPlus className="mr-1.5 h-4 w-4" />
+                    {t("invite")}
+                  </Button>
+                )}
+                {isProjectMember && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setLeaveOpen(true)}
+                  >
+                    <LogOut className="mr-1.5 h-4 w-4" />
+                    {tp("leave")}
+                  </Button>
+                )}
               </div>
             )}
           </div>

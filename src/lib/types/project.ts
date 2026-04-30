@@ -26,4 +26,8 @@ export interface ProjectMember {
 
 export interface ProjectWithRole extends Project {
   role: "owner" | "member" | "viewer";
+  // True if the user has a row in project_members for this project.
+  // Tenant-viewers see all projects (role defaults to "viewer"), but
+  // only those with a real membership belong on the Active tab.
+  isMember: boolean;
 }

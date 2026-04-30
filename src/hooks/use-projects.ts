@@ -35,8 +35,7 @@ async function fetchProjectStats(
 
 async function fetchActiveProjects(
   supabase: ReturnType<typeof createClient>,
-  userId: string,
-  isReadOnly: boolean
+  userId: string
 ): Promise<ProjectWithRole[]> {
   const { data: memberships, error: memberError } = await supabase
     .from("project_members")
@@ -45,7 +44,9 @@ async function fetchActiveProjects(
 
   if (memberError) throw new Error("Projekte konnten nicht geladen werden");
 
-  const roleMap = new Map((memberships ?? []).map((m) => [m.project_id, m.role]));
+  const roleMap = new Map(
+    (memberships ?? []).map((m) => [m.project_id, m.role as "owner" | "member" | "viewer"])
+  );
 
   const { data, error: projectsError } = await supabase
     .from("projects")
@@ -58,15 +59,17 @@ async function fetchActiveProjects(
   const projectIds = (data ?? []).map((p) => p.id);
   const countMap = await fetchProjectStats(supabase, projectIds);
 
-  return (data || []).map((p) => ({
-    ...p,
-    role: isReadOnly
-      ? ("viewer" as const)
-      : ((roleMap.get(p.id) as "owner" | "member" | undefined) ?? "viewer"),
-    pdf_count: countMap.get(p.id)?.pdf_count ?? 0,
-    marker_count: countMap.get(p.id)?.marker_count ?? 0,
-    member_count: countMap.get(p.id)?.member_count ?? 0,
-  }));
+  return (data || []).map((p) => {
+    const memberRole = roleMap.get(p.id);
+    return {
+      ...p,
+      role: memberRole ?? "viewer",
+      isMember: memberRole !== undefined,
+      pdf_count: countMap.get(p.id)?.pdf_count ?? 0,
+      marker_count: countMap.get(p.id)?.marker_count ?? 0,
+      member_count: countMap.get(p.id)?.member_count ?? 0,
+    };
+  });
 }
 
 async function fetchArchivedProjectsData(
@@ -78,7 +81,9 @@ async function fetchArchivedProjectsData(
     .select("project_id, role")
     .eq("user_id", userId);
 
-  const roleMap = new Map((memberships ?? []).map((m) => [m.project_id, m.role]));
+  const roleMap = new Map(
+    (memberships ?? []).map((m) => [m.project_id, m.role as "owner" | "member" | "viewer"])
+  );
 
   const { data: projectsData } = await supabase
     .from("projects")
@@ -89,13 +94,17 @@ async function fetchArchivedProjectsData(
   const archivedIds = (projectsData || []).map((p) => p.id);
   const archivedCountMap = await fetchProjectStats(supabase, archivedIds);
 
-  return (projectsData || []).map((p): ProjectWithRole => ({
-    ...p,
-    role: (roleMap.get(p.id) as "owner" | "member" | undefined) ?? "viewer",
-    pdf_count: archivedCountMap.get(p.id)?.pdf_count ?? 0,
-    marker_count: archivedCountMap.get(p.id)?.marker_count ?? 0,
-    member_count: archivedCountMap.get(p.id)?.member_count ?? 0,
-  }));
+  return (projectsData || []).map((p): ProjectWithRole => {
+    const memberRole = roleMap.get(p.id);
+    return {
+      ...p,
+      role: memberRole ?? "viewer",
+      isMember: memberRole !== undefined,
+      pdf_count: archivedCountMap.get(p.id)?.pdf_count ?? 0,
+      marker_count: archivedCountMap.get(p.id)?.marker_count ?? 0,
+      member_count: archivedCountMap.get(p.id)?.member_count ?? 0,
+    };
+  });
 }
 
 // --- Hook ---
@@ -103,14 +112,14 @@ async function fetchArchivedProjectsData(
 export function useProjects() {
   const queryClient = useQueryClient();
   const supabase = createClient();
-  const { userId, isReadOnly } = useUser();
+  const { userId } = useUser();
 
   // Active projects — list rarely changes during a session; mutations
   // invalidate explicitly. Disabled refetchOnWindowFocus is the global
   // default; no per-query override needed.
   const { data: projects = [], isLoading: loading, error: queryError } = useQuery({
     queryKey: ["projects", userId],
-    queryFn: () => fetchActiveProjects(supabase, userId, isReadOnly),
+    queryFn: () => fetchActiveProjects(supabase, userId),
     staleTime: 5 * 60_000,
   });
 
@@ -241,7 +250,7 @@ export function useProjectMembers(projectId: string) {
       if (!res.ok) throw new Error(json.error ?? "Mitglieder konnten nicht geladen werden");
       return (json.members ?? []).map((m: ProjectMember) => ({
         ...m,
-        role: m.role as "owner" | "member",
+        role: m.role as "owner" | "member" | "viewer",
       }));
     },
     staleTime: 30_000,

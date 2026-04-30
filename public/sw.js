@@ -1,6 +1,9 @@
 const CACHE_NAME = "link2plan-v8";
 const PDF_CACHE_NAME = "link2plan-pdfs";
-const APP_SHELL_CACHE = "link2plan-app-v6";
+// Bumped to v7: cache entries from v6 may contain redirected /login HTML
+// stored under /dashboard keys (cookie-less PWA cold-start). v7 skips
+// redirected responses entirely; old caches are dropped at activate time.
+const APP_SHELL_CACHE = "link2plan-app-v7";
 const OFFLINE_URL = "/offline.html";
 
 // Minimal HTML returned when the user is online but the server replied
@@ -157,8 +160,13 @@ self.addEventListener("fetch", (event) => {
       fetch(event.request)
         .then(async (response) => {
           if (response.ok) {
-            const clone = response.clone();
-            caches.open(APP_SHELL_CACHE).then((c) => c.put(event.request, clone));
+            // Don't cache redirected bodies under the original key — they
+            // belong to a different URL and would poison subsequent loads
+            // (e.g. /login flight payload stored under /dashboard).
+            if (!response.redirected) {
+              const clone = response.clone();
+              caches.open(APP_SHELL_CACHE).then((c) => c.put(event.request, clone));
+            }
             return response;
           }
           // Non-ok (502/503/504 from edge): try cached RSC, else redirect to full nav
@@ -199,6 +207,11 @@ self.addEventListener("fetch", (event) => {
       fetch(event.request)
         .then(async (response) => {
           if (response.ok) {
+            // Skip caching when fetch followed a redirect: the body is the
+            // destination page (often /login during a cookie-less PWA cold
+            // start), not the requested route. Caching it under /dashboard
+            // would serve the stale /login HTML on every subsequent open.
+            if (response.redirected) return response;
             const pathname = getPathname(url);
             const clone1 = response.clone();
             const clone2 = response.clone();
@@ -244,6 +257,8 @@ self.addEventListener("fetch", (event) => {
       fetch(event.request)
         .then(async (response) => {
           if (response.ok) {
+            // Same redirect-poisoning concern as branch #5 — skip caching.
+            if (response.redirected) return response;
             const clone = response.clone();
             caches.open(APP_SHELL_CACHE).then((c) => c.put(event.request, clone));
             return response;

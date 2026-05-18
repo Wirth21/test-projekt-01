@@ -1,4 +1,4 @@
-const CACHE_NAME = "link2plan-v9";
+const CACHE_NAME = "link2plan-v10";
 const PDF_CACHE_NAME = "link2plan-pdfs";
 // v8: adds best-effort pre-cache of "/" and "/login" on install, and the
 // server-error fallback page now ships a one-tap self-heal button that

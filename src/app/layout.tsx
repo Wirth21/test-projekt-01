@@ -62,7 +62,16 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js');
+                navigator.serviceWorker.register('/sw.js').then(function(reg){
+                  var FIVE_MIN = 5 * 60 * 1000;
+                  function check(){
+                    if (document.visibilityState === 'visible') {
+                      reg.update().catch(function(){});
+                    }
+                  }
+                  setInterval(check, FIVE_MIN);
+                  document.addEventListener('visibilitychange', check);
+                }).catch(function(){});
               }
             `,
           }}

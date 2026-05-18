@@ -1,17 +1,22 @@
-const CACHE_NAME = "link2plan-v8";
+const CACHE_NAME = "link2plan-v9";
 const PDF_CACHE_NAME = "link2plan-pdfs";
-// Bumped to v7: cache entries from v6 may contain redirected /login HTML
-// stored under /dashboard keys (cookie-less PWA cold-start). v7 skips
-// redirected responses entirely; old caches are dropped at activate time.
-const APP_SHELL_CACHE = "link2plan-app-v7";
+// v8: adds best-effort pre-cache of "/" and "/login" on install, and the
+// server-error fallback page now ships a one-tap self-heal button that
+// unregisters the SW and purges caches. Old v7 entries are dropped on
+// activate via the keepCaches filter.
+const APP_SHELL_CACHE = "link2plan-app-v8";
 const OFFLINE_URL = "/offline.html";
 
 // Minimal HTML returned when the user is online but the server replied
 // with 5xx or the fetch threw (e.g. Vercel cold-start timeout, edge
 // reset). NEVER serve offline.html in this case — it would tell the
 // user they have no internet, which is false.
+//
+// The page ships a "Cache leeren und neu laden" button so a user whose
+// SW state is somehow corrupted can recover without a PC or Chrome's
+// site-data menu. This is the only escape hatch for a wedged WebAPK.
 function makeServerErrorResponse(status) {
-  const body = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kurz nicht erreichbar</title><style>body{font-family:system-ui,sans-serif;max-width:480px;margin:80px auto;padding:0 24px;color:#111;text-align:center}h1{font-size:22px;margin-bottom:8px}p{color:#555;margin:8px 0}button{margin-top:16px;padding:10px 20px;font-size:15px;border:none;border-radius:8px;background:#3b82f6;color:#fff;cursor:pointer}button:hover{background:#2563eb}</style></head><body><h1>Server kurz nicht erreichbar</h1><p>Bitte versuche es in einem Moment erneut. Deine Internetverbindung ist in Ordnung.</p><button onclick="window.location.reload()">Erneut versuchen</button></body></html>`;
+  const body = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kurz nicht erreichbar</title><style>body{font-family:system-ui,sans-serif;max-width:480px;margin:80px auto;padding:0 24px;color:#111;text-align:center}h1{font-size:22px;margin-bottom:8px}p{color:#555;margin:8px 0}.actions{margin-top:20px;display:flex;flex-direction:column;gap:10px}button{padding:11px 20px;font-size:15px;border:none;border-radius:8px;cursor:pointer}.primary{background:#3b82f6;color:#fff}.primary:hover{background:#2563eb}.secondary{background:transparent;color:#3b82f6;border:1px solid #3b82f6}.secondary:hover{background:#eff6ff}.hint{font-size:12px;color:#888;margin-top:14px}</style></head><body><h1>Server kurz nicht erreichbar</h1><p>Bitte versuche es in einem Moment erneut. Deine Internetverbindung ist in Ordnung.</p><div class="actions"><button class="primary" onclick="window.location.reload()">Erneut versuchen</button><button class="secondary" onclick="resetApp()">Cache leeren und neu laden</button></div><p class="hint">Wenn "Erneut versuchen" auch nach mehreren Anlaeufen scheitert, hilft "Cache leeren".</p><script>async function resetApp(){try{if('serviceWorker' in navigator){var r=await navigator.serviceWorker.getRegistrations();await Promise.all(r.map(function(x){return x.unregister();}));}if('caches' in self){var k=await caches.keys();await Promise.all(k.map(function(x){return caches.delete(x);}));}}catch(e){}window.location.reload();}</script></body></html>`;
   return new Response(body, {
     status: status || 503,
     headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -20,9 +25,25 @@ function makeServerErrorResponse(status) {
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
-      cache.addAll([OFFLINE_URL, "/icon-192.png", "/icon-512.png"])
-    )
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.addAll([OFFLINE_URL, "/icon-192.png", "/icon-512.png"]);
+      // Best-effort pre-cache of the public landing + login pages.
+      // Gives PWA cold-start a fallback even if Vercel hiccups on the
+      // very first navigation. Failures are swallowed on purpose —
+      // this is a safety net, not a hard requirement.
+      const shell = await caches.open(APP_SHELL_CACHE);
+      await Promise.all(
+        ["/", "/login"].map(async (path) => {
+          try {
+            const res = await fetch(path);
+            if (res.ok && !res.redirected) {
+              await shell.put(path, res.clone());
+            }
+          } catch {}
+        })
+      );
+    })()
   );
   self.skipWaiting();
 });

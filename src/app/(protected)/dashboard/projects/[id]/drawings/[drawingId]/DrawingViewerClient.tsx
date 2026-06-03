@@ -25,6 +25,7 @@ import {
   Archive,
   History,
   Maximize,
+  Printer,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ import { UploadInfo } from "@/components/drawings/UploadInfo";
 import type { MarkerWithTarget, MarkerColor } from "@/lib/types/marker";
 import { useTranslations } from "next-intl";
 import { getCachedPdfByStoragePath } from "@/lib/offline/pdf-cache";
+import { printPdf } from "@/lib/print/print-pdf";
 import dynamic from "next/dynamic";
 const SyncStatusBadge = dynamic(
   () => import("@/components/sync/SyncStatusBadge").then((m) => m.SyncStatusBadge),
@@ -192,6 +194,21 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
 
   // Version panel state
   const [versionPanelOpen, setVersionPanelOpen] = useState(false);
+
+  // Print state (PROJ-26). Drucken nutzt die bereits geladene pdfUrl —
+  // das Original-PDF der aktiven Version, ohne Marker-Overlay.
+  const [printing, setPrinting] = useState(false);
+  const handlePrint = useCallback(async () => {
+    if (!pdfUrl || printing) return;
+    setPrinting(true);
+    try {
+      await printPdf(pdfUrl);
+    } catch {
+      toast.error(t("toasts.printFailed"));
+    } finally {
+      setPrinting(false);
+    }
+  }, [pdfUrl, printing, t]);
 
   // Persistent rotation: stored per-version as a DELTA on top of the PDF's
   // intrinsic /Rotate metadata. Display angle = (intrinsic + delta) % 360.
@@ -1057,6 +1074,24 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
               </>
             )}
 
+            {activeVersion && (
+              <>
+                <Separator orientation="vertical" className="h-5" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrint}
+                  disabled={!pdfUrl || printing}
+                  className="gap-1.5"
+                  aria-label={t("print")}
+                  title={t("print")}
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  <span>{t("print")}</span>
+                </Button>
+              </>
+            )}
+
             {fullscreenSupported && (
               <>
                 <Separator orientation="vertical" className="h-5" />
@@ -1117,6 +1152,19 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
               aria-label="90 Grad drehen"
             >
               <RotateCw className="h-3.5 w-3.5" />
+            </Button>
+          )}
+
+          {activeVersion && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrint}
+              disabled={!pdfUrl || printing}
+              className="shrink-0 h-8 w-8 p-0"
+              aria-label={t("print")}
+            >
+              <Printer className="h-3.5 w-3.5" />
             </Button>
           )}
 
@@ -1247,6 +1295,8 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                     onToggleEditMode={() => setEditMode(!editMode)}
                     onExitFullscreen={exitFs}
                     onOpenVersionPanel={() => setVersionPanelOpen(true)}
+                    onPrint={handlePrint}
+                    printing={printing}
                   />
                 )}
 

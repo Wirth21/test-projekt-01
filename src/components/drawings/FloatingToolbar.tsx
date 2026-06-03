@@ -11,6 +11,7 @@ import {
   Pencil,
   Eye,
   History,
+  Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -35,6 +36,8 @@ interface FloatingToolbarProps {
   onToggleEditMode: () => void;
   onExitFullscreen: () => void;
   onOpenVersionPanel: () => void;
+  onPrint: () => void;
+  printing: boolean;
 }
 
 const AUTO_HIDE_DELAY = 3000;
@@ -52,6 +55,8 @@ export function FloatingToolbar({
   onToggleEditMode,
   onExitFullscreen,
   onOpenVersionPanel,
+  onPrint,
+  printing,
 }: FloatingToolbarProps) {
   const [visible, setVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -267,6 +272,27 @@ export function FloatingToolbar({
           </TooltipTrigger>
           <TooltipContent side="bottom">
             <p>Zoom zurücksetzen</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Separator orientation="vertical" className="h-5 mx-0.5" />
+
+        {/* Print */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onPrint}
+              disabled={printing}
+              className="h-9 w-9 p-0"
+              aria-label="Drucken"
+            >
+              <Printer className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <p>Drucken</p>
           </TooltipContent>
         </Tooltip>
 

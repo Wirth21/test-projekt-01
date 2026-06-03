@@ -42,7 +42,8 @@
 | PROJ-23 | Branding (Logo, Favicon, Impressum) | QA Passed | — | 2026-04-01 | 23 |
 | PROJ-24 | Offline-First Caching & Synchronisation | QA Passed | [PROJ-24-offline-caching.md](PROJ-24-offline-caching.md) | 2026-04-09 | 24 |
 | PROJ-25 | Admin Projekt-Hard-Delete | QA Passed | [PROJ-25-admin-project-hard-delete.md](PROJ-25-admin-project-hard-delete.md) | 2026-04-24 | 25 |
+| PROJ-26 | Zeichnung drucken | Planned | [PROJ-26-print-drawing.md](PROJ-26-print-drawing.md) | 2026-06-03 | 26 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-26
+## Next Available ID: PROJ-27

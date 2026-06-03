@@ -1,8 +1,12 @@
 # PROJ-26: Zeichnung drucken
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-06-03
 **Last Updated:** 2026-06-03
+
+> Gemergt via PR #1 nach `main` und über Vercel auf link2plan.de deployt
+> (2026-06-03). Vom Nutzer im Vercel-Preview manuell getestet — Drucken
+> funktioniert.
 
 ## Beschreibung
 Nutzer sollen aus der Zeichnungsansicht heraus die aktuell angezeigte Zeichnung (das

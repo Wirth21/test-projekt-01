@@ -31,7 +31,7 @@ Ein webbasiertes Team-Tool zur Verwaltung technischer PDF-Pläne (z.B. Baupläne
 | P2 | Branding (Logo, Favicon, Impressum) | Done |
 | P1 | Offline-First Caching & Synchronisation | Done |
 | P1 | Admin Projekt-Hard-Delete | Done |
-| P2 | Zeichnung drucken | Planned |
+| P2 | Zeichnung drucken | Done |
 
 ## Success Metrics
 - Teams können Projekte mit PDFs anlegen und gemeinsam nutzen

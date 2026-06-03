@@ -203,6 +203,7 @@
     "editModeHint": "Bearbeitungsmodus -- Klicke auf die Zeichnung um einen Marker zu setzen. Rechtsklick auf Marker zum Bearbeiten.",
     "editMode": "Bearbeiten",
     "viewMode": "Ansicht",
+    "print": "Drucken",
     "fullscreen": "Vollbild",
     "fullscreenEnter": "Vollbildmodus aktivieren",
     "fullscreenExit": "Vollbild verlassen",
@@ -287,6 +288,7 @@
       "versionArchived": "Version archiviert",
       "versionArchiveFailed": "Archivierung fehlgeschlagen",
       "pdfUrlFailed": "PDF-URL konnte nicht geladen werden",
+      "printFailed": "Drucken fehlgeschlagen — PDF konnte nicht vorbereitet werden",
       "statusChanged": "Status aktualisiert",
       "statusChangeFailed": "Status konnte nicht geaendert werden"
     },

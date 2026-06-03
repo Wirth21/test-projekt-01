@@ -203,6 +203,7 @@
     "editModeHint": "Edit mode — Click on the drawing to place a marker. Right-click on markers to edit.",
     "editMode": "Edit",
     "viewMode": "View",
+    "print": "Print",
     "fullscreen": "Fullscreen",
     "fullscreenEnter": "Enter fullscreen mode",
     "fullscreenExit": "Exit fullscreen",
@@ -287,6 +288,7 @@
       "versionArchived": "Version archived",
       "versionArchiveFailed": "Archiving failed",
       "pdfUrlFailed": "Could not load PDF URL",
+      "printFailed": "Printing failed — could not prepare the PDF",
       "statusChanged": "Status changed",
       "statusChangeFailed": "Could not change status"
     },

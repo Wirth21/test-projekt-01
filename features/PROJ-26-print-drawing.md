@@ -1,6 +1,6 @@
 # PROJ-26: Zeichnung drucken
 
-## Status: Planned
+## Status: In Review
 **Created:** 2026-06-03
 **Last Updated:** 2026-06-03
 
@@ -76,10 +76,43 @@ System-Druckdialog selbst Seitenbereich, Drucker und Papierformat wählen.
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+**Ansatz:** Es werden die bereits geladenen Original-PDF-Bytes der aktiven Version gedruckt
+(`pdfUrl` im `DrawingViewerClient`). Marker sind ein separates HTML-Overlay (`MarkerOverlay`)
+und damit automatisch nicht Teil des Ausdrucks — keine Render-/Overlay-Tricks nötig.
+
+**Neuer Helper:** [src/lib/print/print-pdf.ts](../src/lib/print/print-pdf.ts)
+- `printPdf(source)` erzeugt immer eine **same-origin Blob-URL** (signierte Supabase-URL →
+  `fetch`; eine Offline-`blob:`-Quelle wird direkt weiterverwendet). Grund: `iframe.print()`
+  wirft bei fremder Herkunft einen SecurityError.
+- **Desktop (pointer: fine):** verstecktes iframe + nativer Druckdialog; Aufräumen via
+  `afterprint` + Safety-Timeout; Blob-URL wird erst verzögert revoked.
+- **Touch/Mobil (pointer: coarse):** PDF in neuem Tab öffnen (synchron im Klick-Gesture, um
+  Popup-Blocker zu umgehen) → OS-Teilen/Drucken-Sheet.
+
+**UI-Anbindung im [DrawingViewerClient.tsx](../src/app/(protected)/dashboard/projects/[id]/drawings/[drawingId]/DrawingViewerClient.tsx):**
+- `printing`-State + `handlePrint`-Callback (Fehler → `toast.error(t("toasts.printFailed"))`).
+- Drucken-Button (Printer-Icon) in: Desktop-Kopfzeile, mobiler Steuerleiste und der
+  `FloatingToolbar` (Vollbild). Sichtbar/aktiv, sobald eine Version geladen ist — **nicht** an
+  den Bearbeitungsmodus geknüpft, also auch für Viewer/Guest verfügbar.
+- Neue i18n-Keys: `drawings.print` und `drawings.toasts.printFailed` (de + en).
+
+**Keine Backend-/Schema-Änderung** — reines Frontend/Lese-Feature.
 
 ## QA Test Results
-_To be added by /qa_
+
+**Automatisierte Prüfungen (alle grün):**
+- `npx tsc --noEmit` — keine Typfehler
+- ESLint auf geänderten Dateien — 0 Errors (nur 1 vorbestehende `<img>`-Warnung, nicht aus
+  diesem Feature)
+- `npm run build` — erfolgreich (Exit 0)
+- `npm test` — 38/38 Tests bestanden
+
+**Noch offen (manuell zu bestätigen, Teil des Reviews):**
+- [ ] Tatsächliches Öffnen des Druckdialogs im echten Browser (Chrome/Edge/Firefox Desktop)
+- [ ] Mobiler Pfad: neuer Tab + Teilen/Drucken auf Android-Chrome / iOS-Safari
+- [ ] Offline-Fall (PWA): Drucken einer im Cache vorhandenen Zeichnung
+- [ ] Sichtprüfung: Ausdruck enthält keine Marker-Pins
 
 ## Deployment
 _To be added by /deploy_

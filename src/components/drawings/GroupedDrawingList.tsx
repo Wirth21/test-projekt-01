@@ -25,6 +25,8 @@ interface GroupedDrawingListProps {
   uploading?: boolean;
   uploadProgress?: number;
   canEdit?: boolean;
+  /** PROJ-32 — drop a PDF onto a card to add it as a new version. */
+  onDropNewVersion?: (drawingId: string, file: File) => void;
 }
 
 export function GroupedDrawingList({
@@ -45,6 +47,7 @@ export function GroupedDrawingList({
   uploading,
   uploadProgress,
   canEdit = true,
+  onDropNewVersion,
 }: GroupedDrawingListProps) {
   // Active (non-archived) groups sorted alphabetically by name (natural/numeric
   // collation, accent-insensitive). "Ohne Gruppe" stays pinned at the end (it is
@@ -164,6 +167,7 @@ export function GroupedDrawingList({
           uploading={uploading}
           uploadProgress={uploadProgress}
           canEdit={canEdit}
+          onDropNewVersion={onDropNewVersion}
         />
       ))}
 

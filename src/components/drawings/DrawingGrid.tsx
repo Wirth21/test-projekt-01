@@ -17,6 +17,7 @@ interface DrawingGridProps {
   statuses?: DrawingStatus[];
   onStatusChange?: (drawingId: string, versionId: string, statusId: string | null) => Promise<void>;
   canEdit?: boolean;
+  onDropNewVersion?: (drawingId: string, file: File) => void;
 }
 
 export function DrawingGrid({
@@ -31,6 +32,7 @@ export function DrawingGrid({
   statuses,
   onStatusChange,
   canEdit = true,
+  onDropNewVersion,
 }: DrawingGridProps) {
   if (drawings.length === 0) {
     return (
@@ -60,6 +62,7 @@ export function DrawingGrid({
           statuses={statuses}
           onStatusChange={onStatusChange}
           canEdit={canEdit}
+          onDropNewVersion={onDropNewVersion}
         />
       ))}
     </div>

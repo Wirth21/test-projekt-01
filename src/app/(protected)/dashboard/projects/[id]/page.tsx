@@ -65,6 +65,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
     drawings,
     loading: drawingsLoading,
     uploadDrawing,
+    uploadNewVersion,
     renameDrawing,
     archiveDrawing,
     restoreDrawing,
@@ -321,6 +322,27 @@ export default function ProjectDetailPage({ params }: PageProps) {
       if (uploaded > 0) {
         toast.success(`${uploaded} Zeichnungen hochgeladen`);
       }
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  }
+
+  // PROJ-32 — a PDF was dropped onto a drawing card → add it as a new version.
+  async function handleDropNewVersion(drawingId: string, file: File) {
+    const meta = await askUploadMeta(1);
+    if (!meta) return;
+
+    setUploading(true);
+    setUploadProgress(0);
+    try {
+      await uploadNewVersion(drawingId, file, (pct) => setUploadProgress(pct), {
+        status_id: meta.statusId,
+        created_at: meta.createdAtIso,
+      });
+      toast.success(t("toasts.versionUploaded"));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("toasts.uploadFailed"));
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -724,6 +746,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                     onStatusChange={handleStatusChange}
                     onUploadToGroup={isViewer ? undefined : handleUploadToGroup}
                     onUploadMultipleToGroup={isViewer ? undefined : handleUploadMultipleToGroup}
+                    onDropNewVersion={isViewer ? undefined : handleDropNewVersion}
                     uploading={uploading}
                     uploadProgress={uploadProgress}
                     canEdit={!isViewer}

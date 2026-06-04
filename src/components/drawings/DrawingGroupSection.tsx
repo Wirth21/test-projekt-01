@@ -43,6 +43,7 @@ interface DrawingGroupSectionProps {
   uploading?: boolean;
   uploadProgress?: number;
   canEdit?: boolean;
+  onDropNewVersion?: (drawingId: string, file: File) => void;
 }
 
 export function DrawingGroupSection({
@@ -66,6 +67,7 @@ export function DrawingGroupSection({
   uploading = false,
   uploadProgress = 0,
   canEdit = true,
+  onDropNewVersion,
 }: DrawingGroupSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [renameOpen, setRenameOpen] = useState(false);
@@ -141,6 +143,7 @@ export function DrawingGroupSection({
                 statuses={statuses}
                 onStatusChange={onStatusChange}
                 canEdit={canEdit}
+                onDropNewVersion={onDropNewVersion}
               />
             )}
             {onUpload && (

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { MoreVertical, Pencil, Archive, FolderOpen, CircleDot } from "lucide-react";
+import { MoreVertical, Pencil, Archive, FolderOpen, CircleDot, Upload } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -43,6 +44,8 @@ interface DrawingCardProps {
   onStatusChange?: (drawingId: string, versionId: string, statusId: string | null) => Promise<void>;
   /** When false, the action menu is hidden — read-only viewers see the card without write actions. */
   canEdit?: boolean;
+  /** PROJ-32 — drop a PDF onto the card to add it as a new version. */
+  onDropNewVersion?: (drawingId: string, file: File) => void;
 }
 
 export function DrawingCard({
@@ -57,11 +60,46 @@ export function DrawingCard({
   statuses,
   onStatusChange,
   canEdit = true,
+  onDropNewVersion,
 }: DrawingCardProps) {
   const router = useRouter();
   const [renameOpen, setRenameOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [assignGroupOpen, setAssignGroupOpen] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  const dropEnabled = canEdit && !!onDropNewVersion;
+
+  function handleDragOver(e: React.DragEvent) {
+    if (!dropEnabled) return;
+    if (!Array.from(e.dataTransfer.types).includes("Files")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (!dragOver) setDragOver(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    if (!dropEnabled) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    if (!dropEnabled) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    const file = Array.from(e.dataTransfer.files)[0];
+    if (!file) return;
+    const isPdf =
+      file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdf) {
+      toast.error("Nur PDF-Dateien können als neue Version abgelegt werden");
+      return;
+    }
+    onDropNewVersion!(drawing.id, file);
+  }
 
   const formattedDate = new Date(drawing.created_at).toLocaleDateString(
     "de-DE",
@@ -81,7 +119,9 @@ export function DrawingCard({
   return (
     <>
       <div
-        className="group rounded-lg border bg-card overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+        className={`group relative rounded-lg border bg-card overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${
+          dragOver ? "ring-2 ring-primary ring-offset-1" : ""
+        }`}
         onClick={handleCardClick}
         role="button"
         tabIndex={0}
@@ -92,7 +132,18 @@ export function DrawingCard({
             handleCardClick();
           }
         }}
+        onDragOver={dropEnabled ? handleDragOver : undefined}
+        onDragLeave={dropEnabled ? handleDragLeave : undefined}
+        onDrop={dropEnabled ? handleDrop : undefined}
       >
+        {dragOver && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary pointer-events-none">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary bg-background/90 rounded px-2 py-1 shadow-sm">
+              <Upload className="h-3.5 w-3.5" />
+              Als neue Version ablegen
+            </span>
+          </div>
+        )}
         {/* Thumbnail */}
         <div className="aspect-[3/2] bg-muted flex items-center justify-center overflow-hidden relative">
           {drawing.thumbnail_url ? (

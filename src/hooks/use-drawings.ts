@@ -157,6 +157,103 @@ export function useDrawings(projectId: string) {
     [projectId, queryClient, supabase.auth]
   );
 
+  /**
+   * PROJ-32 — Upload a PDF as a NEW VERSION of an existing drawing, addressed
+   * by drawingId (unlike use-versions, which is bound to one drawing). Used by
+   * the drag&drop-onto-card flow on the project page. The server assigns the
+   * real version_number, copies markers and inherits/sets the status.
+   */
+  const uploadNewVersion = useCallback(
+    async (
+      drawingId: string,
+      file: File,
+      onProgress: (pct: number) => void,
+      options?: { status_id?: string | null; created_at?: string }
+    ): Promise<void> => {
+      // Determine the next version number from the existing versions so the
+      // storage path stays within {project}/{drawing}/ and doesn't collide.
+      const verRes = await fetch(
+        `/api/projects/${projectId}/drawings/${drawingId}/versions?includeArchived=true`
+      );
+      const verJson = await verRes.json();
+      if (!verRes.ok) {
+        throw new Error(verJson.error ?? "Versionen konnten nicht geladen werden");
+      }
+      const existing: { version_number: number }[] = verJson.versions ?? [];
+      const nextVersionNumber =
+        existing.reduce((max, v) => Math.max(max, v.version_number), 0) + 1;
+      const storagePath = `${projectId}/${drawingId}/${nextVersionNumber}.pdf`;
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("Nicht eingeloggt");
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/drawings/${storagePath}`;
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", uploadUrl, true);
+        xhr.setRequestHeader("Authorization", `Bearer ${session.access_token}`);
+        xhr.setRequestHeader("x-upsert", "true");
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            onProgress(Math.round((event.loaded / event.total) * 100));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error("Upload fehlgeschlagen"));
+        };
+        xhr.onerror = () => reject(new Error("Upload fehlgeschlagen"));
+        xhr.send(file);
+      });
+
+      let thumbnailPath: string | null = null;
+      try {
+        const jpeg = await renderPdfThumbnail(file);
+        if (jpeg) thumbnailPath = await uploadThumbnail(storagePath, jpeg);
+      } catch {
+        thumbnailPath = null;
+      }
+
+      let pageCount: number | null = null;
+      try {
+        pageCount = await getPdfPageCount(file);
+      } catch {
+        pageCount = null;
+      }
+
+      const label = file.name.replace(/\.pdf$/i, "").trim().slice(0, 100) || undefined;
+
+      const res = await fetch(
+        `/api/projects/${projectId}/drawings/${drawingId}/versions`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storage_path: storagePath,
+            file_size: file.size,
+            ...(label ? { label } : {}),
+            ...(thumbnailPath ? { thumbnail_path: thumbnailPath } : {}),
+            ...(pageCount && pageCount > 0 ? { page_count: pageCount } : {}),
+            ...(options?.status_id !== undefined ? { status_id: options.status_id } : {}),
+            ...(options?.created_at ? { created_at: options.created_at } : {}),
+          }),
+        }
+      );
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error ?? "Version konnte nicht gespeichert werden");
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["drawings", projectId] });
+      await queryClient.invalidateQueries({ queryKey: ["versions", projectId, drawingId] });
+    },
+    [projectId, queryClient, supabase.auth]
+  );
+
   const renameDrawing = useCallback(
     async (drawingId: string, displayName: string) => {
       const res = await fetch(
@@ -256,6 +353,7 @@ export function useDrawings(projectId: string) {
     loading,
     error,
     uploadDrawing,
+    uploadNewVersion,
     renameDrawing,
     archiveDrawing,
     restoreDrawing,

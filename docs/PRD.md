@@ -32,6 +32,14 @@ Ein webbasiertes Team-Tool zur Verwaltung technischer PDF-Pläne (z.B. Baupläne
 | P1 | Offline-First Caching & Synchronisation | Done |
 | P1 | Admin Projekt-Hard-Delete | Done |
 | P2 | Zeichnung drucken | Done |
+| P1 | Gruppen alphabetisch sortieren | In Progress |
+| P1 | Original-PDF in voller Auflösung laden | In Progress |
+| P1 | Download-Menü (Zeichnungen/Versionen, ZIP) | In Progress |
+| P1 | Status + Datum beim Upload | In Progress |
+| P1 | Stand-Übersicht (Liste mit Datum + Status) | In Progress |
+| P1 | Drag&Drop: PDF → neue Version | In Progress |
+| P2 | Rot-Blau-Versionsvergleich | In Progress |
+| P3 | IFC-Viewer (3D/BIM) | Backlog |
 
 ## Success Metrics
 - Teams können Projekte mit PDFs anlegen und gemeinsam nutzen

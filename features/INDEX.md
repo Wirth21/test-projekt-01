@@ -43,7 +43,14 @@
 | PROJ-24 | Offline-First Caching & Synchronisation | QA Passed | [PROJ-24-offline-caching.md](PROJ-24-offline-caching.md) | 2026-04-09 | 24 |
 | PROJ-25 | Admin Projekt-Hard-Delete | QA Passed | [PROJ-25-admin-project-hard-delete.md](PROJ-25-admin-project-hard-delete.md) | 2026-04-24 | 25 |
 | PROJ-26 | Zeichnung drucken | Deployed | [PROJ-26-print-drawing.md](PROJ-26-print-drawing.md) | 2026-06-03 | 26 |
+| PROJ-27 | Gruppen alphabetisch sortieren | In Progress | [PROJ-27-group-alpha-sort.md](PROJ-27-group-alpha-sort.md) | 2026-06-04 | 27 |
+| PROJ-28 | Original-PDF in voller Auflösung laden | In Progress | [PROJ-28-load-original-pdf.md](PROJ-28-load-original-pdf.md) | 2026-06-04 | 28 |
+| PROJ-29 | Download-Menü (Zeichnungen/Versionen) | In Progress | [PROJ-29-download-menu.md](PROJ-29-download-menu.md) | 2026-06-04 | 29 |
+| PROJ-30 | Status + Datum beim Upload | In Progress | [PROJ-30-upload-status-date.md](PROJ-30-upload-status-date.md) | 2026-06-04 | 30 |
+| PROJ-31 | Stand-Übersicht (Liste mit Datum + Status) | In Progress | [PROJ-31-status-overview.md](PROJ-31-status-overview.md) | 2026-06-04 | 31 |
+| PROJ-32 | Drag&Drop: PDF → neue Version | In Progress | [PROJ-32-dragdrop-new-version.md](PROJ-32-dragdrop-new-version.md) | 2026-06-04 | 32 |
+| PROJ-33 | Rot-Blau-Vergleich | In Progress | [PROJ-33-red-blue-compare.md](PROJ-33-red-blue-compare.md) | 2026-06-04 | 33 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-27
+## Next Available ID: PROJ-34 (reserviert: IFC-Viewer, zurückgestellt)

@@ -307,6 +307,13 @@
     },
     "status": "Status",
     "noStatus": "Kein Status",
+    "uploadDate": "Datum",
+    "uploadOptions": {
+      "title": "Status & Datum",
+      "description": "Lege Status und Datum für die neue Zeichnung fest.",
+      "descriptionMultiple": "Lege Status und Datum für {count} neue Zeichnungen fest.",
+      "confirm": "Weiter"
+    },
     "statusChanged": "Status aktualisiert",
     "validation": {
       "pdfOnly": "Nur PDF-Dateien sind erlaubt",

@@ -48,6 +48,7 @@ import { Logo } from "@/components/Logo";
 import { FloatingToolbar } from "@/components/drawings/FloatingToolbar";
 import { DownloadMenu } from "@/components/drawings/DownloadMenu";
 import { downloadDrawings, type DownloadScope } from "@/lib/download/download-drawings";
+import type { UploadMeta } from "@/components/drawings/UploadStatusDateDialog";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { UploadInfo } from "@/components/drawings/UploadInfo";
 import type { MarkerWithTarget, MarkerColor } from "@/lib/types/marker";
@@ -579,10 +580,14 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
 
   async function handleUploadVersion(
     file: File,
-    onProgress: (pct: number) => void
+    onProgress: (pct: number) => void,
+    meta: UploadMeta
   ) {
     try {
-      const result = await uploadVersion(file, onProgress);
+      const result = await uploadVersion(file, onProgress, {
+        status_id: meta.statusId,
+        created_at: meta.createdAtIso,
+      });
       setSelectedVersionId(result.version.id);
       if (result.markerCopyFailed) {
         toast.warning(t("toasts.versionUploadedMarkersWarning"));

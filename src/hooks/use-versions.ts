@@ -41,7 +41,7 @@ export function useVersions(projectId: string, drawingId: string) {
     async (
       file: File,
       onProgress: (pct: number) => void,
-      label?: string
+      opts?: { label?: string; status_id?: string | null; created_at?: string }
     ): Promise<{ version: DrawingVersion; markersCopied: number; markerCopyFailed: boolean }> => {
       // Determine next version number
       const maxVersionNumber = versions.reduce(
@@ -57,7 +57,7 @@ export function useVersions(projectId: string, drawingId: string) {
         .replace(/\.pdf$/i, "")
         .trim()
         .slice(0, 100) || undefined;
-      const effectiveLabel = label ?? fallbackLabel;
+      const effectiveLabel = opts?.label ?? fallbackLabel;
 
       // Upload the file directly to Supabase Storage with progress
       const {
@@ -122,6 +122,8 @@ export function useVersions(projectId: string, drawingId: string) {
           ...(effectiveLabel ? { label: effectiveLabel } : {}),
           ...(thumbnailPath ? { thumbnail_path: thumbnailPath } : {}),
           ...(pageCount && pageCount > 0 ? { page_count: pageCount } : {}),
+          ...(opts?.status_id !== undefined ? { status_id: opts.status_id } : {}),
+          ...(opts?.created_at ? { created_at: opts.created_at } : {}),
         }),
       });
 

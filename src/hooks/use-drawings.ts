@@ -42,7 +42,7 @@ export function useDrawings(projectId: string) {
     async (
       file: File,
       onProgress: (pct: number) => void,
-      options?: { status_id?: string | null; group_id?: string | null },
+      options?: { status_id?: string | null; group_id?: string | null; created_at?: string },
     ): Promise<Drawing> => {
       // Generate a unique ID for the drawing
       const drawingId = crypto.randomUUID();
@@ -127,6 +127,9 @@ export function useDrawings(projectId: string) {
       }
       if (options?.status_id) {
         payload.status_id = options.status_id;
+      }
+      if (options?.created_at) {
+        payload.created_at = options.created_at;
       }
       // group_id can be null (explicit "ungrouped") — distinguish from undefined.
       if (options && "group_id" in options) {

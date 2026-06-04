@@ -31,6 +31,8 @@ import { Logo } from "@/components/Logo";
 import { CreateGroupDialog } from "@/components/drawings/CreateGroupDialog";
 import { SplitPdfDialog, type SplitChoice } from "@/components/drawings/SplitPdfDialog";
 import { MultiPageBatchDialog, type BatchChoice } from "@/components/drawings/MultiPageBatchDialog";
+import { UploadStatusDateDialog, type UploadMeta } from "@/components/drawings/UploadStatusDateDialog";
+import { setLastStatusId } from "@/lib/upload-prefs";
 import { getPdfPageCount, splitPdfToPages } from "@/lib/pdf/split";
 import dynamic from "next/dynamic";
 const ProjectSyncButton = dynamic(
@@ -79,7 +81,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
     assignDrawingToGroup,
   } = useDrawingGroups(id);
 
-  const { statuses, defaultStatus } = useDrawingStatuses();
+  const { statuses } = useDrawingStatuses();
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
@@ -105,6 +107,12 @@ export default function ProjectDetailPage({ params }: PageProps) {
     multiPageFiles: { name: string; pageCount: number }[];
     totalFiles: number;
     resolve: (choice: BatchChoice | null) => void;
+  } | null>(null);
+
+  // PROJ-30: status + date asked once before a new-drawing upload.
+  const [statusDatePrompt, setStatusDatePrompt] = useState<{
+    fileCount: number;
+    resolve: (meta: UploadMeta | null) => void;
   } | null>(null);
   const [drawingTab, setDrawingTab] = useState("active");
   const [restoringDrawing, setRestoringDrawing] = useState<string | null>(null);
@@ -151,18 +159,29 @@ export default function ProjectDetailPage({ params }: PageProps) {
   // legacyPdfUrls feeds the PDF fallback for drawings without a server-side
   // thumbnail yet.
 
+  // Ask status + date once (PROJ-30). Resolves null if the user cancels.
+  async function askUploadMeta(fileCount: number): Promise<UploadMeta | null> {
+    const meta = await new Promise<UploadMeta | null>((resolve) => {
+      setStatusDatePrompt({ fileCount, resolve });
+    });
+    setStatusDatePrompt(null);
+    if (meta) setLastStatusId(meta.statusId);
+    return meta;
+  }
+
   // Upload one PDF as a single drawing.
-  async function uploadSingle(groupId: string | null, file: File) {
+  async function uploadSingle(groupId: string | null, file: File, meta: UploadMeta) {
     await uploadDrawing(file, (pct) => setUploadProgress(pct), {
-      status_id: defaultStatus?.id ?? null,
+      status_id: meta.statusId,
       group_id: groupId,
+      created_at: meta.createdAtIso,
     });
   }
 
   // Split a multi-page PDF locally (pdf-lib) and upload each page as its
   // own drawing. Runs sequentially — keeps progress feedback intuitive and
   // avoids slamming Storage with N parallel XHRs.
-  async function uploadSplit(groupId: string | null, file: File) {
+  async function uploadSplit(groupId: string | null, file: File, meta: UploadMeta) {
     const pages = await splitPdfToPages(file);
     let uploaded = 0;
     for (const { blob, suggestedName } of pages) {
@@ -170,8 +189,9 @@ export default function ProjectDetailPage({ params }: PageProps) {
       try {
         const pageFile = new File([blob], suggestedName, { type: "application/pdf" });
         await uploadDrawing(pageFile, () => {}, {
-          status_id: defaultStatus?.id ?? null,
+          status_id: meta.statusId,
           group_id: groupId,
+          created_at: meta.createdAtIso,
         });
         uploaded++;
       } catch (err) {
@@ -184,6 +204,9 @@ export default function ProjectDetailPage({ params }: PageProps) {
   }
 
   async function handleUploadToGroup(groupId: string | null, file: File) {
+    const meta = await askUploadMeta(1);
+    if (!meta) return;
+
     setUploading(true);
     setUploadProgress(0);
     try {
@@ -208,14 +231,14 @@ export default function ProjectDetailPage({ params }: PageProps) {
           return;
         }
         if (choice === "split") {
-          const n = await uploadSplit(groupId, file);
+          const n = await uploadSplit(groupId, file, meta);
           if (n > 0) toast.success(`${n} Zeichnungen erstellt`);
           return;
         }
         // "keep" falls through to the single-upload path below.
       }
 
-      await uploadSingle(groupId, file);
+      await uploadSingle(groupId, file, meta);
       toast.success(t("toasts.uploaded"));
     } catch (err) {
       toast.error(
@@ -232,6 +255,9 @@ export default function ProjectDetailPage({ params }: PageProps) {
   // who expected the per-page split silently lose N-1 pages of information
   // per file. After the user picks (or declines), apply the choice uniformly.
   async function handleUploadMultipleToGroup(groupId: string | null, files: File[]) {
+    const meta = await askUploadMeta(files.length);
+    if (!meta) return;
+
     setUploading(true);
     setUploadProgress(0);
     try {
@@ -270,13 +296,14 @@ export default function ProjectDetailPage({ params }: PageProps) {
 
       for (const { file, pageCount } of scanned) {
         if (batchChoice === "split" && pageCount > 1) {
-          const n = await uploadSplit(groupId, file);
+          const n = await uploadSplit(groupId, file, meta);
           uploaded += n;
         } else {
           try {
             await uploadDrawing(file, () => {}, {
-              status_id: defaultStatus?.id ?? null,
+              status_id: meta.statusId,
               group_id: groupId,
+              created_at: meta.createdAtIso,
             });
             uploaded++;
           } catch (err) {
@@ -856,6 +883,16 @@ export default function ProjectDetailPage({ params }: PageProps) {
         multiPageFiles={batchPrompt?.multiPageFiles ?? []}
         totalFiles={batchPrompt?.totalFiles ?? 0}
         onChoice={(choice) => batchPrompt?.resolve(choice)}
+      />
+
+      <UploadStatusDateDialog
+        open={statusDatePrompt !== null}
+        onOpenChange={(open) => {
+          if (!open && statusDatePrompt) statusDatePrompt.resolve(null);
+        }}
+        statuses={statuses}
+        fileCount={statusDatePrompt?.fileCount ?? 1}
+        onConfirm={(meta) => statusDatePrompt?.resolve(meta)}
       />
 
       {/* Leave project confirmation */}

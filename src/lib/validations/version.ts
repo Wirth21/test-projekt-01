@@ -26,6 +26,18 @@ export const createVersionSchema = z.object({
     .min(1)
     .nullable()
     .optional(),
+  // PROJ-30: status + (plan) date chosen at upload time. status_id may be
+  // explicitly null ("no status"). created_at overwrites the default upload
+  // timestamp with the user's chosen date.
+  status_id: z
+    .string()
+    .uuid("Ungültige Status-ID")
+    .nullable()
+    .optional(),
+  created_at: z
+    .string()
+    .datetime({ offset: true, message: "Ungültiges Datum (ISO 8601 erwartet)" })
+    .optional(),
 });
 
 export type CreateVersionInput = z.infer<typeof createVersionSchema>;

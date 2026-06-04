@@ -34,6 +34,12 @@ export const createDrawingSchema = z.object({
     .min(1)
     .nullable()
     .optional(),
+  // PROJ-30: optional (plan) date chosen at upload time; overwrites the v1
+  // version's default created_at.
+  created_at: z
+    .string()
+    .datetime({ offset: true, message: "Ungültiges Datum (ISO 8601 erwartet)" })
+    .optional(),
 });
 
 export type CreateDrawingInput = z.infer<typeof createDrawingSchema>;

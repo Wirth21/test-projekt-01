@@ -95,7 +95,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     );
   }
 
-  const { storage_path, file_size, page_count, label, thumbnail_path } = result.data;
+  const { storage_path, file_size, page_count, label, thumbnail_path, status_id, created_at } = result.data;
 
   // Check plan limits for file size and storage
   let tenantId: string;
@@ -166,7 +166,13 @@ export async function POST(request: Request, { params }: RouteParams) {
   const now = new Date();
   const defaultLabel = `${String(now.getDate()).padStart(2, "0")}.${String(now.getMonth() + 1).padStart(2, "0")}.${now.getFullYear()}`;
 
-  // Insert new version
+  // Status: use the client's explicit choice (PROJ-30, may be null), else
+  // inherit the current active version's status.
+  const effectiveStatusId =
+    status_id !== undefined ? status_id : currentActiveVersion?.status_id ?? null;
+
+  // Insert new version. created_at only set when the client sent a chosen
+  // (plan) date — otherwise the DB default (now) applies.
   const { data: newVersion, error: insertError } = await supabase
     .from("drawing_versions")
     .insert({
@@ -179,7 +185,8 @@ export async function POST(request: Request, { params }: RouteParams) {
       page_count: page_count ?? null,
       is_archived: false,
       created_by: user.id,
-      status_id: currentActiveVersion?.status_id ?? null,
+      status_id: effectiveStatusId,
+      ...(created_at ? { created_at } : {}),
     })
     .select()
     .single();

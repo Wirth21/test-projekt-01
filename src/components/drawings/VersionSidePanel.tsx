@@ -18,6 +18,7 @@ import {
 
 import { VersionItem } from "@/components/drawings/VersionItem";
 import { VersionUploadDialog } from "@/components/drawings/VersionUploadDialog";
+import type { UploadMeta } from "@/components/drawings/UploadStatusDateDialog";
 import type { DrawingVersion, DrawingStatus } from "@/lib/types/drawing";
 
 interface VersionSidePanelProps {
@@ -28,7 +29,7 @@ interface VersionSidePanelProps {
   activeVersionId: string | null;
   drawingName: string;
   onSelectVersion: (versionId: string) => void;
-  onUploadVersion: (file: File, onProgress: (pct: number) => void) => Promise<void>;
+  onUploadVersion: (file: File, onProgress: (pct: number) => void, meta: UploadMeta) => Promise<void>;
   onRenameVersion: (versionId: string, label: string) => Promise<void>;
   onArchiveVersion: (versionId: string) => Promise<void>;
   /** Edit version date (PATCH created_at) */
@@ -194,6 +195,7 @@ export function VersionSidePanel({
         onOpenChange={setUploadDialogOpen}
         drawingName={drawingName}
         onUpload={onUploadVersion}
+        statuses={availableStatuses}
       />
     </>
   );

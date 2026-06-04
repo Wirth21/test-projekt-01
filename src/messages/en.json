@@ -307,6 +307,13 @@
     },
     "status": "Status",
     "noStatus": "No status",
+    "uploadDate": "Date",
+    "uploadOptions": {
+      "title": "Status & date",
+      "description": "Set the status and date for the new drawing.",
+      "descriptionMultiple": "Set the status and date for {count} new drawings.",
+      "confirm": "Continue"
+    },
     "statusChanged": "Status changed",
     "validation": {
       "pdfOnly": "Only PDF files are allowed",

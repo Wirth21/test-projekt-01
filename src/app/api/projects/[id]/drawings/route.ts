@@ -175,6 +175,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     status_id: initialStatusId,
     group_id: initialGroupId,
     thumbnail_path,
+    created_at: initialCreatedAt,
   } = result.data;
 
   // Check plan limits for file size and storage
@@ -262,6 +263,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       page_count: page_count ?? null,
       created_by: user.id,
       status_id: initialStatusId ?? null,
+      ...(initialCreatedAt ? { created_at: initialCreatedAt } : {}),
     })
     .select()
     .single();

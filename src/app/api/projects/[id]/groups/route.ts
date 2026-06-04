@@ -14,13 +14,14 @@ export async function GET(_request: Request, { params }: RouteParams) {
   if ("error" in accessResult) return accessResult.error;
   const { supabase } = accessResult.data;
 
-  // Fetch active groups ordered by creation time (oldest first)
+  // Fetch active groups ordered alphabetically by name (the client re-sorts with
+  // locale/numeric collation, but ordering here keeps payloads deterministic)
   const { data: groups, error: fetchError } = await supabase
     .from("drawing_groups")
     .select("*")
     .eq("project_id", projectId)
     .eq("is_archived", false)
-    .order("created_at", { ascending: true });
+    .order("name", { ascending: true });
 
   if (fetchError) {
     return NextResponse.json({ error: "Gruppen konnten nicht geladen werden" }, { status: 500 });

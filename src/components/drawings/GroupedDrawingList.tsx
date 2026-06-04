@@ -46,15 +46,21 @@ export function GroupedDrawingList({
   uploadProgress,
   canEdit = true,
 }: GroupedDrawingListProps) {
-  // Active (non-archived) groups sorted by creation date (oldest first)
+  // Active (non-archived) groups sorted alphabetically by name (natural/numeric
+  // collation, accent-insensitive). "Ohne Gruppe" stays pinned at the end (it is
+  // rendered separately below). Tie-break on created_at for stable ordering.
   const activeGroups = useMemo(
     () =>
       groups
         .filter((g) => !g.is_archived)
-        .sort(
-          (a, b) =>
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        ),
+        .sort((a, b) => {
+          const byName = a.name.localeCompare(b.name, "de", {
+            numeric: true,
+            sensitivity: "base",
+          });
+          if (byName !== 0) return byName;
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        }),
     [groups]
   );
 
@@ -135,7 +141,7 @@ export function GroupedDrawingList({
 
   return (
     <div className="space-y-2">
-      {/* Named groups sorted by creation date */}
+      {/* Named groups sorted alphabetically by name */}
       {activeGroups.map((group) => (
         <DrawingGroupSection
           key={group.id}

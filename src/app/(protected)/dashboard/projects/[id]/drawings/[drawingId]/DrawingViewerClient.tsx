@@ -26,6 +26,7 @@ import {
   History,
   Maximize,
   Printer,
+  ExternalLink,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,7 @@ import { UploadInfo } from "@/components/drawings/UploadInfo";
 import type { MarkerWithTarget, MarkerColor } from "@/lib/types/marker";
 import { useTranslations } from "next-intl";
 import { getCachedPdfByStoragePath } from "@/lib/offline/pdf-cache";
-import { printPdf } from "@/lib/print/print-pdf";
+import { printPdf, openOriginalPdf } from "@/lib/print/print-pdf";
 import dynamic from "next/dynamic";
 const SyncStatusBadge = dynamic(
   () => import("@/components/sync/SyncStatusBadge").then((m) => m.SyncStatusBadge),
@@ -209,6 +210,18 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
       setPrinting(false);
     }
   }, [pdfUrl, printing, t]);
+
+  // Open original (PROJ-28). Opens the already-loaded original PDF (signed URL
+  // or offline blob) in the browser's native PDF viewer — full vector
+  // resolution, unlimited zoom, no canvas-area limit. Read-only action, so it
+  // is available to viewers/guests too. Synchronous (no fetch) to dodge popup
+  // blockers; reuses the same pdfUrl the viewer already holds.
+  const handleOpenOriginal = useCallback(() => {
+    if (!pdfUrl) return;
+    if (!openOriginalPdf(pdfUrl)) {
+      toast.error(t("toasts.originalOpenFailed"));
+    }
+  }, [pdfUrl, t]);
 
   // Persistent rotation: stored per-version as a DELTA on top of the PDF's
   // intrinsic /Rotate metadata. Display angle = (intrinsic + delta) % 360.
@@ -1089,6 +1102,18 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                   <Printer className="h-3.5 w-3.5" />
                   <span>{t("print")}</span>
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOpenOriginal}
+                  disabled={!pdfUrl}
+                  className="gap-1.5"
+                  aria-label={t("openOriginal")}
+                  title={t("openOriginalHint")}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span className="hidden lg:inline">{t("openOriginal")}</span>
+                </Button>
               </>
             )}
 
@@ -1165,6 +1190,19 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
               aria-label={t("print")}
             >
               <Printer className="h-3.5 w-3.5" />
+            </Button>
+          )}
+
+          {activeVersion && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenOriginal}
+              disabled={!pdfUrl}
+              className="shrink-0 h-8 w-8 p-0"
+              aria-label={t("openOriginal")}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
             </Button>
           )}
 
@@ -1297,6 +1335,7 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                     onOpenVersionPanel={() => setVersionPanelOpen(true)}
                     onPrint={handlePrint}
                     printing={printing}
+                    onOpenOriginal={handleOpenOriginal}
                   />
                 )}
 

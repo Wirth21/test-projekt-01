@@ -204,6 +204,8 @@
     "editMode": "Edit",
     "viewMode": "View",
     "print": "Print",
+    "openOriginal": "Open original",
+    "openOriginalHint": "Open the original PDF at full resolution in the browser",
     "fullscreen": "Fullscreen",
     "fullscreenEnter": "Enter fullscreen mode",
     "fullscreenExit": "Exit fullscreen",
@@ -289,6 +291,7 @@
       "versionArchiveFailed": "Archiving failed",
       "pdfUrlFailed": "Could not load PDF URL",
       "printFailed": "Printing failed — could not prepare the PDF",
+      "originalOpenFailed": "Could not open the original — popup blocked?",
       "statusChanged": "Status changed",
       "statusChangeFailed": "Could not change status"
     },

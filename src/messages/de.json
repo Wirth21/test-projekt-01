@@ -204,6 +204,8 @@
     "editMode": "Bearbeiten",
     "viewMode": "Ansicht",
     "print": "Drucken",
+    "openOriginal": "Original öffnen",
+    "openOriginalHint": "Original-PDF in voller Auflösung im Browser öffnen",
     "fullscreen": "Vollbild",
     "fullscreenEnter": "Vollbildmodus aktivieren",
     "fullscreenExit": "Vollbild verlassen",
@@ -289,6 +291,7 @@
       "versionArchiveFailed": "Archivierung fehlgeschlagen",
       "pdfUrlFailed": "PDF-URL konnte nicht geladen werden",
       "printFailed": "Drucken fehlgeschlagen — PDF konnte nicht vorbereitet werden",
+      "originalOpenFailed": "Original konnte nicht geöffnet werden — Popup blockiert?",
       "statusChanged": "Status aktualisiert",
       "statusChangeFailed": "Status konnte nicht geaendert werden"
     },

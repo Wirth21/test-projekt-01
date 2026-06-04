@@ -326,6 +326,30 @@
       "noVersions": "No versions",
       "loadingVersions": "Loading versions …"
     },
+    "compare": {
+      "button": "Compare",
+      "title": "Version compare",
+      "versionA": "Old (red)",
+      "versionB": "New (blue)",
+      "mode": {
+        "overlay": "Overlay",
+        "swipe": "Swipe",
+        "redblue": "Red-blue",
+        "difference": "Difference"
+      },
+      "opacity": "New version opacity",
+      "wipe": "Divider",
+      "legend": {
+        "removed": "removed",
+        "added": "added",
+        "unchanged": "unchanged",
+        "changed": "changes"
+      },
+      "loading": "Rendering comparison …",
+      "error": "Could not build the comparison",
+      "aspectWarning": "The page formats differ — the comparison may be inaccurate.",
+      "sameVersion": "Pick two different versions"
+    },
     "statusChanged": "Status changed",
     "validation": {
       "pdfOnly": "Only PDF files are allowed",

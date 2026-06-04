@@ -326,6 +326,30 @@
       "noVersions": "Keine Versionen",
       "loadingVersions": "Versionen werden geladen …"
     },
+    "compare": {
+      "button": "Vergleich",
+      "title": "Versionsvergleich",
+      "versionA": "Alt (rot)",
+      "versionB": "Neu (blau)",
+      "mode": {
+        "overlay": "Überblenden",
+        "swipe": "Swipe",
+        "redblue": "Rot-Blau",
+        "difference": "Differenz"
+      },
+      "opacity": "Deckkraft neue Version",
+      "wipe": "Trennlinie",
+      "legend": {
+        "removed": "entfernt",
+        "added": "neu",
+        "unchanged": "unverändert",
+        "changed": "Änderungen"
+      },
+      "loading": "Vergleich wird gerendert …",
+      "error": "Vergleich konnte nicht erstellt werden",
+      "aspectWarning": "Die Seitenformate unterscheiden sich — der Vergleich kann ungenau sein.",
+      "sameVersion": "Bitte zwei verschiedene Versionen wählen"
+    },
     "statusChanged": "Status aktualisiert",
     "validation": {
       "pdfOnly": "Nur PDF-Dateien sind erlaubt",

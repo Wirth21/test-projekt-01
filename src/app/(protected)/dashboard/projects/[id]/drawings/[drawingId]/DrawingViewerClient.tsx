@@ -27,6 +27,7 @@ import {
   Maximize,
   Printer,
   ExternalLink,
+  Columns2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,12 @@ import { printPdf, openOriginalPdf } from "@/lib/print/print-pdf";
 import dynamic from "next/dynamic";
 const SyncStatusBadge = dynamic(
   () => import("@/components/sync/SyncStatusBadge").then((m) => m.SyncStatusBadge),
+  { ssr: false }
+);
+// PROJ-33 — the compare view renders pdfjs offscreen; keep it ssr:false and
+// lazy so it only loads when the user opens the comparison.
+const PdfCompareDialog = dynamic(
+  () => import("@/components/drawings/PdfCompareDialog").then((m) => m.PdfCompareDialog),
   { ssr: false }
 );
 
@@ -198,6 +205,8 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
 
   // Version panel state
   const [versionPanelOpen, setVersionPanelOpen] = useState(false);
+  // Version compare (PROJ-33)
+  const [compareOpen, setCompareOpen] = useState(false);
 
   // Print state (PROJ-26). Drucken nutzt die bereits geladene pdfUrl —
   // das Original-PDF der aktiven Version, ohne Marker-Overlay.
@@ -1150,6 +1159,19 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                   disabled={!pdfUrl}
                   align="end"
                 />
+                {versions.filter((v) => !v.is_archived).length > 1 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCompareOpen(true)}
+                    className="gap-1.5"
+                    aria-label={t("compare.button")}
+                    title={t("compare.button")}
+                  >
+                    <Columns2 className="h-3.5 w-3.5" />
+                    <span className="hidden lg:inline">{t("compare.button")}</span>
+                  </Button>
+                )}
               </>
             )}
 
@@ -1251,6 +1273,18 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
               triggerClassName="shrink-0 h-8 w-8 p-0"
               align="start"
             />
+          )}
+
+          {versions.filter((v) => !v.is_archived).length > 1 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCompareOpen(true)}
+              className="shrink-0 h-8 w-8 p-0"
+              aria-label={t("compare.button")}
+            >
+              <Columns2 className="h-3.5 w-3.5" />
+            </Button>
           )}
 
           {fullscreenSupported && (
@@ -1585,6 +1619,17 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
         onStatusChange={handleStatusChange}
         canEdit={!isReadOnly}
       />
+
+      {/* Version compare (PROJ-33) */}
+      {compareOpen && (
+        <PdfCompareDialog
+          open={compareOpen}
+          onClose={() => setCompareOpen(false)}
+          versions={versions}
+          drawingName={displayName}
+          getVersionSignedUrl={getVersionSignedUrl}
+        />
+      )}
     </div>
   );
 }

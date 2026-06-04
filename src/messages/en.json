@@ -254,6 +254,13 @@
         "submit": "Archive"
       }
     },
+    "download": {
+      "label": "Download",
+      "current": "Current drawing",
+      "currentVersions": "Current drawing incl. all versions",
+      "allCurrent": "All current drawings",
+      "allVersions": "All drawings incl. all versions"
+    },
     "versions": {
       "title": "Versions",
       "upload": {
@@ -292,6 +299,9 @@
       "pdfUrlFailed": "Could not load PDF URL",
       "printFailed": "Printing failed — could not prepare the PDF",
       "originalOpenFailed": "Could not open the original — popup blocked?",
+      "downloadPreparing": "Preparing download …",
+      "downloadReady": "Download started ({count, plural, one {# file} other {# files}})",
+      "downloadFailed": "Download failed",
       "statusChanged": "Status changed",
       "statusChangeFailed": "Could not change status"
     },

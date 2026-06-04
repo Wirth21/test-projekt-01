@@ -254,6 +254,13 @@
         "submit": "Archivieren"
       }
     },
+    "download": {
+      "label": "Herunterladen",
+      "current": "Aktuelle Zeichnung",
+      "currentVersions": "Aktuelle Zeichnung inkl. aller Versionen",
+      "allCurrent": "Alle aktuellen Zeichnungen",
+      "allVersions": "Alle Zeichnungen inkl. aller Versionen"
+    },
     "versions": {
       "title": "Versionen",
       "upload": {
@@ -292,6 +299,9 @@
       "pdfUrlFailed": "PDF-URL konnte nicht geladen werden",
       "printFailed": "Drucken fehlgeschlagen — PDF konnte nicht vorbereitet werden",
       "originalOpenFailed": "Original konnte nicht geöffnet werden — Popup blockiert?",
+      "downloadPreparing": "Download wird vorbereitet …",
+      "downloadReady": "Download gestartet ({count, plural, one {# Datei} other {# Dateien}})",
+      "downloadFailed": "Download fehlgeschlagen",
       "statusChanged": "Status aktualisiert",
       "statusChangeFailed": "Status konnte nicht geaendert werden"
     },

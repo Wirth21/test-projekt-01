@@ -23,6 +23,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { DownloadMenu } from "@/components/drawings/DownloadMenu";
+import type { DownloadScope } from "@/lib/download/download-drawings";
 
 interface FloatingToolbarProps {
   currentPage: number;
@@ -40,6 +42,8 @@ interface FloatingToolbarProps {
   onPrint: () => void;
   printing: boolean;
   onOpenOriginal: () => void;
+  onDownload: (scope: DownloadScope) => void;
+  downloading: boolean;
 }
 
 const AUTO_HIDE_DELAY = 3000;
@@ -60,6 +64,8 @@ export function FloatingToolbar({
   onPrint,
   printing,
   onOpenOriginal,
+  onDownload,
+  downloading,
 }: FloatingToolbarProps) {
   const [visible, setVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -316,6 +322,16 @@ export function FloatingToolbar({
             <p>Original (volle Auflösung)</p>
           </TooltipContent>
         </Tooltip>
+
+        {/* Download menu (PROJ-29) */}
+        <DownloadMenu
+          onSelect={onDownload}
+          downloading={downloading}
+          variant="ghost"
+          iconOnly
+          triggerClassName="h-9 w-9 p-0"
+          align="center"
+        />
 
         <Separator orientation="vertical" className="h-5 mx-0.5" />
 

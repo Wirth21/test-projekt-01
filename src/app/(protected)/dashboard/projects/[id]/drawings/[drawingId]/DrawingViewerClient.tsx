@@ -46,6 +46,8 @@ import {
 import { VersionSidePanel } from "@/components/drawings/VersionSidePanel";
 import { Logo } from "@/components/Logo";
 import { FloatingToolbar } from "@/components/drawings/FloatingToolbar";
+import { DownloadMenu } from "@/components/drawings/DownloadMenu";
+import { downloadDrawings, type DownloadScope } from "@/lib/download/download-drawings";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { UploadInfo } from "@/components/drawings/UploadInfo";
 import type { MarkerWithTarget, MarkerColor } from "@/lib/types/marker";
@@ -222,6 +224,29 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
       toast.error(t("toasts.originalOpenFailed"));
     }
   }, [pdfUrl, t]);
+
+  // Download (PROJ-29). Resolves the scope to signed URLs server-side, then
+  // either triggers a single-file download or streams a ZIP client-side.
+  const [downloading, setDownloading] = useState(false);
+  const handleDownload = useCallback(
+    async (scope: DownloadScope) => {
+      if (downloading) return;
+      setDownloading(true);
+      const tid = toast.loading(t("toasts.downloadPreparing"));
+      try {
+        const r = await downloadDrawings({ projectId, scope, drawingId: activeDrawingId });
+        toast.success(t("toasts.downloadReady", { count: r.count }), { id: tid });
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : t("toasts.downloadFailed"),
+          { id: tid }
+        );
+      } finally {
+        setDownloading(false);
+      }
+    },
+    [downloading, projectId, activeDrawingId, t]
+  );
 
   // Persistent rotation: stored per-version as a DELTA on top of the PDF's
   // intrinsic /Rotate metadata. Display angle = (intrinsic + delta) % 360.
@@ -1114,6 +1139,12 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                   <ExternalLink className="h-3.5 w-3.5" />
                   <span className="hidden lg:inline">{t("openOriginal")}</span>
                 </Button>
+                <DownloadMenu
+                  onSelect={handleDownload}
+                  downloading={downloading}
+                  disabled={!pdfUrl}
+                  align="end"
+                />
               </>
             )}
 
@@ -1204,6 +1235,17 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
             >
               <ExternalLink className="h-3.5 w-3.5" />
             </Button>
+          )}
+
+          {activeVersion && (
+            <DownloadMenu
+              onSelect={handleDownload}
+              downloading={downloading}
+              disabled={!pdfUrl}
+              iconOnly
+              triggerClassName="shrink-0 h-8 w-8 p-0"
+              align="start"
+            />
           )}
 
           {fullscreenSupported && (
@@ -1336,6 +1378,8 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                     onPrint={handlePrint}
                     printing={printing}
                     onOpenOriginal={handleOpenOriginal}
+                    onDownload={handleDownload}
+                    downloading={downloading}
                   />
                 )}
 

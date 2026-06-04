@@ -1,8 +1,15 @@
 # PROJ-28: Original-PDF in voller Auflösung laden
 
-## Status: In Progress
+## Status: In Review
 **Created:** 2026-06-04
 **Last Updated:** 2026-06-04
+
+> Implementiert auf Branch `feature/PROJ-27-33-drawings-erweiterungen`.
+> Umsetzung: „Original öffnen" öffnet das Original-PDF im nativen Browser-Viewer
+> (neuer Tab) — volle Vektorauflösung ohne Canvas-Limit-Risiko (robuster als
+> In-Viewer-Hochskalierung).
+> Automatisierte Prüfungen grün: `tsc`, ESLint, `npm run build`, 38/38 Tests.
+> Manuelle Browser-Prüfung + PR-Review ausstehend.
 
 ## Beschreibung
 In der Zeichnungsansicht soll per Knopfdruck das Original-PDF in voller Auflösung

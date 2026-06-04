@@ -1,8 +1,13 @@
 # PROJ-30: Status + Datum beim Upload abfragen
 
-## Status: In Progress
+## Status: In Review
 **Created:** 2026-06-04
 **Last Updated:** 2026-06-04
+
+> Implementiert auf Branch `feature/PROJ-27-33-drawings-erweiterungen`.
+> Beide Pfade umgesetzt (neue Zeichnung + neue Version); `created_at` überschrieben
+> (keine Migration). Automatisierte Prüfungen grün: `tsc`, ESLint, `npm run build`,
+> 38/38 Tests. Manuelle Browser-Prüfung + PR-Review ausstehend.
 
 ## Beschreibung
 Beim Hochladen einer Zeichnung (neu oder als neue Version) sollen Status und Datum

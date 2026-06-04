@@ -1,8 +1,13 @@
 # PROJ-33: Rot-Blau-Vergleich zweier Planversionen
 
-## Status: In Progress
+## Status: In Review
 **Created:** 2026-06-04
 **Last Updated:** 2026-06-04
+
+> Implementiert auf Branch `feature/PROJ-27-33-drawings-erweiterungen`.
+> Vollausbau: Überblenden + Swipe + Rot-Blau + Differenz; unverändert = Grau.
+> Automatisierte Prüfungen grün: `tsc`, ESLint, `npm run build`, 38/38 Tests.
+> Manuelle Browser-Prüfung + PR-Review ausstehend.
 
 ## Beschreibung
 In der Zeichnungsansicht soll ein Versionsvergleich möglich sein. Neben einem Überblend-/

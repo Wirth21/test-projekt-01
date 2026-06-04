@@ -1,8 +1,12 @@
 # PROJ-29: Download-Menü (aktuell / inkl. Versionen / alle / alle inkl. Versionen)
 
-## Status: In Progress
+## Status: In Review
 **Created:** 2026-06-04
 **Last Updated:** 2026-06-04
+
+> Implementiert auf Branch `feature/PROJ-27-33-drawings-erweiterungen`.
+> Neue Dependency `client-zip`. Automatisierte Prüfungen grün: `tsc`, ESLint,
+> `npm run build`, 38/38 Tests. Manuelle Browser-Prüfung + PR-Review ausstehend.
 
 ## Beschreibung
 Im Zeichnungsbereich soll ein Download-Button ein Menü mit vier Optionen öffnen:

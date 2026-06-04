@@ -1,8 +1,12 @@
 # PROJ-27: Gruppen alphabetisch sortieren
 
-## Status: In Progress
+## Status: In Review
 **Created:** 2026-06-04
 **Last Updated:** 2026-06-04
+
+> Implementiert auf Branch `feature/PROJ-27-33-drawings-erweiterungen`.
+> Automatisierte Prüfungen grün: `tsc`, ESLint, `npm run build`, 38/38 Tests.
+> Manuelle Browser-Prüfung + PR-Review ausstehend.
 
 ## Beschreibung
 Zeichnungsgruppen in der Projektübersicht sollen alphabetisch nach Name sortiert

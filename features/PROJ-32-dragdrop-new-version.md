@@ -1,8 +1,13 @@
 # PROJ-32: Drag&Drop — PDF auf Zeichnung → neue Version
 
-## Status: In Progress
+## Status: In Review
 **Created:** 2026-06-04
 **Last Updated:** 2026-06-04
+
+> Implementiert auf Branch `feature/PROJ-27-33-drawings-erweiterungen`.
+> Nach Drop wird der PROJ-30-Status/Datum-Dialog gezeigt. Automatisierte Prüfungen
+> grün: `tsc`, ESLint, `npm run build`, 38/38 Tests. Manuelle Browser-Prüfung +
+> PR-Review ausstehend.
 
 ## Beschreibung
 In der Übersicht soll man ein PDF aus dem Dateisystem direkt auf eine bestehende Zeichnung

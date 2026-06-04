@@ -314,6 +314,18 @@
       "descriptionMultiple": "Set the status and date for {count} new drawings.",
       "confirm": "Continue"
     },
+    "overview": {
+      "viewGrid": "Cards",
+      "viewList": "List",
+      "colName": "Drawing",
+      "colDate": "Date",
+      "colStatus": "Status",
+      "ungrouped": "Ungrouped",
+      "empty": "No drawings yet",
+      "groupEmpty": "No drawings in this group",
+      "noVersions": "No versions",
+      "loadingVersions": "Loading versions …"
+    },
     "statusChanged": "Status changed",
     "validation": {
       "pdfOnly": "Only PDF files are allowed",

@@ -314,6 +314,18 @@
       "descriptionMultiple": "Lege Status und Datum für {count} neue Zeichnungen fest.",
       "confirm": "Weiter"
     },
+    "overview": {
+      "viewGrid": "Karten",
+      "viewList": "Liste",
+      "colName": "Zeichnung",
+      "colDate": "Datum",
+      "colStatus": "Status",
+      "ungrouped": "Ohne Gruppe",
+      "empty": "Noch keine Zeichnungen",
+      "groupEmpty": "Keine Zeichnungen in dieser Gruppe",
+      "noVersions": "Keine Versionen",
+      "loadingVersions": "Versionen werden geladen …"
+    },
     "statusChanged": "Status aktualisiert",
     "validation": {
       "pdfOnly": "Nur PDF-Dateien sind erlaubt",

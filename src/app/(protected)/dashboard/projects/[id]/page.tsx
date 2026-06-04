@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, UserPlus, Users, Crown, User, Loader2, FileText, Archive, RotateCcw, Plus, LogOut, X } from "lucide-react";
+import { ArrowLeft, UserPlus, Users, Crown, User, Loader2, FileText, Archive, RotateCcw, Plus, LogOut, X, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +27,7 @@ import { useDrawingStatuses } from "@/hooks/use-drawing-statuses";
 import { InviteMemberDialog } from "@/components/projects/InviteMemberDialog";
 import { ActivityLog } from "@/components/projects/ActivityLog";
 import { GroupedDrawingList } from "@/components/drawings/GroupedDrawingList";
+import { DrawingStatusTable } from "@/components/drawings/DrawingStatusTable";
 import { Logo } from "@/components/Logo";
 import { CreateGroupDialog } from "@/components/drawings/CreateGroupDialog";
 import { SplitPdfDialog, type SplitChoice } from "@/components/drawings/SplitPdfDialog";
@@ -115,6 +116,8 @@ export default function ProjectDetailPage({ params }: PageProps) {
     resolve: (meta: UploadMeta | null) => void;
   } | null>(null);
   const [drawingTab, setDrawingTab] = useState("active");
+  // PROJ-31: card grid vs. status list view in the active tab.
+  const [drawingView, setDrawingView] = useState<"grid" | "list">("grid");
   const [restoringDrawing, setRestoringDrawing] = useState<string | null>(null);
   // Pre-signed thumbnail JPEG URLs for modern uploads come straight from
   // /api/projects/[id]/drawings as drawing.thumbnail_url. We only need to
@@ -657,7 +660,36 @@ export default function ProjectDetailPage({ params }: PageProps) {
             </TabsList>
 
             <TabsContent value="active">
-              <div className="space-y-4">
+              <div className="space-y-3">
+                {!drawingsLoading && !groupsLoading &&
+                  drawings.filter((d) => !d.is_archived).length > 0 && (
+                    <div className="flex justify-end">
+                      <div className="inline-flex rounded-md border p-0.5">
+                        <Button
+                          variant={drawingView === "grid" ? "secondary" : "ghost"}
+                          size="sm"
+                          className="h-7 gap-1.5 px-2"
+                          onClick={() => setDrawingView("grid")}
+                          aria-pressed={drawingView === "grid"}
+                          aria-label={t("overview.viewGrid")}
+                        >
+                          <LayoutGrid className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline text-xs">{t("overview.viewGrid")}</span>
+                        </Button>
+                        <Button
+                          variant={drawingView === "list" ? "secondary" : "ghost"}
+                          size="sm"
+                          className="h-7 gap-1.5 px-2"
+                          onClick={() => setDrawingView("list")}
+                          aria-pressed={drawingView === "list"}
+                          aria-label={t("overview.viewList")}
+                        >
+                          <List className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline text-xs">{t("overview.viewList")}</span>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 {drawingsLoading || groupsLoading ? (
                   <div className="grid grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-3 gap-4">
                     {Array.from({ length: 3 }).map((_, i) => (
@@ -670,6 +702,12 @@ export default function ProjectDetailPage({ params }: PageProps) {
                       </div>
                     ))}
                   </div>
+                ) : drawingView === "list" ? (
+                  <DrawingStatusTable
+                    drawings={drawings.filter((d) => !d.is_archived)}
+                    groups={groups}
+                    projectId={id}
+                  />
                 ) : (
                   <GroupedDrawingList
                     drawings={drawings.filter((d) => !d.is_archived)}

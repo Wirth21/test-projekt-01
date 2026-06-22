@@ -134,7 +134,9 @@ export async function POST(request: Request) {
 
   if (usage.projectCount >= limits.maxProjects) {
     return NextResponse.json(
-      { error: "Projektlimit erreicht. Bitte Plan upgraden." },
+      {
+        error: `Projektlimit erreicht: ${usage.projectCount} von ${limits.maxProjects} Projekten im ${plan}-Plan werden bereits genutzt. Bitte Plan upgraden oder ein bestehendes Projekt löschen.`,
+      },
       { status: 403 }
     );
   }

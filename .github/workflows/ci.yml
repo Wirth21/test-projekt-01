@@ -30,6 +30,16 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    # Tests run against ONE shared live Supabase instance using fixed synthetic
+    # fixture UUIDs. Two concurrent test jobs (e.g. a PR run plus its merge-to-main
+    # push run, which start only seconds apart) race on the same rows: one job's
+    # afterAll force_delete_test_project wipes the project another job is mid-test
+    # on, causing FK violations and 0-row reads. Serialize all test jobs globally
+    # so only one ever touches the DB at a time; queue (don't cancel) so the merge
+    # run still executes after the PR run finishes.
+    concurrency:
+      group: live-supabase-tests
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 

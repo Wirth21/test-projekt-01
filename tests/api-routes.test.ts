@@ -36,13 +36,18 @@ const API_TEST_DRAWING = {
 describe("API Route Logic", () => {
   beforeAll(async () => {
     // Create test project
-    await sc.from("projects").upsert({
+    const { error: projectError } = await sc.from("projects").upsert({
       id: API_TEST_PROJECT.id,
       name: API_TEST_PROJECT.name,
       tenant_id: TEST_TENANT_ID,
       created_by: TEST_USERS.admin.id,
       is_archived: false,
     });
+    // Fail loudly here instead of letting the missing project surface later as
+    // confusing FK violations / 0-row reads in the actual test cases.
+    if (projectError) {
+      throw new Error(`Test project setup failed: ${projectError.message}`);
+    }
 
     // Admin is owner
     await ensureMembership(TEST_USERS.admin.id, API_TEST_PROJECT.id, "owner");

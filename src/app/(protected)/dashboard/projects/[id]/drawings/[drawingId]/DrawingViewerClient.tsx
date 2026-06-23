@@ -1363,11 +1363,14 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                           plain skeleton otherwise. */}
                       {!lowResReady && (
                         drawing?.thumbnail_url && currentPage === 1 ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- signed Storage URL, not a static asset
                           <img
                             src={drawing.thumbnail_url}
                             alt=""
                             className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
                             aria-hidden="true"
+                            // CORS so the service worker can cache it (see DrawingCard).
+                            crossOrigin="anonymous"
                           />
                         ) : (
                           <Skeleton className="absolute inset-0 z-10" />

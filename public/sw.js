@@ -1,5 +1,8 @@
 const CACHE_NAME = "link2plan-v10";
 const PDF_CACHE_NAME = "link2plan-pdfs";
+// Drawing thumbnails (Supabase Storage *.thumb.jpg). Kept separate from the
+// app shell so a shell-cache bump never evicts the (large) thumbnail set.
+const THUMB_CACHE_NAME = "link2plan-thumbs";
 // v8: adds best-effort pre-cache of "/" and "/login" on install, and the
 // server-error fallback page now ships a one-tap self-heal button that
 // unregisters the SW and purges caches. Old v7 entries are dropped on
@@ -49,7 +52,7 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  const keepCaches = [CACHE_NAME, PDF_CACHE_NAME, APP_SHELL_CACHE];
+  const keepCaches = [CACHE_NAME, PDF_CACHE_NAME, APP_SHELL_CACHE, THUMB_CACHE_NAME];
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
@@ -62,6 +65,19 @@ self.addEventListener("activate", (event) => {
 
 function isSupabasePdfRequest(url) {
   return url.includes("/storage/v1/object/") && url.includes("pdf");
+}
+
+// Server-rendered drawing thumbnails sit next to the PDF as *.thumb.jpg.
+// Matched BEFORE the PDF branch in the fetch handler so the two never overlap.
+function isSupabaseThumbnailRequest(url) {
+  return url.includes("/storage/v1/object/") && url.includes(".thumb.jpg");
+}
+
+// The pdfjs render worker, copied to /public by the postinstall script and
+// loaded by the drawing viewer + thumbnail renderer.
+function isPdfWorkerRequest(url) {
+  try { return new URL(url).pathname === "/pdfjs-worker.min.mjs"; }
+  catch { return false; }
 }
 
 function isNextStaticAsset(url) {
@@ -91,6 +107,33 @@ function toPdfCacheKey(url) {
   } catch {
     return url;
   }
+}
+
+// Stale-while-revalidate: serve the cached copy instantly and refresh it in the
+// background. Used for thumbnails and the pdfjs worker — both can change in
+// place (a thumbnail re-bake reuses the same storage path; a pdfjs upgrade
+// ships under the same /pdfjs-worker.min.mjs filename), so a pure immutable
+// cache-first would pin stale bytes forever. Only `ok` responses are cached;
+// the thumbnail <img> elements set crossOrigin="anonymous" so the SW sees real
+// CORS status codes — an expired-token 403 is therefore never stored, and a
+// re-baked/upgraded asset self-heals on the very next load.
+function staleWhileRevalidate(event, cacheName, cacheKey) {
+  return caches.open(cacheName).then(async (cache) => {
+    const cached = await cache.match(cacheKey);
+    const network = fetch(event.request)
+      .then((response) => {
+        if (response.ok) cache.put(cacheKey, response.clone());
+        return response;
+      })
+      .catch(() => null);
+    if (cached) {
+      // Hit: return immediately, let the refresh finish in the background.
+      event.waitUntil(network.then(() => {}));
+      return cached;
+    }
+    const fresh = await network;
+    return fresh || new Response("", { status: 503 });
+  });
 }
 
 /**
@@ -130,6 +173,23 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = event.request.url;
+
+  // 0a. pdfjs worker: stale-while-revalidate. A big module loaded by the
+  //     drawing viewer + thumbnail renderer; serving it from disk removes a
+  //     network wait on every viewer open. Refresh in the background so a
+  //     pdfjs upgrade (same filename) is picked up on the next load.
+  if (isPdfWorkerRequest(url)) {
+    event.respondWith(staleWhileRevalidate(event, APP_SHELL_CACHE, url));
+    return;
+  }
+
+  // 0b. Supabase thumbnails: stale-while-revalidate with a token-stripped key
+  //     so a re-signed URL hits the same entry (rotating ?token otherwise
+  //     defeats every cache). Must run BEFORE the PDF branch below.
+  if (isSupabaseThumbnailRequest(url)) {
+    event.respondWith(staleWhileRevalidate(event, THUMB_CACHE_NAME, toPdfCacheKey(url)));
+    return;
+  }
 
   // 1. PDF requests: cache-first
   if (isSupabasePdfRequest(url)) {

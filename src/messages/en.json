@@ -206,6 +206,8 @@
     "editMode": "Edit",
     "viewMode": "View",
     "print": "Print",
+    "openOriginal": "Original",
+    "openOriginalHint": "Open the original PDF at full sharpness (no markers)",
     "fullscreen": "Fullscreen",
     "fullscreenEnter": "Enter fullscreen mode",
     "fullscreenExit": "Exit fullscreen",

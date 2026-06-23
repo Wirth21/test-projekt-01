@@ -206,6 +206,8 @@
     "editMode": "Bearbeiten",
     "viewMode": "Ansicht",
     "print": "Drucken",
+    "openOriginal": "Original",
+    "openOriginalHint": "Original-PDF in voller Schärfe öffnen (ohne Marker)",
     "fullscreen": "Vollbild",
     "fullscreenEnter": "Vollbildmodus aktivieren",
     "fullscreenExit": "Vollbild verlassen",

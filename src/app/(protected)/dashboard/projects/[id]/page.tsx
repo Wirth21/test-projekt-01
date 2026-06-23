@@ -26,6 +26,7 @@ import { useDrawingGroups } from "@/hooks/use-drawing-groups";
 import { useDrawingStatuses } from "@/hooks/use-drawing-statuses";
 import { InviteMemberDialog } from "@/components/projects/InviteMemberDialog";
 import { ActivityLog } from "@/components/projects/ActivityLog";
+import { ProjectChangesBanner } from "@/components/projects/ProjectChangesBanner";
 import { GroupedDrawingList } from "@/components/drawings/GroupedDrawingList";
 import { Logo } from "@/components/Logo";
 import { CreateGroupDialog } from "@/components/drawings/CreateGroupDialog";
@@ -595,6 +596,9 @@ export default function ProjectDetailPage({ params }: PageProps) {
 
         {/* Drawings (PROJ-3) + Groups (PROJ-8) */}
         <section>
+          {/* Poll a tiny server-side signature; offer a refresh when the
+              project's data changed elsewhere (PROJ perf #4). */}
+          <ProjectChangesBanner projectId={id} />
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <h3 className="text-base font-semibold">{t("title")}</h3>
             {!isViewer && (

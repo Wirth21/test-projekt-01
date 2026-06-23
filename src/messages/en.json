@@ -76,6 +76,8 @@
     "profile": "My Profile"
   },
   "projects": {
+    "changesAvailable": "New changes available",
+    "refresh": "Refresh",
     "title": "My Projects",
     "subtitle": "Own and shared projects",
     "newProject": "New Project",

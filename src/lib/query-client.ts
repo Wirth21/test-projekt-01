@@ -5,7 +5,13 @@ import { QueryClient } from "@tanstack/react-query";
 // query from memory before the persisted copy is allowed to be restored, and
 // the cache silently does nothing. Keep gcTime === CACHE_MAX_AGE_MS and derive
 // the persister maxAge from the same constant so the two can never drift apart.
-export const CACHE_MAX_AGE_MS = 24 * 60 * 60_000; // 24h
+//
+// 30 days (was 24h): metadata changes rarely, and stale data is now caught two
+// ways — the deploy `buster` (next.config build id) drops the cache on every
+// release, and the per-project change signature refetches when server data
+// actually moved. So a long offline-retention window is safe and lets the app
+// open instantly from cache even after days without a connection.
+export const CACHE_MAX_AGE_MS = 30 * 24 * 60 * 60_000; // 30 days
 
 function makeQueryClient() {
   return new QueryClient({

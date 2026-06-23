@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { useProjects, useProjectMembers } from "@/hooks/use-projects";
+import { useProject, useProjectMembers } from "@/hooks/use-projects";
 import { useDrawings } from "@/hooks/use-drawings";
 import { useDrawingGroups } from "@/hooks/use-drawing-groups";
 import { useDrawingStatuses } from "@/hooks/use-drawing-statuses";
@@ -41,7 +41,6 @@ const SyncStatusBadge = dynamic(
   () => import("@/components/sync/SyncStatusBadge").then((m) => m.SyncStatusBadge),
   { ssr: false }
 );
-import type { ProjectWithRole } from "@/lib/types/project";
 import { useTranslations } from "next-intl";
 
 interface PageProps {
@@ -55,7 +54,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
   const tp = useTranslations("projects");
   const tc = useTranslations("common");
   const tn = useTranslations("nav");
-  const { projects, loading: projectsLoading, leaveProject } = useProjects();
+  const { project, loading: projectsLoading, leaveProject } = useProject(id);
   const { members, loading: membersLoading, inviteMember, removeMember, changeRole, refetch: refetchMembers } = useProjectMembers(id);
 
   const {
@@ -423,7 +422,6 @@ export default function ProjectDetailPage({ params }: PageProps) {
     return map;
   }, [drawings]);
 
-  const project = projects.find((p) => p.id === id) as ProjectWithRole | undefined;
   const isOwner = project?.role === "owner";
   const isMember = project?.role === "owner" || project?.role === "member";
   const isViewer = project?.role === "viewer";
@@ -440,7 +438,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
     if (!project) return;
     setLeaving(true);
     try {
-      await leaveProject(project.id);
+      await leaveProject();
       toast.success(tp("toasts.left", { name: project.name }));
       router.push("/dashboard");
     } catch (err) {

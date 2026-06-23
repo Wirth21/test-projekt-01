@@ -36,6 +36,20 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA ?? "dev",
   },
+  // Client-side router cache. Next 15/16 default `dynamic` to 0s, which means
+  // navigating BACK to an already-visited dynamic route (e.g. from a drawing
+  // back to the project overview) re-fetches that route's RSC payload from the
+  // server every time — slow, even though the actual data is already in the
+  // React Query cache. Keeping visited routes in the router cache for a few
+  // minutes makes back-navigation instant. Data freshness is owned by React
+  // Query (staleTime + the project change-signature), not the route shell, so a
+  // generous router-cache window is safe here.
+  experimental: {
+    staleTimes: {
+      dynamic: 300, // 5 min — covers a realistic "open drawing, look, go back"
+      static: 300,
+    },
+  },
   transpilePackages: ["react-pdf", "pdfjs-dist"],
   turbopack: {
     resolveAlias: {

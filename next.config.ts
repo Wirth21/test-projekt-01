@@ -27,6 +27,36 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Exposed to the client and used as the React Query persistence `buster`:
+  // a new deploy => new commit SHA => the 24h IndexedDB cache from the
+  // previous build is discarded on restore. Prevents serving a stale-shaped
+  // cache blob after a data-model change (the "Ghost-Data" failure class).
+  // Falls back to "dev" outside Vercel (local/CI builds), where busting per
+  // build is unnecessary.
+  env: {
+    NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA ?? "dev",
+  },
+  // Client-side router cache. Next 15/16 default `dynamic` to 0s, which means
+  // navigating BACK to an already-visited dynamic route (e.g. from a drawing
+  // back to the project overview) re-fetches that route's RSC payload from the
+  // server every time — slow, even though the data is already in React Query.
+  //
+  // Window deliberately large (30 min): if it were short, idling a few minutes
+  // in a drawing and then going back would expire the entry, forcing a server
+  // round-trip — which simply FAILS offline. With a long window the back-nav is
+  // served from the in-memory router cache (instant, no network) across realistic
+  // idle periods. Data freshness is owned by React Query (staleTime + project
+  // change-signature), not the route shell, so a long window is safe.
+  //
+  // Note: this in-memory cache only covers a live session. True cross-session
+  // offline (reopened PWA, no network) is handled by the service worker, which
+  // serves cached route HTML, plus React Query's 30-day IndexedDB persistence.
+  experimental: {
+    staleTimes: {
+      dynamic: 1800, // 30 min
+      static: 1800,
+    },
+  },
   transpilePackages: ["react-pdf", "pdfjs-dist"],
   turbopack: {
     resolveAlias: {

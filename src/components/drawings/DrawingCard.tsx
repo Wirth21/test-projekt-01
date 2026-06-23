@@ -105,6 +105,9 @@ export function DrawingCard({
               className="w-full h-full object-contain p-2"
               loading="lazy"
               decoding="async"
+              // CORS request so the service worker can cache the response
+              // (an <img> defaults to no-cors → opaque → uncacheable).
+              crossOrigin="anonymous"
             />
           ) : legacyPdfUrl ? (
             // Legacy drawings uploaded before server-side thumbnails existed:

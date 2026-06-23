@@ -117,6 +117,8 @@ export function MarkerTooltip({
                   className="max-w-full max-h-full object-contain"
                   loading="lazy"
                   decoding="async"
+                  // CORS so the service worker can cache it (see DrawingCard).
+                  crossOrigin="anonymous"
                 />
               </div>
             ) : (

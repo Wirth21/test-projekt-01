@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { fetchPdfWithCache, isPdfCached } from "@/lib/offline/pdf-cache";
+import { markProjectSynced } from "@/lib/offline/synced-projects";
 import { useSyncContext } from "./SyncProvider";
 
 interface ProjectSyncButtonProps {
@@ -217,6 +218,9 @@ export function ProjectSyncButton({
         phase: "done",
       }));
 
+      // Remember this project is now available offline, so we can warn later
+      // (when offline) about projects that were never synced.
+      markProjectSynced(projectId);
       notifySynced();
       toast.success(t("projectSynced"));
     } catch (err) {

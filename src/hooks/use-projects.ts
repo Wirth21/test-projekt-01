@@ -9,28 +9,38 @@ import type { CreateProjectInput, EditProjectInput } from "@/lib/validations/pro
 
 // --- Query functions ---
 
-type ProjectStats = { drawing_count: number; marker_count: number; member_count: number };
+type ProjectStatsRow = {
+  project_id: string;
+  drawing_count: number;
+  marker_count: number;
+  member_count: number;
+};
 
 async function fetchProjectStats(
   supabase: ReturnType<typeof createClient>,
   projectIds: string[]
 ) {
-  const results = await Promise.all(
-    projectIds.map((pid) =>
-      supabase.rpc("project_stats", { p_project_id: pid })
-        .then(({ data }) => ({ id: pid, stats: (data ?? null) as ProjectStats | null }))
-    )
-  );
-  return new Map(
-    results.map((r) => [
-      r.id,
-      {
-        pdf_count: r.stats?.drawing_count ?? 0,
-        marker_count: r.stats?.marker_count ?? 0,
-        member_count: r.stats?.member_count ?? 0,
-      },
-    ])
-  );
+  const countMap = new Map<
+    string,
+    { pdf_count: number; marker_count: number; member_count: number }
+  >();
+  if (projectIds.length === 0) return countMap;
+
+  // One batched RPC for ALL projects instead of one project_stats() call per
+  // project (the previous N+1 Promise.all). The function LEFT JOINs over the
+  // input ids, so every id comes back with a row (0 when empty).
+  const { data } = await supabase.rpc("project_stats_batch", {
+    p_project_ids: projectIds,
+  });
+
+  for (const r of (data ?? []) as ProjectStatsRow[]) {
+    countMap.set(r.project_id, {
+      pdf_count: r.drawing_count ?? 0,
+      marker_count: r.marker_count ?? 0,
+      member_count: r.member_count ?? 0,
+    });
+  }
+  return countMap;
 }
 
 async function fetchActiveProjects(
@@ -235,6 +245,66 @@ export function useProjects() {
     fetchArchivedProjects: refetchArchived,
     refetch,
   };
+}
+
+// --- useProject (single project, for the detail page) ---
+
+/**
+ * Loads ONE project plus the caller's role/membership. Opening a project used
+ * to mount useProjects(), which fetches the entire active project list AND its
+ * per-project stats (N+1) just to `.find()` one row — a needless waterfall on
+ * every project open. This mirrors fetchActiveProjects' semantics (non-archived,
+ * RLS-visible, role from project_members) for a single id, without any stats.
+ */
+export function useProject(projectId: string) {
+  const queryClient = useQueryClient();
+  const supabase = createClient();
+  const { userId } = useUser();
+
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["project", projectId],
+    queryFn: async (): Promise<ProjectWithRole | null> => {
+      const [{ data: membership }, { data: project }] = await Promise.all([
+        supabase
+          .from("project_members")
+          .select("role")
+          .eq("project_id", projectId)
+          .eq("user_id", userId)
+          .maybeSingle(),
+        supabase
+          .from("projects")
+          .select("*")
+          .eq("id", projectId)
+          .eq("is_archived", false)
+          .maybeSingle(),
+      ]);
+      if (!project) return null;
+      const role = membership?.role as "owner" | "member" | "viewer" | undefined;
+      return {
+        ...project,
+        role: role ?? "viewer",
+        isMember: role !== undefined,
+        // Counts are not shown on the detail header; keep the type shape.
+        pdf_count: 0,
+        marker_count: 0,
+        member_count: 0,
+      };
+    },
+    staleTime: 5 * 60_000,
+    enabled: !!projectId,
+  });
+
+  const leaveProject = useCallback(async () => {
+    const res = await fetch(`/api/projects/${projectId}/leave`, { method: "POST" });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? "Verlassen fehlgeschlagen");
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["projects"] }),
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] }),
+    ]);
+  }, [projectId, queryClient]);
+
+  return { project: data ?? null, loading, leaveProject };
 }
 
 // --- useProjectMembers ---

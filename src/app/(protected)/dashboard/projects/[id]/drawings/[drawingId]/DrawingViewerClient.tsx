@@ -26,6 +26,7 @@ import {
   History,
   Maximize,
   Printer,
+  ExternalLink,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import { useDrawings } from "@/hooks/use-drawings";
 import { useMarkers } from "@/hooks/use-markers";
 import { useVersions } from "@/hooks/use-versions";
 import { useDrawingStatuses } from "@/hooks/use-drawing-statuses";
+import { useUser } from "@/components/providers/UserProvider";
 import { MarkerOverlay } from "@/components/drawings/MarkerOverlay";
 import { MarkerCreationDialog } from "@/components/drawings/MarkerCreationDialog";
 import {
@@ -171,26 +173,12 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
   const [pdfLoading, setPdfLoading] = useState(true);
   const [pdfError, setPdfError] = useState(false);
 
-  // Read-only check (viewer/guest)
-  const [isReadOnly, setIsReadOnly] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    async function checkRole() {
-      const supabase = (await import("@/lib/supabase")).createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || cancelled) return;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("tenant_role")
-        .eq("id", user.id)
-        .single();
-      if (!cancelled && (profile?.tenant_role === "viewer" || profile?.tenant_role === "guest")) {
-        setIsReadOnly(true);
-      }
-    }
-    checkRole();
-    return () => { cancelled = true; };
-  }, []);
+  // Read-only check (viewer/guest). Comes straight from UserProvider, which the
+  // (protected) layout already derives from the middleware-set x-tenant-role
+  // header (isReadOnly = role is "viewer" | "guest"). The viewer previously
+  // re-fetched this with its own getUser() + profiles SELECT — two extra network
+  // round-trips on the most-visited deep page for data already in context.
+  const { isReadOnly } = useUser();
 
   // Version panel state
   const [versionPanelOpen, setVersionPanelOpen] = useState(false);
@@ -209,6 +197,17 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
       setPrinting(false);
     }
   }, [pdfUrl, printing, t]);
+
+  // Open the original PDF in the browser's native viewer. pdfUrl already points
+  // at the full-resolution original (react-pdf renders from it) — the in-app
+  // pixelation is only the rasterized canvas, so the native viewer gives crisp,
+  // vector-sharp zoom at any level. Opened synchronously from the click so it
+  // is not swallowed by mobile popup blockers; works offline when pdfUrl is a
+  // cached blob.
+  const handleOpenOriginal = useCallback(() => {
+    if (!pdfUrl) return;
+    window.open(pdfUrl, "_blank");
+  }, [pdfUrl]);
 
   // Persistent rotation: stored per-version as a DELTA on top of the PDF's
   // intrinsic /Rotate metadata. Display angle = (intrinsic + delta) % 360.
@@ -1089,6 +1088,18 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                   <Printer className="h-3.5 w-3.5" />
                   <span>{t("print")}</span>
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOpenOriginal}
+                  disabled={!pdfUrl}
+                  className="gap-1.5"
+                  aria-label={t("openOriginal")}
+                  title={t("openOriginalHint")}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span>{t("openOriginal")}</span>
+                </Button>
               </>
             )}
 
@@ -1165,6 +1176,19 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
               aria-label={t("print")}
             >
               <Printer className="h-3.5 w-3.5" />
+            </Button>
+          )}
+
+          {activeVersion && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenOriginal}
+              disabled={!pdfUrl}
+              className="shrink-0 h-8 w-8 p-0"
+              aria-label={t("openOriginal")}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
             </Button>
           )}
 
@@ -1363,11 +1387,14 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
                           plain skeleton otherwise. */}
                       {!lowResReady && (
                         drawing?.thumbnail_url && currentPage === 1 ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- signed Storage URL, not a static asset
                           <img
                             src={drawing.thumbnail_url}
                             alt=""
                             className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
                             aria-hidden="true"
+                            // CORS so the service worker can cache it (see DrawingCard).
+                            crossOrigin="anonymous"
                           />
                         ) : (
                           <Skeleton className="absolute inset-0 z-10" />

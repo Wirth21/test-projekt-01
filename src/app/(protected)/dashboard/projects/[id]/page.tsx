@@ -20,12 +20,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { useProjects, useProjectMembers } from "@/hooks/use-projects";
+import { useProject, useProjectMembers } from "@/hooks/use-projects";
 import { useDrawings } from "@/hooks/use-drawings";
 import { useDrawingGroups } from "@/hooks/use-drawing-groups";
 import { useDrawingStatuses } from "@/hooks/use-drawing-statuses";
 import { InviteMemberDialog } from "@/components/projects/InviteMemberDialog";
 import { ActivityLog } from "@/components/projects/ActivityLog";
+import { ProjectChangesBanner } from "@/components/projects/ProjectChangesBanner";
+import { OfflineNotSyncedHint } from "@/components/sync/OfflineNotSyncedHint";
 import { GroupedDrawingList } from "@/components/drawings/GroupedDrawingList";
 import { Logo } from "@/components/Logo";
 import { CreateGroupDialog } from "@/components/drawings/CreateGroupDialog";
@@ -41,7 +43,6 @@ const SyncStatusBadge = dynamic(
   () => import("@/components/sync/SyncStatusBadge").then((m) => m.SyncStatusBadge),
   { ssr: false }
 );
-import type { ProjectWithRole } from "@/lib/types/project";
 import { useTranslations } from "next-intl";
 
 interface PageProps {
@@ -55,7 +56,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
   const tp = useTranslations("projects");
   const tc = useTranslations("common");
   const tn = useTranslations("nav");
-  const { projects, loading: projectsLoading, leaveProject } = useProjects();
+  const { project, loading: projectsLoading, leaveProject } = useProject(id);
   const { members, loading: membersLoading, inviteMember, removeMember, changeRole, refetch: refetchMembers } = useProjectMembers(id);
 
   const {
@@ -423,7 +424,6 @@ export default function ProjectDetailPage({ params }: PageProps) {
     return map;
   }, [drawings]);
 
-  const project = projects.find((p) => p.id === id) as ProjectWithRole | undefined;
   const isOwner = project?.role === "owner";
   const isMember = project?.role === "owner" || project?.role === "member";
   const isViewer = project?.role === "viewer";
@@ -440,7 +440,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
     if (!project) return;
     setLeaving(true);
     try {
-      await leaveProject(project.id);
+      await leaveProject();
       toast.success(tp("toasts.left", { name: project.name }));
       router.push("/dashboard");
     } catch (err) {
@@ -492,11 +492,13 @@ export default function ProjectDetailPage({ params }: PageProps) {
             <Skeleton className="h-6 w-48" />
             <Skeleton className="h-9 w-32 rounded" />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-            {[1, 2, 3, 4].map((i) => (
+          {/* Same grid + tile shape as the real DrawingGrid/DrawingCard so the
+              skeleton doesn't jump to a different size when data arrives. */}
+          <div className="grid grid-cols-2 min-[400px]:grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2.5">
+            {Array.from({ length: 10 }).map((_, i) => (
               <div key={i} className="rounded-lg border bg-card overflow-hidden">
-                <Skeleton className="aspect-[4/3] w-full" />
-                <div className="p-2.5 space-y-1.5">
+                <Skeleton className="aspect-[3/2] w-full" />
+                <div className="p-3 space-y-1.5">
                   <Skeleton className="h-3.5 w-3/4" />
                   <Skeleton className="h-3 w-1/3" />
                 </div>
@@ -597,6 +599,11 @@ export default function ProjectDetailPage({ params }: PageProps) {
 
         {/* Drawings (PROJ-3) + Groups (PROJ-8) */}
         <section>
+          {/* Warn when offline on a project that was never synced for offline use. */}
+          <OfflineNotSyncedHint projectId={id} />
+          {/* Poll a tiny server-side signature; offer a refresh when the
+              project's data changed elsewhere (PROJ perf #4). */}
+          <ProjectChangesBanner projectId={id} />
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <h3 className="text-base font-semibold">{t("title")}</h3>
             {!isViewer && (
@@ -632,13 +639,15 @@ export default function ProjectDetailPage({ params }: PageProps) {
             <TabsContent value="active">
               <div className="space-y-4">
                 {drawingsLoading || groupsLoading ? (
-                  <div className="grid grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                      <div key={i} className="rounded-lg border overflow-hidden">
-                        <Skeleton className="aspect-[3/4]" />
-                        <div className="p-3 space-y-2">
-                          <Skeleton className="h-4 w-3/4" />
-                          <Skeleton className="h-3 w-1/2" />
+                  // Match the real DrawingGrid/DrawingCard (columns + aspect-[3/2])
+                  // so the placeholders are the same size as the loaded tiles.
+                  <div className="grid grid-cols-2 min-[400px]:grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2.5">
+                    {Array.from({ length: 10 }).map((_, i) => (
+                      <div key={i} className="rounded-lg border bg-card overflow-hidden">
+                        <Skeleton className="aspect-[3/2] w-full" />
+                        <div className="p-3 space-y-1.5">
+                          <Skeleton className="h-3.5 w-3/4" />
+                          <Skeleton className="h-3 w-1/3" />
                         </div>
                       </div>
                     ))}

@@ -76,6 +76,8 @@
     "profile": "My Profile"
   },
   "projects": {
+    "changesAvailable": "New changes available",
+    "refresh": "Refresh",
     "title": "My Projects",
     "subtitle": "Own and shared projects",
     "newProject": "New Project",
@@ -204,6 +206,8 @@
     "editMode": "Edit",
     "viewMode": "View",
     "print": "Print",
+    "openOriginal": "Original",
+    "openOriginalHint": "Open the original PDF at full sharpness (no markers)",
     "fullscreen": "Fullscreen",
     "fullscreenEnter": "Enter fullscreen mode",
     "fullscreenExit": "Exit fullscreen",
@@ -858,6 +862,7 @@
     "synced": "Up to date",
     "syncing": "Updating…",
     "offline": "Offline",
+    "notSyncedOffline": "You're offline and this project isn't saved for offline use – drawings you haven't opened before may be unavailable.",
     "neverSynced": "Never synced",
     "syncedMinAgo": "{minutes} min ago",
     "syncedHoursAgo": "{hours}h ago",

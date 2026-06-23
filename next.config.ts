@@ -27,6 +27,15 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Exposed to the client and used as the React Query persistence `buster`:
+  // a new deploy => new commit SHA => the 24h IndexedDB cache from the
+  // previous build is discarded on restore. Prevents serving a stale-shaped
+  // cache blob after a data-model change (the "Ghost-Data" failure class).
+  // Falls back to "dev" outside Vercel (local/CI builds), where busting per
+  // build is unnecessary.
+  env: {
+    NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA ?? "dev",
+  },
   transpilePackages: ["react-pdf", "pdfjs-dist"],
   turbopack: {
     resolveAlias: {

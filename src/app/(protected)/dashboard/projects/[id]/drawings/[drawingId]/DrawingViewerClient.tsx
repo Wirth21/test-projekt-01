@@ -36,6 +36,7 @@ import { useDrawings } from "@/hooks/use-drawings";
 import { useMarkers } from "@/hooks/use-markers";
 import { useVersions } from "@/hooks/use-versions";
 import { useDrawingStatuses } from "@/hooks/use-drawing-statuses";
+import { useUser } from "@/components/providers/UserProvider";
 import { MarkerOverlay } from "@/components/drawings/MarkerOverlay";
 import { MarkerCreationDialog } from "@/components/drawings/MarkerCreationDialog";
 import {
@@ -171,26 +172,12 @@ export function DrawingViewerClient({ params }: DrawingViewerClientProps) {
   const [pdfLoading, setPdfLoading] = useState(true);
   const [pdfError, setPdfError] = useState(false);
 
-  // Read-only check (viewer/guest)
-  const [isReadOnly, setIsReadOnly] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    async function checkRole() {
-      const supabase = (await import("@/lib/supabase")).createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || cancelled) return;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("tenant_role")
-        .eq("id", user.id)
-        .single();
-      if (!cancelled && (profile?.tenant_role === "viewer" || profile?.tenant_role === "guest")) {
-        setIsReadOnly(true);
-      }
-    }
-    checkRole();
-    return () => { cancelled = true; };
-  }, []);
+  // Read-only check (viewer/guest). Comes straight from UserProvider, which the
+  // (protected) layout already derives from the middleware-set x-tenant-role
+  // header (isReadOnly = role is "viewer" | "guest"). The viewer previously
+  // re-fetched this with its own getUser() + profiles SELECT — two extra network
+  // round-trips on the most-visited deep page for data already in context.
+  const { isReadOnly } = useUser();
 
   // Version panel state
   const [versionPanelOpen, setVersionPanelOpen] = useState(false);

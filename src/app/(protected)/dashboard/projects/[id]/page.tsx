@@ -27,6 +27,7 @@ import { useDrawingStatuses } from "@/hooks/use-drawing-statuses";
 import { InviteMemberDialog } from "@/components/projects/InviteMemberDialog";
 import { ActivityLog } from "@/components/projects/ActivityLog";
 import { ProjectChangesBanner } from "@/components/projects/ProjectChangesBanner";
+import { OfflineNotSyncedHint } from "@/components/sync/OfflineNotSyncedHint";
 import { GroupedDrawingList } from "@/components/drawings/GroupedDrawingList";
 import { Logo } from "@/components/Logo";
 import { CreateGroupDialog } from "@/components/drawings/CreateGroupDialog";
@@ -598,6 +599,8 @@ export default function ProjectDetailPage({ params }: PageProps) {
 
         {/* Drawings (PROJ-3) + Groups (PROJ-8) */}
         <section>
+          {/* Warn when offline on a project that was never synced for offline use. */}
+          <OfflineNotSyncedHint projectId={id} />
           {/* Poll a tiny server-side signature; offer a refresh when the
               project's data changed elsewhere (PROJ perf #4). */}
           <ProjectChangesBanner projectId={id} />

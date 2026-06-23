@@ -842,6 +842,7 @@
     "synced": "Aktualisiert",
     "syncing": "Wird aktualisiert…",
     "offline": "Offline",
+    "notSyncedOffline": "Du bist offline und dieses Projekt wurde nicht für die Offline-Nutzung gespeichert – zuvor nicht geöffnete Zeichnungen sind eventuell nicht verfügbar.",
     "neverSynced": "Nie synchronisiert",
     "syncedMinAgo": "Vor {minutes} Min.",
     "syncedHoursAgo": "Vor {hours} Std.",

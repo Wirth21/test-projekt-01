@@ -862,6 +862,7 @@
     "synced": "Up to date",
     "syncing": "Updating…",
     "offline": "Offline",
+    "notSyncedOffline": "You're offline and this project isn't saved for offline use – drawings you haven't opened before may be unavailable.",
     "neverSynced": "Never synced",
     "syncedMinAgo": "{minutes} min ago",
     "syncedHoursAgo": "{hours}h ago",

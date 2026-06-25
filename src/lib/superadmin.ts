@@ -3,6 +3,11 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 /**
  * Creates a Supabase client with the service role key (bypasses RLS).
+ *
+ * NOTE: not yet parametrized with <Database>. Doing so is a recommended
+ * follow-up — it surfaced a real column bug (file_size selected from drawings
+ * in the tenant export, now fixed) plus a few untyped update payloads. Deferred
+ * to avoid overlapping with the open restore route change.
  */
 export function createServiceRoleClient() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

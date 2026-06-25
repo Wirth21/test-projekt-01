@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { getAuthenticatedAdmin } from "@/lib/admin";
+import type { TablesUpdate } from "@/lib/types/database";
 import { z } from "zod";
 
 const updateProfileSchema = z.object({
@@ -68,7 +69,7 @@ export async function PATCH(
   const { display_name, email, tenant_role } = result.data;
 
   // Update profile in profiles table
-  const profileUpdate: Record<string, string> = {};
+  const profileUpdate: TablesUpdate<"profiles"> = {};
   if (display_name !== undefined) profileUpdate.display_name = display_name;
   if (email !== undefined) profileUpdate.email = email.trim().toLowerCase();
   if (tenant_role !== undefined) profileUpdate.tenant_role = tenant_role;

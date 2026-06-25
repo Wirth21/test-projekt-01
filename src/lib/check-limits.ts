@@ -67,3 +67,32 @@ export function checkFileSize(
     maxBytes: limits.maxFileSizeBytes,
   };
 }
+
+/**
+ * Reads the authoritative byte size of an already-uploaded Storage object.
+ *
+ * Uploads go directly client -> Supabase Storage; the client then reports
+ * `file_size` in the metadata call. Trusting that number lets a client
+ * understate the size to bypass per-file and tenant storage quotas (and
+ * corrupts usage accounting). Read the real size from Storage instead.
+ *
+ * Returns the size in bytes, or null if the object can't be found.
+ */
+export async function getStorageObjectSize(
+  supabase: SupabaseClient,
+  bucket: string,
+  storagePath: string
+): Promise<number | null> {
+  const slash = storagePath.lastIndexOf("/");
+  const folder = slash >= 0 ? storagePath.slice(0, slash) : "";
+  const filename = slash >= 0 ? storagePath.slice(slash + 1) : storagePath;
+
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .list(folder, { search: filename, limit: 100 });
+  if (error || !data) return null;
+
+  const obj = data.find((o) => o.name === filename);
+  const size = (obj?.metadata as { size?: number } | null | undefined)?.size;
+  return typeof size === "number" ? size : null;
+}

@@ -35,18 +35,27 @@ export async function getAuthenticatedAdmin(supabase: SupabaseClient) {
 /**
  * Fetches the tenant_role of the authenticated user.
  * Returns 'user' | 'viewer' | 'guest'.
+ *
+ * Pass `userId` when the caller already resolved the user (e.g. via
+ * `auth.getUser()`) to skip a redundant auth round trip.
  */
-export async function getTenantRole(supabase: SupabaseClient): Promise<TenantRole> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return "user";
+export async function getTenantRole(
+  supabase: SupabaseClient,
+  userId?: string
+): Promise<TenantRole> {
+  let uid = userId;
+  if (!uid) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return "user";
+    uid = user.id;
+  }
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("tenant_role")
-    .eq("id", user.id)
+    .eq("id", uid)
     .single();
 
   return (profile?.tenant_role as TenantRole) ?? "user";
@@ -54,8 +63,12 @@ export async function getTenantRole(supabase: SupabaseClient): Promise<TenantRol
 
 /**
  * Returns true if the user's tenant_role is read-only (viewer or guest).
+ * Pass `userId` to skip the redundant auth lookup when already known.
  */
-export async function isReadOnlyUser(supabase: SupabaseClient): Promise<boolean> {
-  const role = await getTenantRole(supabase);
+export async function isReadOnlyUser(
+  supabase: SupabaseClient,
+  userId?: string
+): Promise<boolean> {
+  const role = await getTenantRole(supabase, userId);
   return role === "viewer" || role === "guest";
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createVersionSchema } from "@/lib/validations/version";
 import { getTenantContext } from "@/lib/tenant";
-import { checkFileSize, checkStorageLimit } from "@/lib/check-limits";
+import { checkFileSize, checkStorageLimit, getStorageObjectSize } from "@/lib/check-limits";
 import { formatBytes } from "@/lib/plan-limits";
 import type { PlanType } from "@/lib/types/tenant";
 import { logActivity } from "@/lib/activity-log";
@@ -95,7 +95,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     );
   }
 
-  const { storage_path, file_size, page_count, label, thumbnail_path } = result.data;
+  const { storage_path, page_count, label, thumbnail_path } = result.data;
 
   // Check plan limits for file size and storage
   let tenantId: string;
@@ -113,26 +113,36 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   const plan = (tenant?.plan as PlanType) ?? "free";
 
-  const fileSizeCheck = checkFileSize(plan, file_size);
+  // Validate storage_path format: {project_id}/{drawing_id}/{version_number}.pdf
+  // before we touch Storage with it.
+  const expectedPrefix = `${projectId}/${drawingId}/`;
+  if (!storage_path.startsWith(expectedPrefix)) {
+    return NextResponse.json({ error: "Ungültiger Speicherpfad" }, { status: 400 });
+  }
+
+  // Enforce quotas against the REAL uploaded size, not the client-reported
+  // file_size (which a client can understate to bypass plan/storage limits).
+  const realSize = await getStorageObjectSize(supabase, "drawings", storage_path);
+  if (realSize === null) {
+    return NextResponse.json({ error: "Hochgeladene Datei nicht gefunden" }, { status: 400 });
+  }
+
+  const fileSizeCheck = checkFileSize(plan, realSize);
   if (!fileSizeCheck.allowed) {
+    await supabase.storage.from("drawings").remove([storage_path, thumbnail_path].filter(Boolean) as string[]);
     return NextResponse.json(
       { error: `Die Datei ist zu groß. Maximale Dateigröße: ${formatBytes(fileSizeCheck.maxBytes)}.` },
       { status: 413 }
     );
   }
 
-  const storageCheck = await checkStorageLimit(supabase, tenantId, plan, file_size);
+  const storageCheck = await checkStorageLimit(supabase, tenantId, plan, realSize);
   if (!storageCheck.allowed) {
+    await supabase.storage.from("drawings").remove([storage_path, thumbnail_path].filter(Boolean) as string[]);
     return NextResponse.json(
       { error: "Speicherlimit erreicht. Bitte Plan upgraden." },
       { status: 403 }
     );
-  }
-
-  // Validate storage_path format: {project_id}/{drawing_id}/{version_number}.pdf
-  const expectedPrefix = `${projectId}/${drawingId}/`;
-  if (!storage_path.startsWith(expectedPrefix)) {
-    return NextResponse.json({ error: "Ungültiger Speicherpfad" }, { status: 400 });
   }
 
   // Next version_number = current max + 1 (global across active + archived,
@@ -175,7 +185,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       label: label ?? defaultLabel,
       storage_path,
       thumbnail_path: thumbnail_path ?? null,
-      file_size,
+      file_size: realSize,
       page_count: page_count ?? null,
       is_archived: false,
       created_by: user.id,

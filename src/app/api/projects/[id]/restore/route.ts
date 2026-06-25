@@ -1,34 +1,25 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { createServiceRoleClient } from "@/lib/superadmin";
 import { logActivity } from "@/lib/activity-log";
-import { isReadOnlyUser } from "@/lib/admin";
 import { getTenantContext } from "@/lib/tenant";
+import { requireProjectAccess } from "@/lib/require-project-access";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-// POST /api/projects/[id]/restore — restore an archived project
+// POST /api/projects/[id]/restore — restore an archived project (owner only)
 export async function POST(_request: Request, { params }: RouteParams) {
   const { id } = await params;
-  const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
+  // Authorize: must be an owner of THIS project with write access.
+  // Mirrors the archive route; restore was previously missing the membership/
+  // owner check, so any writer in the tenant could un-archive any project.
+  const access = await requireProjectAccess(id, { requireRole: "owner", requireWrite: true });
+  if ("error" in access) return access.error;
+  const { supabase, user } = access.data;
 
-  if (authError || !user) {
-    return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
-  }
-
-  // Check read-only user
-  if (await isReadOnlyUser(supabase)) {
-    return NextResponse.json({ error: "Kein Schreibzugriff" }, { status: 403 });
-  }
-
-  // Verify tenant context
+  // Tenant scope for the privileged restore
   let tenantId: string;
   try {
     const ctx = await getTenantContext();
@@ -37,7 +28,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Tenant-Kontext nicht verfügbar" }, { status: 400 });
   }
 
-  // Restore project — use service role to bypass RLS, but filter by tenant_id
+  // Restore project — service role to bypass RLS, still scoped by tenant_id.
   let project = null;
   let restoreError = null;
   try {

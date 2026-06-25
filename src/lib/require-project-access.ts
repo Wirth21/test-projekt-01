@@ -42,25 +42,28 @@ export async function requireProjectAccess(
     };
   }
 
-  // Check write permission if required
-  if (options?.requireWrite) {
-    if (await isReadOnlyUser(supabase)) {
-      return {
-        error: NextResponse.json(
-          { error: "Kein Schreibzugriff" },
-          { status: 403 }
-        ),
-      };
-    }
-  }
+  // The read-only check (a profiles read) and the membership lookup are
+  // independent — run them together. Reuse the user we already resolved so
+  // isReadOnlyUser doesn't issue a second auth.getUser().
+  const [isReadOnly, { data: membership }] = await Promise.all([
+    options?.requireWrite ? isReadOnlyUser(supabase, user.id) : Promise.resolve(false),
+    supabase
+      .from("project_members")
+      .select("id, role")
+      .eq("project_id", projectId)
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
 
-  // Check project membership (RLS handles tenant isolation)
-  const { data: membership } = await supabase
-    .from("project_members")
-    .select("id, role")
-    .eq("project_id", projectId)
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // Check write permission if required
+  if (options?.requireWrite && isReadOnly) {
+    return {
+      error: NextResponse.json(
+        { error: "Kein Schreibzugriff" },
+        { status: 403 }
+      ),
+    };
+  }
 
   if (!membership) {
     return {

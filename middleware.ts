@@ -17,6 +17,19 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ──────────────────────────────────────────────
+  // 0. Strip client-supplied trust headers.
+  //    x-tenant-id / x-user-id / x-is-admin / x-tenant-role are set ONLY by
+  //    this middleware from the authenticated profile (section 4). An inbound
+  //    copy from the client must never survive to a route handler — otherwise
+  //    a forged header could spoof tenant/role on the error/early-return paths
+  //    where the profile lookup doesn't run.
+  // ──────────────────────────────────────────────
+  request.headers.delete("x-tenant-id");
+  request.headers.delete("x-user-id");
+  request.headers.delete("x-is-admin");
+  request.headers.delete("x-tenant-role");
+
+  // ──────────────────────────────────────────────
   // 1. Superadmin routes
   // ──────────────────────────────────────────────
   if (pathname === "/superadmin/login") {

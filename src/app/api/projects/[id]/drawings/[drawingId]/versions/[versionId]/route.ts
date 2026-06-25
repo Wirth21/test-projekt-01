@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { updateVersionSchema } from "@/lib/validations/version";
 import { requireProjectAccess } from "@/lib/require-project-access";
+import type { TablesUpdate } from "@/lib/types/database";
 
 interface RouteParams {
   params: Promise<{ id: string; drawingId: string; versionId: string }>;
@@ -51,7 +52,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Version gehört nicht zu diesem Projekt" }, { status: 403 });
   }
 
-  const updates: Record<string, string | number> = {};
+  const updates: TablesUpdate<"drawing_versions"> = {};
   if (result.data.label !== undefined) updates.label = result.data.label;
   if (result.data.created_at !== undefined) updates.created_at = result.data.created_at;
   if (result.data.rotation !== undefined) updates.rotation = result.data.rotation;

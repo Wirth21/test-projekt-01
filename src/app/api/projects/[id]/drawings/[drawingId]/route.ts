@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { updateDrawingSchema } from "@/lib/validations/drawing";
 import { logActivity } from "@/lib/activity-log";
 import { requireProjectAccess } from "@/lib/require-project-access";
+import type { TablesUpdate } from "@/lib/types/database";
 
 interface RouteParams {
   params: Promise<{ id: string; drawingId: string }>;
@@ -46,7 +47,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 
   // Build the update payload — only include fields that were provided
-  const updatePayload: Record<string, unknown> = {
+  const updatePayload: TablesUpdate<"drawings"> = {
     updated_at: new Date().toISOString(),
   };
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { updateMarkerSchema } from "@/lib/validations/marker";
 import { logActivity } from "@/lib/activity-log";
 import { requireProjectAccess } from "@/lib/require-project-access";
+import type { TablesUpdate } from "@/lib/types/database";
 
 interface RouteParams {
   params: Promise<{ id: string; drawingId: string; markerId: string }>;
@@ -61,7 +62,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 
   // Build update payload (only include provided fields)
-  const updatePayload: Record<string, unknown> = {};
+  const updatePayload: TablesUpdate<"markers"> = {};
   if (updates.name !== undefined) updatePayload.name = updates.name;
   if (updates.color !== undefined) updatePayload.color = updates.color;
   if (updates.target_drawing_id !== undefined) updatePayload.target_drawing_id = updates.target_drawing_id;

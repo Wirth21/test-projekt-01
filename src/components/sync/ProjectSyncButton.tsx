@@ -195,18 +195,26 @@ export function ProjectSyncButton({
           `/dashboard/projects/${projectId}`,
         ];
 
-        const cache = await caches.open("link2plan-app-v4");
-        for (const route of routesToPrefetch) {
-          if (controller.signal.aborted) return;
-          try {
-            const fullUrl = new URL(route, window.location.origin).toString();
-            const res = await fetch(fullUrl, { credentials: "include" });
-            if (res.ok) {
-              await cache.put(route, res.clone());
-              await cache.put(fullUrl, res.clone());
+        // Write into the service worker's actual app-shell cache. Its name
+        // carries a version suffix the SW bumps on deploy; a hardcoded name
+        // gets purged by the SW's activate handler before it's ever read
+        // (which silently broke offline page navigation). Discover it instead.
+        const cacheKeys = await caches.keys();
+        const appShellCacheName = cacheKeys.find((k) => k.startsWith("link2plan-app-"));
+        if (appShellCacheName) {
+          const cache = await caches.open(appShellCacheName);
+          for (const route of routesToPrefetch) {
+            if (controller.signal.aborted) return;
+            try {
+              const fullUrl = new URL(route, window.location.origin).toString();
+              const res = await fetch(fullUrl, { credentials: "include" });
+              if (res.ok) {
+                await cache.put(route, res.clone());
+                await cache.put(fullUrl, res.clone());
+              }
+            } catch {
+              // Individual page prefetch failure is non-critical
             }
-          } catch {
-            // Individual page prefetch failure is non-critical
           }
         }
       } catch {

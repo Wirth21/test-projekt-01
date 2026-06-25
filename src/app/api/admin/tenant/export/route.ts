@@ -75,7 +75,10 @@ export async function GET() {
     const { data: drawings } = projectIds.length > 0
       ? await serviceClient
           .from("drawings")
-          .select("id, project_id, display_name, file_size, page_count, is_archived")
+          // file_size and page_count live on drawing_versions, NOT drawings —
+          // selecting them here made PostgREST 400 and silently returned no
+          // drawings (and thus no markers/versions) in the tenant export.
+          .select("id, project_id, display_name, is_archived")
           .in("project_id", projectIds)
           .order("project_id", { ascending: true })
       : { data: [] };

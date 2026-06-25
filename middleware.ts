@@ -218,7 +218,20 @@ export async function middleware(request: NextRequest) {
       request.headers.set("x-user-id", user.id);
       request.headers.set("x-is-admin", profile.is_admin ? "1" : "0");
       request.headers.set("x-tenant-role", profile.tenant_role ?? "user");
-      supabaseResponse = NextResponse.next({ request });
+
+      // Rebuild the response so it forwards the x-* request headers — but COPY
+      // the Set-Cookie headers over first. When getUser() refreshed the access
+      // token, setAll() wrote the new (rotated) auth cookies onto the current
+      // supabaseResponse. A bare NextResponse.next({ request }) would drop those
+      // Set-Cookie headers, so the browser would keep the OLD refresh token that
+      // Supabase already rotated server-side → next request fails auth → the user
+      // is logged out. In the PWA this happened constantly (backgrounded app →
+      // expired access token → refresh on every reopen). Preserve the cookies.
+      const responseWithHeaders = NextResponse.next({ request });
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        responseWithHeaders.cookies.set(cookie);
+      });
+      supabaseResponse = responseWithHeaders;
     }
   }
 

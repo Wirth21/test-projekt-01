@@ -1,5 +1,40 @@
 const PDF_CACHE_NAME = "link2plan-pdfs";
 
+/** Request persistent storage once so the browser won't evict cached PDFs
+ *  under storage pressure. Best-effort; not supported everywhere. */
+let persistRequested = false;
+async function ensurePersistentStorage(): Promise<void> {
+  if (persistRequested) return;
+  persistRequested = true;
+  try {
+    if (navigator.storage?.persist && !(await navigator.storage.persisted())) {
+      await navigator.storage.persist();
+    }
+  } catch {
+    // Storage Manager not available — ignore
+  }
+}
+
+/** Cheap byte size of a cached response via Content-Length (no blob read). */
+function responseSize(res: Response): number {
+  const len = res.headers.get("content-length");
+  const n = len ? parseInt(len, 10) : 0;
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Evict oldest entries (the Cache API preserves insertion order) until at
+ *  least `bytesNeeded` has been freed or the cache is empty. */
+async function evictOldest(cache: Cache, bytesNeeded: number): Promise<void> {
+  const keys = await cache.keys();
+  let freed = 0;
+  for (const req of keys) {
+    if (freed >= bytesNeeded) break;
+    const res = await cache.match(req);
+    freed += res ? responseSize(res) : 0;
+    await cache.delete(req);
+  }
+}
+
 /** Normalize a Supabase storage URL to a stable cache key (strip token params) */
 function toCacheKey(url: string): string {
   try {
@@ -24,13 +59,28 @@ export async function isPdfCached(url: string): Promise<boolean> {
   }
 }
 
-/** Cache a PDF response (call after fetching) */
+/** Cache a PDF response (call after fetching). On a storage-quota rejection,
+ *  evict the oldest cached PDFs and retry once instead of silently dropping it. */
 export async function cachePdf(url: string, response: Response): Promise<void> {
+  await ensurePersistentStorage();
+  const key = toCacheKey(url);
+  const size = responseSize(response);
   try {
     const cache = await caches.open(PDF_CACHE_NAME);
-    await cache.put(toCacheKey(url), response.clone());
-  } catch {
-    // Silently fail — cache might be full
+    try {
+      await cache.put(key, response.clone());
+    } catch (err) {
+      // Likely QuotaExceededError — free room (at least this file, min 50 MB)
+      // by dropping the oldest entries, then retry once.
+      await evictOldest(cache, Math.max(size, 50 * 1024 * 1024));
+      try {
+        await cache.put(key, response.clone());
+      } catch {
+        console.warn("[pdf-cache] PDF not cached — storage quota reached", err);
+      }
+    }
+  } catch (err) {
+    console.warn("[pdf-cache] cache unavailable", err);
   }
 }
 
@@ -143,12 +193,11 @@ export async function getPdfCacheStats(): Promise<{
     const keys = await cache.keys();
     let totalSize = 0;
 
+    // Sum Content-Length headers rather than materializing every PDF blob into
+    // memory (which could be hundreds of MB and spike GC).
     for (const request of keys) {
       const response = await cache.match(request);
-      if (response) {
-        const blob = await response.clone().blob();
-        totalSize += blob.size;
-      }
+      if (response) totalSize += responseSize(response);
     }
 
     return { count: keys.length, totalSize };

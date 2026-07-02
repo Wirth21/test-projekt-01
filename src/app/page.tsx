@@ -15,6 +15,7 @@ import { Logo } from "@/components/Logo";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useCases } from "./loesungen/use-cases";
 
 const FEATURES = [
   { key: "pdfViewer" as const, icon: FileText },
@@ -314,7 +315,7 @@ export default async function LandingPage() {
       {/* Footer */}
       <footer className="border-t">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-          <div className="grid gap-8 sm:grid-cols-3">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <Logo size="sm" />
             </div>
@@ -346,6 +347,24 @@ export default async function LandingPage() {
                     {t("footer.faq")}
                   </a>
                 </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold">
+                {t("footer.solutions")}
+              </h4>
+              <ul className="mt-3 space-y-2">
+                {useCases.map((uc) => (
+                  <li key={uc.slug}>
+                    <Link
+                      href={`/loesungen/${uc.slug}`}
+                      className="text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      {uc.shortLabel}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
 

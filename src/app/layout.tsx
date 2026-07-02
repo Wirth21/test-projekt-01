@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import { Analytics } from "@vercel/analytics/next";
 import { CookieConsent } from "@/components/CookieConsent";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -60,6 +61,7 @@ export default async function RootLayout({
           <CookieConsent />
           <Toaster richColors position="top-center" />
         </NextIntlClientProvider>
+        <Analytics />
         <script
           dangerouslySetInnerHTML={{
             __html: `

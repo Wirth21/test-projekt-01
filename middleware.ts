@@ -126,6 +126,9 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/impressum") ||
     pathname.startsWith("/agb") ||
     pathname === "/sitemap.xml" ||
+    pathname === "/robots.txt" ||
+    pathname === "/opengraph-image" ||
+    pathname === "/twitter-image" ||
     pathname === "/icon.svg";
 
   const isApiRoute = pathname.startsWith("/api");

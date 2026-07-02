@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     siteName: "Link2Plan",
     title: "Link2Plan — Technische PDF-Pläne verwalten und verknüpfen",
     description:
-      "Verbinde technische PDF-Pläne mit intelligenten Markern. Dein Team navigiert per Klick zwischen Grundrissen, Schnitten und Details.",
+      "Technische PDF-Pläne mit intelligenten Markern verknüpfen — per Klick zwischen Grundrissen, Schnitten und Details.",
   },
   twitter: {
     card: "summary_large_image",

@@ -585,7 +585,8 @@
       "title": "Link plans. Navigate faster.",
       "subtitle": "Link2Plan connects technical PDF plans with intelligent markers. Your team navigates between floor plans, sections, and details with a single click — no more searching.",
       "cta": "Try for free",
-      "ctaSecondary": "Learn more"
+      "ctaSecondary": "Learn more",
+      "previewAlt": "Link2plan preview: technical plan with clickable markers"
     },
     "features": {
       "title": "Everything your team needs",
@@ -666,10 +667,41 @@
       "subtitle": "Start for free today — no credit card required.",
       "button": "Try for free"
     },
+    "faq": {
+      "title": "Frequently asked questions",
+      "subtitle": "Everything you want to know before getting started.",
+      "items": [
+        {
+          "question": "Where is my data stored?",
+          "answer": "All plans and project data are hosted on servers in the EU and processed in compliance with GDPR."
+        },
+        {
+          "question": "Is Link2plan GDPR-compliant?",
+          "answer": "Yes. We host in the EU, process data according to GDPR, and provide the required privacy information."
+        },
+        {
+          "question": "Can I start for free?",
+          "answer": "Yes. The Free plan is free forever and requires no credit card — ideal for trying it out."
+        },
+        {
+          "question": "Which files can I upload?",
+          "answer": "Technical plans as PDF. Viewing runs entirely in the browser, with no extra software."
+        },
+        {
+          "question": "Do I need to install anything?",
+          "answer": "No. Link2plan runs in the browser and can optionally be installed as an app (PWA) on your phone."
+        },
+        {
+          "question": "Can I cancel anytime?",
+          "answer": "Yes. Paid plans are billed monthly and can be cancelled at any time, effective at the end of the term."
+        }
+      ]
+    },
     "footer": {
       "product": "Product",
       "features": "Features",
       "pricing": "Pricing",
+      "faq": "FAQ",
       "legal": "Legal",
       "imprint": "Imprint",
       "privacy": "Privacy Policy",
@@ -679,6 +711,7 @@
     "nav": {
       "features": "Features",
       "pricing": "Pricing",
+      "faq": "FAQ",
       "login": "Log in"
     }
   },

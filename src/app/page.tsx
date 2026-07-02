@@ -8,6 +8,7 @@ import {
   Layers,
   Archive,
   Check,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
@@ -29,8 +30,49 @@ const PLANS = ["free", "team", "business"] as const;
 export default async function LandingPage() {
   const t = await getTranslations("landing");
 
+  const faqItems = t.raw("faq.items") as {
+    question: string;
+    answer: string;
+  }[];
+
+  const siteUrl = "https://link2plan.de";
+
+  // Strukturierte Daten für Google (Rich Results)
+  const softwareLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "Link2plan",
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    description: t("hero.subtitle"),
+    url: siteUrl,
+    offers: [
+      { "@type": "Offer", name: "Free", price: "0", priceCurrency: "EUR" },
+      { "@type": "Offer", name: "Team", price: "39", priceCurrency: "EUR" },
+      { "@type": "Offer", name: "Business", price: "119", priceCurrency: "EUR" },
+    ],
+  };
+
+  const faqLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqItems.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+      />
       {/* Navbar */}
       <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -50,6 +92,12 @@ export default async function LandingPage() {
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               {t("nav.pricing")}
+            </a>
+            <a
+              href="#faq"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {t("nav.faq")}
             </a>
           </div>
 
@@ -72,11 +120,44 @@ export default async function LandingPage() {
         </p>
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <Button size="lg" asChild>
-            <Link href="/login">{t("hero.cta")}</Link>
+            <Link href="/register">{t("hero.cta")}</Link>
           </Button>
           <Button variant="ghost" size="lg" asChild>
             <a href="#features">{t("hero.ctaSecondary")}</a>
           </Button>
+        </div>
+
+        {/*
+          Produkt-Vorschau. Platzhalter-Frame im Branding — ersetze den
+          inneren Block durch einen echten Screenshot, sobald vorhanden:
+          <Image src="/screenshots/app-preview.png" alt={t("hero.previewAlt")}
+                 width={1280} height={720} className="w-full" priority />
+        */}
+        <div className="mt-16 overflow-hidden rounded-xl border bg-card text-left shadow-2xl">
+          <div className="flex items-center gap-1.5 border-b bg-muted/50 px-4 py-3">
+            <span className="h-3 w-3 rounded-full bg-red-400" />
+            <span className="h-3 w-3 rounded-full bg-yellow-400" />
+            <span className="h-3 w-3 rounded-full bg-green-400" />
+            <span className="ml-3 text-xs text-muted-foreground">
+              link2plan.de
+            </span>
+          </div>
+          <div
+            className="relative flex aspect-[16/9] items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950"
+            role="img"
+            aria-label={t("hero.previewAlt")}
+          >
+            {/* Dekorative Marker deuten das Kernfeature an */}
+            <MapPin className="absolute left-[18%] top-[28%] h-8 w-8 text-blue-400/80" />
+            <MapPin className="absolute right-[24%] top-[22%] h-6 w-6 text-blue-300/70" />
+            <MapPin className="absolute bottom-[26%] left-[42%] h-7 w-7 text-blue-500/80" />
+            <div className="flex flex-col items-center gap-3 text-center">
+              <MapPin className="h-14 w-14 text-blue-500" />
+              <span className="text-sm font-medium text-slate-300">
+                {t("hero.previewAlt")}
+              </span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -178,7 +259,7 @@ export default async function LandingPage() {
                     className="w-full"
                     asChild
                   >
-                    <Link href="/login">
+                    <Link href="/register">
                       {t(`pricing.${plan}.cta`)}
                     </Link>
                   </Button>
@@ -186,6 +267,32 @@ export default async function LandingPage() {
               </Card>
             );
           })}
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section
+        id="faq"
+        className="mx-auto max-w-4xl px-4 py-16 sm:px-6 sm:py-24"
+      >
+        <div className="text-center">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            {t("faq.title")}
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
+            {t("faq.subtitle")}
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-8 sm:grid-cols-2">
+          {faqItems.map((item) => (
+            <div key={item.question}>
+              <h3 className="font-semibold">{item.question}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {item.answer}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -199,7 +306,7 @@ export default async function LandingPage() {
         </p>
         <div className="mt-8">
           <Button size="lg" asChild>
-            <Link href="/login">{t("cta.button")}</Link>
+            <Link href="/register">{t("cta.button")}</Link>
           </Button>
         </div>
       </section>
@@ -229,6 +336,14 @@ export default async function LandingPage() {
                     className="text-sm text-muted-foreground hover:text-foreground"
                   >
                     {t("footer.pricing")}
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#faq"
+                    className="text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    {t("footer.faq")}
                   </a>
                 </li>
               </ul>

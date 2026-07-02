@@ -585,7 +585,8 @@
       "title": "Pläne verknüpfen. Schneller navigieren.",
       "subtitle": "Link2Plan verbindet technische PDF-Pläne mit intelligenten Markern. Dein Team navigiert per Klick zwischen Grundrissen, Schnitten und Details — ohne Suchen.",
       "cta": "Kostenlos testen",
-      "ctaSecondary": "Mehr erfahren"
+      "ctaSecondary": "Mehr erfahren",
+      "previewAlt": "Link2plan-Vorschau: technischer Plan mit klickbaren Markern"
     },
     "features": {
       "title": "Alles, was dein Team braucht",
@@ -646,10 +647,41 @@
       "subtitle": "Starte jetzt kostenlos — keine Kreditkarte erforderlich.",
       "button": "Kostenlos testen"
     },
+    "faq": {
+      "title": "Häufige Fragen",
+      "subtitle": "Alles, was du vor dem Start wissen möchtest.",
+      "items": [
+        {
+          "question": "Wo werden meine Daten gespeichert?",
+          "answer": "Alle Pläne und Projektdaten liegen auf Servern in der EU und werden DSGVO-konform verarbeitet."
+        },
+        {
+          "question": "Ist Link2plan DSGVO-konform?",
+          "answer": "Ja. Wir hosten in der EU, verarbeiten Daten nach DSGVO und stellen die nötigen Datenschutz-Informationen bereit."
+        },
+        {
+          "question": "Kann ich kostenlos starten?",
+          "answer": "Ja. Der Free-Tarif ist dauerhaft kostenlos und ohne Kreditkarte nutzbar — ideal zum Ausprobieren."
+        },
+        {
+          "question": "Welche Dateien kann ich hochladen?",
+          "answer": "Technische Pläne als PDF. Die Anzeige läuft komplett im Browser, ohne zusätzliche Software."
+        },
+        {
+          "question": "Brauche ich eine Installation?",
+          "answer": "Nein. Link2plan läuft im Browser und lässt sich optional als App (PWA) auf dem Smartphone installieren."
+        },
+        {
+          "question": "Kann ich jederzeit kündigen?",
+          "answer": "Ja. Bezahlte Tarife sind monatlich und jederzeit zum Laufzeitende kündbar."
+        }
+      ]
+    },
     "footer": {
       "product": "Produkt",
       "features": "Funktionen",
       "pricing": "Preise",
+      "faq": "FAQ",
       "legal": "Rechtliches",
       "imprint": "Impressum",
       "privacy": "Datenschutz",
@@ -659,6 +691,7 @@
     "nav": {
       "features": "Funktionen",
       "pricing": "Preise",
+      "faq": "FAQ",
       "login": "Anmelden"
     }
   },

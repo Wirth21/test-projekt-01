@@ -34,7 +34,9 @@ export async function generateMetadata({
 
   const url = `${SITE_URL}/loesungen/${uc.slug}`;
   return {
-    title: uc.metaTitle,
+    // absolute: die metaTitle enthalten bereits "| Link2plan" — sonst würde die
+    // Root-Layout-Vorlage "%s | Link2Plan" den Markennamen ein zweites Mal anhängen.
+    title: { absolute: uc.metaTitle },
     description: uc.metaDescription,
     alternates: { canonical: `/loesungen/${uc.slug}` },
     openGraph: {
